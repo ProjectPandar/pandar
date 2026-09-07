@@ -104,6 +104,42 @@ reached its normal home UI and mapped the exact Pandar plugin and companion from
 module-load evidence for macOS arm64 only. It is not a tagged artifact, macOS amd64 evidence,
 authenticated sign-in/session evidence, Hub/Agent/printer evidence, or a hardware-operation claim.
 
+## v0.2.2 Tagged Release Evidence
+
+Annotated tag `v0.2.2` resolves to commit `932cf9e03315edebc54579b4b5a454c6dc459e0c`.
+Release-commit Checks run `34145759500`, release-commit Android run `34145759482`, tagged Checks run
+`34148368492`, Release run `34148368504`, and Docker/Helm run `34148368491` all passed. The
+release-commit Docker run `34145759471` also published the rolling main images.
+
+The GitHub Release was published on 2026-09-07 with 70 assets: 28 desktop archives, seven Windows
+Studio hook bundles, and one SHA-256 sidecar for every archive or bundle. All 35 downloaded sidecars
+passed `sha256sum --check --strict`, every payload archive and hook bundle had its exact three-file
+layout, and all seven Windows CLIs executed `--help` successfully on a Windows amd64 host. Linux and
+macOS CLI startup was not re-executed on this host because it has no Linux or macOS runtime; the
+Release workflow executed each archive's CLI and ABI probe natively on its target OS before
+publication.
+
+| ABI series | Linux amd64 | macOS amd64 | macOS arm64 | Windows amd64 | Windows hook |
+| ---------- | ----------- | ----------- | ----------- | ------------- | ------------ |
+| `02.06.00` | `cc73066f7b8523c4577e51525837a54d7f54f3f349f5d8d0cc6f9663441afd63` | `cb6cf239c77a0fb1544661a7137d5fcd69d808f23882fed6d91847b517b14864` | `6ec33c91ae917a1f5db0dbbfcb8cb67baddce4c727698d8477dc85b7c28c828b` | `dd425d844384026f0328c0d6e15ea4105cdf9e6fb727d0638e8265601c09b55b` | `08233dee77d75d8f70aaa437461f391c23c4e229ecdc150cf6708c438d1950dd` |
+| `02.06.01` | `e1e34f52cb6285a3381d6df554c2574434174e98ab662414a0acd0ced93ba387` | `4f7b42ab9c93915ec26217d1fe1c9e81a5f1f24c4fa3ae61f35f7a2a208e23f6` | `cdc80780c181f0f8d75e48fe43c4e57e32f01ce11a180066e9095f5e2a8cf505` | `80cafe303d637a44f13596cb3514c464f193a278f3a0276c60fca9d3b6783c6b` | `d7300a7fd192c83978a56c79f3d24c0d99eb8b178bcc1d2e23c5285dd48d06c0` |
+| `02.07.00` | `e669e8c0839f813a3e3410948af373e024c4aa1cf867b75da469e524666738ce` | `1243ec0ba1af60678606ac3957d7c193a5028871c51577950a9a415d98c845a8` | `0a5e5f0d5e7411e71d69758cd10b25e0d457e4e494c04abe51b85face647e5dc` | `894d9cb083ad7544dbb99c5971a80a5e1e5c73e5907d25266e0504fe16c9655e` | `018ea3231588663384315787adce71e63ee93bc5bb6f26fa14fe64e6a0bf3bad` |
+| `02.07.01` | `328a0069e885e08f671364194a6f0cf98ec88c59d39c6a2c4408c435cc106ff6` | `d12ee4ef74b2bcf112b5e8b1c7f02c330cdadf021f085efa68ec587d834420a8` | `d55520827860fcd16cf7aed12c0d896fe115d9f8ce04d80a4d729409aae951c3` | `5ce05cd45b66f9e53974bed1aca454f8961c7d13f044f2584c4a3edc09322052` | `96b9a071e4f642a5cf86d6c7344fde50e97050fa61906320e8a9fbbaa4bd967b` |
+| `02.08.00` | `5f951c6ed4c844a2b8813c479b329f4a3717e21434805392fdefa0dae399e5f1` | `b147a9bf72ede9138315accc06c47ed12e08f3757506309927888d134474eeb8` | `3a252adba54bbcb91742621f9631c2c07dc27021551e4a6c49663b2cfcda455a` | `ccabbadf3a6a022460c3bf7596ce12632c79ec88ad16a60e2a65b0b4dd5bac6d` | `e4f6f10061fc0ae23246df0b041607c9652d6aa0e07ae277140d37fb9c0fdbdf` |
+| `02.08.01` | `5e0f02f81a8a2a6d01f744bad202d03d769adee0a583a85fd9e6e226c9390652` | `6d9ebebb1783102d61b782f8218c77b6c2f7b74b799a3830f8c7b1be88866e23` | `7dea512f6370785912e90d111ab16ce3899f93755964d99dbb2f9c5829aee7a3` | `2ddaec430a52e7eaa3de7af42122419a452a09fa9066c071ee5c9524d2b927eb` | `a814dfaa64b1cfdebbc34279dc37aa8ad5ace2728b81a42b2f5388e4e487ddfd` |
+| `02.08.02` | `6d7670408c4b2e26542e77f23ff957f464e1e2b4b5e61f5914ff1bd3e536eba1` | `46c2185aa9944569d4f6847f182b237b30294ecb48020fe950d1d3e32106eb59` | `0af7a12107f881efc22d0fc535be1e275ebc89daffbede5992a1f4fcc7b751c1` | `5732dba1ce97a1ace062280e70e8ba456a8a041758c13377e6541af8e7515fe7` | `892a9a181f2a3d8256cf683b16d79e965166fb60b927339afe12191a6d806290` |
+
+Every Release matrix job built on its target OS, ran the packaged CLI and ABI probe, verified the
+exact three-file archive layout, and passed its ABI-series-specific Studio export contract before
+publication. This is package evidence, not real Studio or printer-hardware evidence.
+
+The published Hub manifest digest is
+`sha256:8f0ce4a0c2fabc1dd8b4fcc4acebee12f11876616ffb65324d53e49efdea58a1`; the Web manifest
+digest is `sha256:d6c16053bce2ee5fb708e992e047a097b4f758041f76bdfe9dc986a5f6f74618`.
+Both image manifests identify release commit `932cf9e03315edebc54579b4b5a454c6dc459e0c` and
+version `v0.2.2`. Helm chart `0.2.2` has OCI digest
+`sha256:cd9e0a77b9c6e6fd6c7a2b9404a3de91c09576ce615bff14614c41a4efd1075d` and declares
+`appVersion: v0.2.2`.
 ## v0.2.1 Tagged Release Evidence
 
 Annotated tag `v0.2.1` resolves to commit `57930101c55191f4fb7c21f94ba6ab22d60d6b86`.
