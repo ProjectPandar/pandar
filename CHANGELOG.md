@@ -6,6 +6,32 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-09-07
+
+### Fixed
+
+- Bound filament-switch AMS units to both extruders in the Studio plugin's telemetry projection: the synthesized AMS-unit `info` now encodes Studio's `0xE` both-extruders binding from the Agent's normalized `toolhead: "LR"` whenever the filament-switch flag is set, raw routing hex still passes through verbatim when present and usable, and units without the flag keep the legacy main-extruder projection because Studio rejects `0xE` without its own switch state — the reported X2D left-nozzle AMS mismatch.
+- Kept the canonical tenant profile through the Studio native `change_user` login handoff: a matching token and user id now confirm the login the Hub ticket exchange already committed without applying a mutation, a mismatched token or identity is rejected with `stale_account_response` instead of overwriting the session, and persisted authenticated sessions written without tenant context by the old envelope path are retired at startup so Studio falls back to the normal Pandar sign-in flow instead of appearing logged in with a printer cache that cannot initialize.
+
+### Removed
+
+- Removed stale dead-code suppressions from the Hub (four `#[cfg_attr(not(test), allow(dead_code))]` markers guarding production-reachable helpers and the never-read `JwtClaims.nbf` field), the caller-free `StudioAbiSeries::reference_version_components` accessor, and the dead `inventory.switchNozzle` dashboard message key.
+
+### Distribution
+
+- The release publishes seven ABI-series-specific CLI, network plugin, and BambuSource archive sets with SHA-256 sidecars; Windows also publishes Studio hook bundles.
+- Hub and Web images are published at `ghcr.io/projectpandar/pandar/hub:v0.2.2` and `ghcr.io/projectpandar/pandar/web:v0.2.2`.
+- Helm chart `0.2.2` is published at `oci://ghcr.io/projectpandar/pandar/chart/pandar`.
+
+### Known limitations
+
+- Desktop archives remain unsigned. Verify the supplied SHA-256 sidecar; Windows SmartScreen and macOS Gatekeeper may warn.
+- Real-host installation and real Bambu Studio replacement evidence is not complete for every target and ABI series.
+- The container images target Linux amd64 only.
+- Native firmware and recovery ownership still requires one active Hub; the firmware package catalog is intentionally empty.
+- The Android client is built separately and is not attached to the GitHub Release.
+
+
 ## [0.2.1] - 2026-09-03
 
 ### Changed

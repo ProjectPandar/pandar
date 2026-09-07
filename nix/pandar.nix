@@ -49,7 +49,7 @@
 
       root = ./..;
 
-      version = "0.2.1";
+      version = "0.2.2";
 
       rustSrc = lib.cleanSourceWith {
         src = root;
@@ -239,7 +239,7 @@
         src = frontendWorkspaceSource;
         npmWorkspace = "pandar-auth";
         npmDepsFetcherVersion = 2;
-        npmDepsHash = "sha256-Z9zcxOoS+qYmlMmqboBWvZ5OjN8H0LDSTyfpYfbObRI=";
+        npmDepsHash = "sha256-YsvISZsb4CHReQv5AERVAhTgjFWgT5IbPsh7OH8XaPI=";
 
         nativeBuildInputs = [
           pkgs.makeWrapper
@@ -323,7 +323,7 @@
         inherit version;
         src = frontendWorkspaceSource;
         npmDepsFetcherVersion = 2;
-        npmDepsHash = "sha256-Z9zcxOoS+qYmlMmqboBWvZ5OjN8H0LDSTyfpYfbObRI=";
+        npmDepsHash = "sha256-YsvISZsb4CHReQv5AERVAhTgjFWgT5IbPsh7OH8XaPI=";
         npmBuildScript = "build:web";
 
         nativeBuildInputs = [
