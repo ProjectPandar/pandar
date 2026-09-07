@@ -71,7 +71,7 @@ impl AmsUnitPayload {
         tray_exist_bits: &mut u64,
         filament_switch_installed: Option<bool>,
     ) -> Option<Self> {
-        let info = studio_ams_info(unit, filament_switch_installed)?;
+        let info = studio_ams_info(unit, filament_switch_installed);
         let unit_id = text_if_present(&unit.unit_id)?;
         let unit_number = parse_u64_or_zero(&unit_id);
         let unit_kind = ams_unit_kind(unit);
@@ -104,15 +104,21 @@ impl AmsUnitPayload {
     }
 }
 
-fn studio_ams_info(unit: &AmsUnit, filament_switch_installed: Option<bool>) -> Option<String> {
-    if filament_switch_installed == Some(true) {
-        return filament_switch_info(unit);
+fn studio_ams_info(unit: &AmsUnit, filament_switch_installed: Option<bool>) -> String {
+    let switch_installed = filament_switch_installed == Some(true);
+    if switch_installed && let Some(info) = filament_switch_info(unit) {
+        return info;
     }
 
-    let extruder_id = if text(&unit.toolhead).eq_ignore_ascii_case("L") {
-        1
-    } else {
-        0
+    // Studio only accepts the both-extruders `0xE` binding while its own
+    // filament-switch flag (aux bit 29, forwarded verbatim) is set, so the
+    // synthesized binding must agree with the flag the unit travels with.
+    // The synthesized switch input is always POS_IN_B; the real input nibble
+    // only exists in raw `info`, and when that is gone no better source does.
+    let extruder_id = match text(&unit.toolhead).to_ascii_uppercase().as_str() {
+        "L" => 1,
+        "LR" if switch_installed => 0xE,
+        _ => 0,
     };
     let type_id = unit
         .unit_kind
@@ -120,7 +126,7 @@ fn studio_ams_info(unit: &AmsUnit, filament_switch_installed: Option<bool>) -> O
         .map(u64::from)
         .or_else(|| ams_unit_kind(unit).studio_type_id().map(u64::from))
         .unwrap_or(1);
-    Some(hex_string(type_id | (extruder_id << 8)))
+    hex_string(type_id | (extruder_id << 8))
 }
 
 fn ams_unit_kind(unit: &AmsUnit) -> AmsUnitKind {
