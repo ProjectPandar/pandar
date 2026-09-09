@@ -10,14 +10,6 @@
     "moreAbout": "关于{label}的更多信息"
   },
   "runtime": {
-    "liveState": {
-      "live": "已连接",
-      "connecting": "连接中",
-      "disconnected": "重新连接中",
-      "idle": "空闲",
-      "unavailable": "不可用",
-      "error": "不可用"
-    },
     "authSource": {
       "request_cookie": "请求 Cookie",
       "app_auth_bearer_token": "应用 Bearer 令牌",
