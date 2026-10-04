@@ -173,20 +173,6 @@ fn material_patch_json(json: &str) -> TestMaterialPatch {
     serde_json::from_str(json).unwrap()
 }
 
-fn chamber_light_payload(payload: &serde_json::Value) -> TestChamberLightPayload {
-    decode_payload(payload)
-}
-
-#[derive(Debug, Deserialize, PartialEq)]
-struct TestChamberLightPayload {
-    system: TestChamberLightSystem,
-}
-
-#[derive(Debug, Deserialize, PartialEq)]
-struct TestChamberLightSystem {
-    led_mode: String,
-}
-
 #[derive(Debug, Deserialize, PartialEq)]
 struct TestProjectFilePayload {
     print: TestProjectFilePrint,

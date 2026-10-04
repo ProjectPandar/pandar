@@ -190,11 +190,6 @@ async fn upload_in_bambu_chunks(
     Ok(())
 }
 
-#[cfg(test)]
-pub(crate) fn bambu_lan_ftps_tls_config_for_default_profile() -> Arc<ClientConfig> {
-    bambu_lan_ftps_tls_config(FtpsProfile::for_model(None), "test-printer")
-}
-
 #[derive(Debug)]
 enum UploadVerification {
     Verified,

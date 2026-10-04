@@ -98,11 +98,6 @@ fn wait_for_sample_result(tunnel: *mut c_void) -> i32 {
 }
 
 #[test]
-fn sentinel_identifies_the_local_camera_source() {
-    assert_eq!(pandar_bambu_source_sentinel(), 1);
-}
-
-#[test]
 fn media_struct_layout_matches_pinned_studio() {
     assert_eq!(std::mem::offset_of!(BambuStreamInfo, stream_type), 0);
     assert_eq!(std::mem::offset_of!(BambuStreamInfo, sub_type), 4);

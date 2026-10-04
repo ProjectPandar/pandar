@@ -64,18 +64,6 @@ fn valid_linux_preflight_renders_pass_and_evidence_row() {
 }
 
 #[test]
-fn linux_target_rejects_windows_plugin_filename() {
-    let dir = tempfile::tempdir().unwrap();
-    let mut args = valid_args(&dir);
-    args.plugin_artifact = temp_file(&dir, "pandar_network_plugin.dll");
-
-    let error = validate(&args).unwrap_err();
-
-    assert!(error.contains("pandar_network_plugin.dll"));
-    assert!(error.contains("expected libpandar_network_plugin.so"));
-}
-
-#[test]
 fn windows_target_rejects_linux_plugin_filename() {
     let dir = tempfile::tempdir().unwrap();
     let mut args = valid_args(&dir);

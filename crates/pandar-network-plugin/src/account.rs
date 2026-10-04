@@ -12,8 +12,6 @@ mod tests;
 use anyhow::{Context, ensure};
 
 use crate::{PluginHttpResult, result, stable_error_body};
-#[cfg(test)]
-use runtime::pandar_plugin_account_debug_consistent;
 use types::{LocalServerBaseUrl, LoginEnvelope, LoginEnvelopeData, borrowed};
 
 const ACCOUNT_FAILURE: &str = "account_state_unavailable";

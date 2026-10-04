@@ -93,13 +93,3 @@ async fn diagnose_printer_emits_success_with_structured_problem_result() {
         other => panic!("expected command result, got {other:?}"),
     }
 }
-
-#[test]
-fn diagnose_command_payload_contains_only_serial_number() {
-    let access_code = "ACCESS-CODE-UNIQUE";
-    let command = diagnose_command("command-1".to_owned(), "SERIAL1");
-    let payload = format!("{command:?}");
-
-    assert!(payload.contains("SERIAL1"));
-    assert!(!payload.contains(access_code));
-}

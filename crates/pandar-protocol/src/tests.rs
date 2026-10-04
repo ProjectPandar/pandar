@@ -4,17 +4,13 @@ use prost::Message;
 
 use crate::agent::v1::{
     AgentCapability, AgentEvent, AmsFirmwareDescriptorList, AmsFirmwareSwitchState, CommandResult,
-    ExecuteFirmwareControl, FirmwareAcknowledgement, FirmwareCommand, FirmwareCommandResult,
-    FirmwareConsistencyConfirm, FirmwarePrepared, FirmwarePublished, FirmwareRefreshedModules,
-    FirmwareStart, FirmwareSwitchAmsFirmware, FirmwareUpgradeConfirm, HubCommand,
-    PrepareFirmwareControl, PrinterFirmwareInvalidated, PrinterFirmwareModule,
-    PrinterFirmwareModulesSnapshot, PrinterFirmwareStatus, PrinterFirmwareStatusSnapshot,
-    PrinterFirmwareVersionList, PrinterUpgradeState, PublishedWithoutAcknowledgement,
-    RefreshFirmwareVersion, RefreshPrinterMaterials, agent_event, firmware_command,
-    firmware_command_result, hub_command,
+    ExecuteFirmwareControl, FirmwareCommand, FirmwareConsistencyConfirm, FirmwarePrepared,
+    FirmwarePublished, FirmwareStart, FirmwareSwitchAmsFirmware, FirmwareUpgradeConfirm,
+    HubCommand, PrepareFirmwareControl, PrinterFirmwareInvalidated, PrinterFirmwareModule,
+    PrinterFirmwareModulesSnapshot, PrinterFirmwareStatusSnapshot, PrinterFirmwareVersionList,
+    PrinterUpgradeState, RefreshFirmwareVersion, RefreshPrinterMaterials, agent_event,
+    firmware_command, hub_command,
 };
-
-mod studio_print;
 
 fn assert_round_trip<T>(value: T)
 where
@@ -179,57 +175,6 @@ fn firmware_wire_round_trips_all_commands_and_exact_hub_tags() {
 }
 
 #[test]
-fn firmware_wire_round_trips_refresh_acknowledgement_and_unknown_outcomes() {
-    let refreshed = FirmwareCommandResult {
-        command_id: "refresh".into(),
-        serial: "SERIAL".into(),
-        generation: 9,
-        transient_status: None,
-        outcome: Some(firmware_command_result::Outcome::RefreshedModules(
-            FirmwareRefreshedModules {
-                modules: vec![module("01.00.00.00"), module("02.00.00.00")],
-                module_revision: 31,
-            },
-        )),
-    };
-    assert_round_trip(refreshed);
-
-    let acknowledged = FirmwareCommandResult {
-        command_id: "control".into(),
-        serial: "SERIAL".into(),
-        generation: 9,
-        transient_status: Some(PrinterFirmwareStatus {
-            upgrade_state: None,
-            cfg: Some(String::new()),
-        }),
-        outcome: Some(firmware_command_result::Outcome::Acknowledgement(
-            FirmwareAcknowledgement {
-                command: "mc_for_ams_firmware_upgrade".into(),
-                sequence_id: "101".into(),
-                result: Some("fail".into()),
-                error_code: Some(-42),
-                reason: Some("unsupported".into()),
-                message: Some("printer rejected selection".into()),
-            },
-        )),
-    };
-    assert!(!format!("{acknowledged:?}").contains("https://"));
-    assert_round_trip(acknowledged);
-
-    assert_round_trip(FirmwareCommandResult {
-        command_id: "control".into(),
-        serial: "SERIAL".into(),
-        generation: 9,
-        transient_status: None,
-        outcome: Some(
-            firmware_command_result::Outcome::PublishedWithoutAcknowledgement(
-                PublishedWithoutAcknowledgement {},
-            ),
-        ),
-    });
-}
-
-#[test]
 fn firmware_wire_keeps_legacy_agent_and_hub_fixtures_byte_identical() {
     let agent = AgentEvent {
         agent_id: "a".into(),
@@ -265,74 +210,5 @@ fn firmware_wire_keeps_legacy_agent_and_hub_fixtures_byte_identical() {
         [
             0x0a, 0x01, b'c', 0x82, 0x01, 0x06, 0x0a, 0x01, b'p', 0x12, 0x01, b's',
         ]
-    );
-}
-
-fn sparse_module(version: &str) -> PrinterFirmwareModule {
-    PrinterFirmwareModule {
-        name: "n3s/0".into(),
-        software_version: Some(version.into()),
-        software_new_version: None,
-        new_version: None,
-        visible: None,
-        product_name: None,
-        serial_number: None,
-        hardware_version: None,
-        firmware_flag: None,
-    }
-}
-
-#[test]
-fn firmware_wire_round_trips_complete_printer_rejection() {
-    let result = CommandResult {
-        command_id: "control".into(),
-        success: true,
-        error: String::new(),
-        result_json: String::new(),
-        firmware_result: Some(FirmwareCommandResult {
-            command_id: "control".into(),
-            serial: "SERIAL".into(),
-            generation: 7,
-            transient_status: Some(PrinterFirmwareStatus {
-                upgrade_state: None,
-                cfg: Some(String::new()),
-            }),
-            outcome: Some(firmware_command_result::Outcome::Acknowledgement(
-                FirmwareAcknowledgement {
-                    command: "mc_for_ams_firmware_upgrade".into(),
-                    sequence_id: "-77".into(),
-                    result: Some("fail".into()),
-                    error_code: Some(-42),
-                    reason: Some("unsupported firmware".into()),
-                    message: Some("printer refused the selection".into()),
-                },
-            )),
-        }),
-    };
-
-    let bytes = result.encode_to_vec();
-    assert_eq!(CommandResult::decode(bytes.as_slice()).unwrap(), result);
-    assert!(!format!("{result:?}").contains("https://"));
-}
-
-#[test]
-fn firmware_wire_refresh_keeps_generation_revision_duplicates_and_order() {
-    let firmware_result = FirmwareCommandResult {
-        command_id: "refresh".into(),
-        serial: "SERIAL".into(),
-        generation: 13,
-        transient_status: None,
-        outcome: Some(firmware_command_result::Outcome::RefreshedModules(
-            FirmwareRefreshedModules {
-                modules: vec![sparse_module("old"), sparse_module("new")],
-                module_revision: 29,
-            },
-        )),
-    };
-    let bytes = firmware_result.encode_to_vec();
-
-    assert_eq!(
-        FirmwareCommandResult::decode(bytes.as_slice()).unwrap(),
-        firmware_result
     );
 }

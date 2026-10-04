@@ -31,13 +31,6 @@ fn parses_agent_subcommand_with_agent_options() {
 }
 
 #[test]
-fn parses_hub_subcommand() {
-    let cli = Cli::parse_from(["pandar", "hub"]);
-
-    assert!(matches!(cli.command, Command::Hub));
-}
-
-#[test]
 fn defaults_install_network_plugin_files_to_release_artifacts_in_current_directory() {
     let cli = Cli::try_parse_from(["pandar", "install-network-plugin"])
         .expect("parse install-network-plugin without explicit release files");

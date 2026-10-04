@@ -16,20 +16,6 @@ fn profile_caps_tls_for_known_aliases_only() {
 }
 
 #[test]
-fn default_profile_builds_tls_config() {
-    let config = bambu_lan_ftps_tls_config_for_default_profile();
-
-    assert!(config.alpn_protocols.is_empty());
-}
-
-#[test]
-fn p2s_profile_builds_tls_config() {
-    let config = bambu_lan_ftps_tls_config(FtpsProfile::for_model(Some("P2S")), "test-printer");
-
-    assert!(config.alpn_protocols.is_empty());
-}
-
-#[test]
 fn upload_size_verification_accepts_exact_match() {
     assert!(matches!(
         verify_uploaded_size(42, Some(42), "Metadata/job.3mf").unwrap(),

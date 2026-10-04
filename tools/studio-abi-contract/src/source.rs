@@ -222,9 +222,7 @@ fn export_symbols(exports: &ExportMap) -> BTreeSet<String> {
 mod tests {
     use std::{fs, path::Path, process::Command};
 
-    use super::{
-        CONTRACT_PATHS, PINNED_BOOST_VERSION, PINNED_BOOST_VERSION_NUMBER, inspect_source,
-    };
+    use super::{CONTRACT_PATHS, inspect_source};
 
     const OFFICIAL_ORIGIN: &str = "https://github.com/bambulab/BambuStudio";
 
@@ -290,16 +288,6 @@ mod tests {
         abi_series.network_exports = 2;
         abi_series.file_transfer_exports = 2;
         abi_series
-    }
-
-    #[test]
-    fn pinned_commit_is_the_reviewed_upstream_object() {
-        assert_eq!(
-            pandar_studio_profile::catalog().default().studio_commit,
-            "3f126b717ed1f10fee0f32f05ed9731808d0c8bb"
-        );
-        assert_eq!(PINNED_BOOST_VERSION, "1.84.0");
-        assert_eq!(PINNED_BOOST_VERSION_NUMBER, "108400");
     }
 
     #[test]

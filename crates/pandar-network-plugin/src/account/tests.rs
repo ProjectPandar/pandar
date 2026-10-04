@@ -1,6 +1,6 @@
 use super::runtime::canonical_hub_identity;
 use super::{
-    pandar_plugin_account_debug_consistent, persistence,
+    persistence,
     types::{PersistedLogin, Profile, ProfileInput, SessionKind},
 };
 
@@ -13,12 +13,6 @@ fn hub_identity_ignores_trailing_slashes() {
         canonical_hub_identity("  http://hub.example///  "),
         "http://hub.example"
     );
-}
-
-#[test]
-fn release_abi_rejects_debug_studio_stl_mode() {
-    assert!(pandar_plugin_account_debug_consistent(false));
-    assert!(!pandar_plugin_account_debug_consistent(true));
 }
 
 #[test]

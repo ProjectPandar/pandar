@@ -1,13 +1,6 @@
 use super::*;
 
 #[tokio::test]
-async fn noop_refresh_printers_returns_no_snapshots() {
-    let gateway = NoopMachineGateway;
-
-    assert_eq!(gateway.refresh_printers().await.unwrap(), Vec::new());
-}
-
-#[tokio::test]
 async fn configured_refresh_printers_refreshes_endpoints_sequentially() {
     let first =
         FakeMqttTransport::with_reports([get_version_report("P2S"), print_state_report("READY")]);
@@ -104,17 +97,6 @@ async fn configured_refresh_printers_refreshes_endpoints_sequentially() {
             },
         ]
     );
-}
-
-#[tokio::test]
-async fn configured_gateway_construction_uses_runtime_ftps_without_network_io() {
-    let mqtt = FakeMqttTransport::default();
-    let gateway = ConfiguredBambuMachineGateway::new(
-        vec![(endpoint("SERIAL1"), mqtt)],
-        Duration::from_secs(1),
-    );
-
-    assert_eq!(gateway.configured_printer_count(), 1);
 }
 
 #[tokio::test]

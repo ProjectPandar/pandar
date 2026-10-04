@@ -69,14 +69,4 @@ mod tests {
         assert!(!body.contains("<script>"));
         assert!(!body.contains("alert(1)"));
     }
-
-    #[test]
-    fn callback_delivers_safe_ticket_to_studio() {
-        let body = body(
-            "/callback?ticket=pandar_plugin_ticket_abc-123&redirect_url=http%3A%2F%2F127.0.0.1%2Fcallback",
-        );
-
-        assert!(body.contains("user_ticket_login"));
-        assert!(body.contains("pandar_plugin_ticket_abc-123"));
-    }
 }

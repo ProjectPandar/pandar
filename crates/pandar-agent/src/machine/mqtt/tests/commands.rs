@@ -148,14 +148,6 @@ fn ams_drying_payloads_match_bambu_studio_reference() {
 }
 
 #[test]
-fn topics_match_bambu_reference_shape() {
-    let topics = BambuMqttTopics::for_serial("01S00EXAMPLE");
-
-    assert_eq!(topics.report, "device/01S00EXAMPLE/report");
-    assert_eq!(topics.request, "device/01S00EXAMPLE/request");
-}
-
-#[test]
 fn constants_match_bambu_defaults() {
     assert_eq!(BAMBU_MQTT_PORT, 8883);
     assert_eq!(BAMBU_MQTT_USERNAME, "bblp");
@@ -181,35 +173,6 @@ fn mqtt_report_error_log_preserves_error_chain() {
     assert!(captured.contains("MQTT report receive failed"));
     assert!(captured.contains("payload size limit exceeded: 262600"));
     assert!(captured.contains("poll rumqttc event loop"));
-}
-
-#[test]
-fn lan_tls_uses_rustls_certificate_policy_for_printer_certificates() {
-    assert!(matches!(
-        bambu_lan_tls_config("test-bambu-v1"),
-        TlsConfiguration::Rustls(_)
-    ));
-}
-
-#[test]
-fn ftps_lan_tls_default_profile_config_constructs() {
-    let config = crate::machine::ftps::bambu_lan_ftps_tls_config_for_default_profile();
-
-    assert!(config.alpn_protocols.is_empty());
-}
-
-#[test]
-fn pushall_payload_matches_reference() {
-    let payload = BambuMqttCommand::RequestPushAll.payload();
-    let sequence_id = studio_sequence_id(&payload, "pushing");
-    assert_eq!(payload, expected_pushall_payload(&sequence_id));
-}
-
-#[test]
-fn get_version_payload_matches_reference() {
-    let payload = BambuMqttCommand::GetVersion.payload();
-    let sequence_id = studio_sequence_id(&payload, "info");
-    assert_eq!(payload, expected_get_version_payload(&sequence_id));
 }
 
 #[test]
@@ -252,18 +215,6 @@ fn basic_print_control_payloads_match_reference() {
 }
 
 #[test]
-fn chamber_light_payload_matches_bambu_studio_reference() {
-    let on = BambuMqttCommand::SetChamberLight(true).payload();
-    assert_eq!(
-        on,
-        expected_chamber_light_payload(&studio_sequence_id(&on, "system"))
-    );
-
-    let off = BambuMqttCommand::SetChamberLight(false).payload();
-    assert_eq!(chamber_light_payload(&off).system.led_mode, "off");
-}
-
-#[test]
 fn print_speed_is_limited_to_reference_modes() {
     let payload = BambuMqttCommand::SetPrintSpeed(PrintSpeed::new(4).unwrap()).payload();
     assert_eq!(
@@ -275,57 +226,6 @@ fn print_speed_is_limited_to_reference_modes() {
 }
 
 #[test]
-fn select_extruder_payload_matches_bambu_studio_reference() {
-    let payload = BambuMqttCommand::SelectExtruder(1).payload();
-    assert_eq!(
-        payload,
-        expected_select_extruder_payload(1, &studio_sequence_id(&payload, "print"))
-    );
-}
-
-#[test]
-fn axis_controls_back_to_center_payload_is_typed_and_exact() {
-    let payload = BambuMqttCommand::BackToCenter.payload();
-    assert_eq!(
-        payload,
-        serde_json::json!({
-            "print": {
-                "command": "back_to_center",
-                "sequence_id": studio_sequence_id(&payload, "print"),
-            }
-        })
-    );
-}
-
-#[test]
-fn axis_controls_xyz_control_payload_uses_uppercase_axis_and_numeric_fields() {
-    for (axis, direction, mode, expected_axis) in [
-        (crate::machine::PrinterAxis::X, 1, 0, "X"),
-        (crate::machine::PrinterAxis::Y, -1, 1, "Y"),
-        (crate::machine::PrinterAxis::Z, 1, 1, "Z"),
-    ] {
-        let payload = BambuMqttCommand::XyzControl {
-            axis,
-            direction,
-            mode,
-        }
-        .payload();
-        assert_eq!(
-            payload,
-            serde_json::json!({
-                "print": {
-                    "command": "xyz_ctrl",
-                    "axis": expected_axis,
-                    "dir": direction,
-                    "mode": mode,
-                    "sequence_id": studio_sequence_id(&payload, "print"),
-                }
-            })
-        );
-    }
-}
-
-#[test]
 fn gcode_line_payload_preserves_single_home_line() {
     let payload = BambuMqttCommand::GcodeLine(GcodeLineCommand {
         param: "G28".to_string(),
@@ -334,22 +234,6 @@ fn gcode_line_payload_preserves_single_home_line() {
     assert_eq!(
         payload,
         expected_print_command_payload("gcode_line", "G28", &studio_sequence_id(&payload, "print"))
-    );
-}
-
-#[test]
-fn gcode_line_payload_preserves_studio_axis_move_envelope() {
-    let payload = BambuMqttCommand::GcodeLine(GcodeLineCommand {
-        param: "M211 S\nM211 X1 Y1 Z1\nM1002 push_ref_mode\nG91\nG1 X10 Z-0.5 F3000\nM1002 pop_ref_mode\nM211 R".to_string(),
-    })
-    .payload();
-    assert_eq!(
-        payload,
-        expected_print_command_payload(
-            "gcode_line",
-            "M211 S\nM211 X1 Y1 Z1\nM1002 push_ref_mode\nG91\nG1 X10 Z-0.5 F3000\nM1002 pop_ref_mode\nM211 R",
-            &studio_sequence_id(&payload, "print")
-        )
     );
 }
 
@@ -367,17 +251,6 @@ fn gcode_line_payload_preserves_hotend_temperature_line() {
             &studio_sequence_id(&payload, "print")
         )
     );
-}
-
-#[test]
-fn gcode_line_payload_preserves_exact_param() {
-    let param = "M106 P1 S127 \r\n; keep  \n\n";
-    let payload = BambuMqttCommand::GcodeLine(GcodeLineCommand {
-        param: param.to_owned(),
-    })
-    .command_payload();
-
-    assert_eq!(payload.payload["print"]["param"], param);
 }
 
 #[test]

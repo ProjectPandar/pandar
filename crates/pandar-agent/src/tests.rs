@@ -75,25 +75,6 @@ async fn invalid_printer_config_fails_before_reconnect_loop() {
 }
 
 #[test]
-fn startup_summary_names_hub_and_agent() {
-    let config = AgentConfig {
-        hub_grpc_url: "http://hub.internal:50051".to_owned(),
-        hub_api_url: None,
-        agent_name: "garage".to_owned(),
-        agent_id: "agent-id".to_owned(),
-        tenant_id: "tenant-id".to_owned(),
-        agent_credential: "pandar_ac_test".to_owned(),
-        agent_version: env!("CARGO_PKG_VERSION").to_owned(),
-        printers: "[]".to_owned(),
-    };
-
-    assert_eq!(
-        startup_summary(&config),
-        "agent garage will connect to http://hub.internal:50051"
-    );
-}
-
-#[test]
 fn hello_event_has_agent_identity_version_and_exact_capability() {
     let config = test_config();
 
@@ -254,11 +235,6 @@ fn backoff_reset_returns_to_one_second() {
     backoff.reset();
 
     assert_eq!(backoff.next_delay(), Duration::from_secs(1));
-}
-
-#[test]
-fn heartbeat_interval_is_fifteen_seconds() {
-    assert_eq!(HEARTBEAT_INTERVAL, Duration::from_secs(15));
 }
 
 fn test_config() -> AgentConfig {

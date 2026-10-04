@@ -59,8 +59,6 @@ pub(crate) use reports::{
     forward_print_reports, forward_print_reports_with_firmware, print_job_report_event,
     printer_snapshot_event,
 };
-#[cfg(test)]
-pub(crate) use rumqttc::TlsConfiguration;
 pub(crate) use snapshot::snapshot_from_endpoint;
 pub(crate) use transport::BambuLanCertificateVerifier;
 #[cfg(test)]

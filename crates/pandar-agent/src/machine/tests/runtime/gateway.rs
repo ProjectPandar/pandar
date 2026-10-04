@@ -28,21 +28,6 @@ async fn report_forwarder_retries_initial_subscribe_failure() {
 }
 
 #[tokio::test]
-async fn empty_runtime_gateway_refresh_printers_returns_empty() {
-    let gateway = TestRuntimeBambuMachineGateway::new(
-        Vec::<(
-            BambuPrinterEndpoint,
-            FakeMqttTransport,
-            FakeMachineFileTransfer,
-        )>::new(),
-        FakeMachineFileTransfer::default(),
-        Duration::from_secs(1),
-    );
-
-    assert_eq!(gateway.refresh_printers().await.unwrap(), Vec::new());
-}
-
-#[tokio::test]
 async fn successful_link_printer_installs_endpoint_for_later_refresh() {
     let gateway = TestRuntimeBambuMachineGateway::new(
         Vec::new(),

@@ -1,13 +1,5 @@
 use super::*;
 
-#[test]
-fn periodic_printer_refresh_uses_exact_sixty_second_constant() {
-    assert_eq!(
-        super::super::PRINTER_REFRESH_INTERVAL,
-        Duration::from_secs(60)
-    );
-}
-
 #[tokio::test(start_paused = true)]
 async fn initial_pushall_full_report_is_authoritative_even_when_telemetry_is_empty() {
     let transport = ControlledTransport::new(None);

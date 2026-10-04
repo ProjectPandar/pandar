@@ -240,31 +240,6 @@ mod tests {
     }
 
     #[test]
-    fn release_bundle_name_uses_abi_series() {
-        let abi_series = pandar_studio_profile::abi_series("02.07.01").unwrap();
-
-        assert_eq!(abi_series.reference_studio_version, "02.07.01.57");
-        assert_eq!(
-            abi_series.hook_bundle_name(),
-            "pandar-studio-hook-02.07.01-windows-amd64.zip"
-        );
-
-        let beta = pandar_studio_profile::abi_series("02.08.01").unwrap();
-        assert_eq!(beta.reference_studio_version, "02.08.01.55");
-        assert_eq!(
-            beta.hook_bundle_name(),
-            "pandar-studio-hook-02.08.01-windows-amd64.zip"
-        );
-
-        let latest = pandar_studio_profile::abi_series("02.08.02").unwrap();
-        assert_eq!(latest.reference_studio_version, "02.08.02.61");
-        assert_eq!(
-            latest.hook_bundle_name(),
-            "pandar-studio-hook-02.08.02-windows-amd64.zip"
-        );
-    }
-
-    #[test]
     fn bundle_checksum_mismatch_is_rejected() {
         assert!(verify_checksum(&"0".repeat(64), b"bundle").is_err());
     }

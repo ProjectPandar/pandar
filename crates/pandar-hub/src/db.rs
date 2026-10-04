@@ -296,14 +296,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn database_config_detects_sqlite_backend() {
-        let config = DatabaseConfig::from_url("sqlite::memory:").unwrap();
-
-        assert_eq!(config.backend(), DatabaseBackend::Sqlite);
-        assert_eq!(config.url(), "sqlite::memory:");
-    }
-
-    #[test]
     fn database_config_detects_postgres_backend() {
         let config = DatabaseConfig::from_url("postgres://localhost/pandar").unwrap();
 

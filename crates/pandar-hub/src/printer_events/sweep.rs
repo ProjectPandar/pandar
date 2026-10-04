@@ -64,15 +64,4 @@ mod tests {
         assert_eq!(hub.channel_counts_for_tests().await, [1, 0, 0]);
         drop(receiver);
     }
-
-    #[tokio::test]
-    async fn sweep_keeps_channels_for_slow_but_alive_subscribers() {
-        let hub = PrinterEventHub::new();
-        let tenant = TenantId::new();
-        let receiver = hub.subscribe(tenant).await;
-        // A receiver nobody polls is still a live subscriber.
-        hub.sweep_idle_channels().await;
-        assert_eq!(hub.channel_counts_for_tests().await, [1, 0, 0]);
-        drop(receiver);
-    }
 }

@@ -16,7 +16,7 @@ use crate::repositories::{AgentRepository, RepositoryError, RepositoryResult};
 use pandar_protocol::agent::v1::{AgentCapability, HubCommand};
 
 #[cfg(test)]
-use pandar_core::{AgentStatus, CommandId};
+use pandar_core::CommandId;
 
 pub(crate) mod firmware_commands;
 pub(crate) mod live_commands;

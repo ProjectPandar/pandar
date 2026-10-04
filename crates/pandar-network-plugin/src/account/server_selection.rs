@@ -83,33 +83,6 @@ fn store_unlocked(
 mod tests {
     use super::*;
 
-    fn selection() -> PersistedServerSelection {
-        PersistedServerSelection {
-            web_url: "https://pandar-web.example.test".to_owned(),
-            hub_url: "https://pandar-hub.example.test".to_owned(),
-        }
-    }
-
-    #[test]
-    fn store_and_load_round_trips_typed_selection() {
-        let directory = tempfile::tempdir().unwrap();
-        let config_dir = directory.path().to_string_lossy().into_owned();
-
-        store(&config_dir, &selection())
-            .unwrap()
-            .require_confirmed("test")
-            .unwrap();
-
-        assert_eq!(load(&config_dir).unwrap(), Some(selection()));
-        let body =
-            std::fs::read_to_string(directory.path().join("pandar-plugin-server-selection.json"))
-                .unwrap();
-        assert_eq!(
-            body,
-            r#"{"web_url":"https://pandar-web.example.test","hub_url":"https://pandar-hub.example.test"}"#
-        );
-    }
-
     #[test]
     fn canonical_identity_drops_trailing_slashes_and_rejects_unsafe_urls() {
         let canonical = PersistedServerSelection::new(

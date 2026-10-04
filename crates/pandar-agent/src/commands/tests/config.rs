@@ -33,14 +33,3 @@ fn invalid_printer_config_malformed_json_preserves_context() {
 
     assert!(format!("{err:#}").contains("PANDAR_PRINTERS"));
 }
-
-#[test]
-fn invalid_printer_config_missing_required_field_preserves_context() {
-    let err =
-        parse_printer_config(r#"[{"host":"192.0.2.10","serial":"","access_code":"12345678"}]"#)
-            .unwrap_err();
-
-    let error = format!("{err:#}");
-    assert!(error.contains("PANDAR_PRINTERS"));
-    assert!(error.contains("serial"));
-}

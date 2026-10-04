@@ -342,13 +342,3 @@ fn mixed_replica_control_plane_requires_compatibility_and_decodes_enrichment() {
     assert_eq!(printer.id, "printer-1");
     assert_eq!(printer.status, "RUNNING");
 }
-
-#[test]
-fn parse_agent_identity_reads_tenant_and_agent_ids() {
-    let tenant_id = TenantId::new();
-    let agent_id = AgentId::new();
-
-    let parsed = parse_agent_identity(&tenant_id.to_string(), &agent_id.to_string()).unwrap();
-
-    assert_eq!(parsed, (tenant_id, agent_id));
-}

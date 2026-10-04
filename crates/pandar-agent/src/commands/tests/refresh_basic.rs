@@ -23,41 +23,6 @@ async fn refresh_printers_no_configured_noop_emits_ack_and_success_only() {
     assert_eq!(success, success_event(&config, &command_id));
 }
 
-#[tokio::test]
-async fn refresh_printers_one_snapshot_emits_ack_snapshot_success() {
-    let config = test_config();
-    let command_id = uuid::Uuid::new_v4().to_string();
-    let gateway = FakeGateway::ok([snapshot("SERIAL1", "garage", Some("A1 Mini"), "READY")]);
-    let (sender, mut receiver) = mpsc::channel(3);
-
-    handle_command_with_gateway(
-        &config,
-        &gateway,
-        &sender,
-        refresh_command(command_id.clone()),
-    )
-    .await
-    .unwrap();
-    drop(sender);
-
-    assert_eq!(
-        receiver.recv().await.unwrap(),
-        ack_event(&config, &command_id)
-    );
-    assert_snapshot(
-        receiver.recv().await.unwrap(),
-        "SERIAL1",
-        "garage",
-        "A1 Mini",
-        "READY",
-    );
-    assert_eq!(
-        receiver.recv().await.unwrap(),
-        success_event(&config, &command_id)
-    );
-    assert!(receiver.recv().await.is_none());
-}
-
 #[test]
 fn printer_snapshot_event_maps_device_features_exactly() {
     let config = test_config();

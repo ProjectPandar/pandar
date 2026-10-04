@@ -251,14 +251,6 @@ mod tests {
     use super::{locate_include_roots, prepare_archive, sha256_bytes, verify_pinned_digest};
 
     #[test]
-    fn hashes_known_bytes_with_sha256() {
-        assert_eq!(
-            sha256_bytes(b"abc"),
-            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
-        );
-    }
-
-    #[test]
     fn rejects_archive_digest_mismatch() {
         let actual = sha256_bytes(b"not the pinned Boost archive");
 

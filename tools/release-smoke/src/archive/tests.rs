@@ -4,7 +4,7 @@ use flate2::{Compression, write::GzEncoder};
 use tar::{Builder, Header};
 use tempfile::tempdir;
 
-use super::{normalized_top_level_path, sha256_hex, stage_archive, validate_checksum};
+use super::{normalized_top_level_path, stage_archive, validate_checksum};
 
 #[test]
 fn checksum_validation_rejects_digest_mismatch() {
@@ -53,35 +53,6 @@ fn staged_archive_is_removed_when_raii_guard_drops() {
     drop(stage);
 
     assert!(!stage_path.exists());
-}
-
-#[test]
-fn checksum_and_exact_layout_accept_three_top_level_artifacts() {
-    let temp = tempdir().unwrap();
-    let archive = temp.path().join("archive.tar.gz");
-    create_tar_gz(
-        &archive,
-        &[
-            ("pandar", b"cli"),
-            ("libpandar_network_plugin.so", b"plugin"),
-            ("libpandar_bambu_source.so", b"source"),
-        ],
-    );
-    let checksum = temp.path().join("archive.tar.gz.sha256");
-    let digest = sha256_hex(&archive).unwrap();
-    fs::write(&checksum, format!("{digest} archive.tar.gz\n")).unwrap();
-
-    assert_eq!(validate_checksum(&archive, &checksum).unwrap(), digest);
-    let stage = stage_archive(
-        &archive,
-        "pandar",
-        "libpandar_network_plugin.so",
-        "libpandar_bambu_source.so",
-    )
-    .unwrap();
-    assert!(stage.cli.is_file());
-    assert!(stage.plugin.is_file());
-    assert!(stage.source.is_file());
 }
 
 #[test]

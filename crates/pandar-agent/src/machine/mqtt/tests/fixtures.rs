@@ -61,11 +61,6 @@ struct RawPrint<'a> {
 }
 
 #[derive(Serialize)]
-struct ExpectedSystemPayload<'a> {
-    system: ExpectedSystem<'a>,
-}
-
-#[derive(Serialize)]
 struct PrintStateReport<'a> {
     print: PrintState<'a>,
 }
@@ -207,18 +202,6 @@ struct ExternalVtTrayAms<'a> {
 struct ExternalVtTray<'a> {
     tray_info_idx: &'a str,
     tray_color: &'a str,
-}
-
-#[derive(Serialize)]
-struct ExpectedSystem<'a> {
-    command: &'static str,
-    led_node: &'static str,
-    led_mode: &'static str,
-    led_on_time: u32,
-    led_off_time: u32,
-    loop_times: u32,
-    interval_time: u32,
-    sequence_id: &'a str,
 }
 
 pub(super) fn expected_pushall_payload(sequence_id: &str) -> Value {
@@ -413,36 +396,10 @@ pub(super) fn expected_print_command_payload(
     })
 }
 
-pub(super) fn expected_select_extruder_payload(extruder_index: u32, sequence_id: &str) -> Value {
-    value(ExpectedPrintPayload {
-        print: ExpectedPrint {
-            command: "select_extruder",
-            param: None,
-            sequence_id,
-            extruder_index: Some(extruder_index),
-        },
-    })
-}
-
 pub(super) fn raw_print_payload(command: &str, sequence_id: &str) -> Value {
     value(RawPrintPayload {
         print: RawPrint {
             command,
-            sequence_id,
-        },
-    })
-}
-
-pub(super) fn expected_chamber_light_payload(sequence_id: &str) -> Value {
-    value(ExpectedSystemPayload {
-        system: ExpectedSystem {
-            command: "ledctrl",
-            led_node: "chamber_light",
-            led_mode: "on",
-            led_on_time: 500,
-            led_off_time: 500,
-            loop_times: 1,
-            interval_time: 1000,
             sequence_id,
         },
     })

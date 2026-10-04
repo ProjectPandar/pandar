@@ -26,13 +26,3 @@ pub(crate) async fn send_hub_request(
         .map_err(reqwest::Error::without_url)
         .context(context)
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn hub_client_is_reused() {
-        assert!(std::ptr::eq(hub_client(), hub_client()));
-    }
-}

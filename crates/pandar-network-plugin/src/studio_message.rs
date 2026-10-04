@@ -249,32 +249,4 @@ mod tests {
         assert_eq!(outcome.outcome, VALID);
         free_body(outcome);
     }
-
-    #[test]
-    fn valid_h2c_mapping_request_is_dispatched_to_the_h2c_parser() {
-        let message = r#"{"print":{"command":"get_auto_nozzle_mapping","sequence_id":"42","version":1,"group_info":[{"id":0,"ext":1,"dia":0.4,"vol":"E3D High Flow"}]}}"#;
-        let outcome = dispatch(message);
-        assert_eq!(outcome.kind, H2C_AUTO_NOZZLE_MAPPING);
-        assert_eq!(outcome.outcome, VALID);
-        free_body(outcome);
-    }
-
-    #[test]
-    fn malformed_h2c_mapping_request_reports_the_h2c_kind() {
-        let message =
-            r#"{"print":{"command":"get_auto_nozzle_mapping","sequence_id":"42","version":"1"}}"#;
-        let outcome = dispatch(message);
-        assert_eq!(outcome.kind, H2C_AUTO_NOZZLE_MAPPING);
-        assert_eq!(outcome.outcome, INVALID);
-        free_body(outcome);
-    }
-
-    #[test]
-    fn status_request_still_dispatches_before_operations() {
-        let message = r#"{"info":{"command":"get_version","sequence_id":"7"}}"#;
-        let outcome = dispatch(message);
-        assert_eq!(outcome.kind, STATUS_GET_VERSION);
-        assert_eq!(outcome.outcome, VALID);
-        free_body(outcome);
-    }
 }

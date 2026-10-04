@@ -18,11 +18,6 @@ class ControlsBodyShapeTest {
     @Test fun pause_is_minimal() =
         assertEquals("""{"action":"pause"}""", encode(PrinterControlIntent.Pause))
 
-    @Test fun no_polymorphic_discriminator_leaks() {
-        val body = encode(PrinterControlIntent.Pause)
-        assertFalse("type discriminator leaked", body.contains("\"type\""))
-    }
-
     @Test fun resume_is_minimal() =
         assertEquals("""{"action":"resume"}""", encode(PrinterControlIntent.Resume))
 

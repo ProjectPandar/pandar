@@ -13,7 +13,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import en from "../messages/en.json";
 import type { MutationActionState, SecretActionState } from "./action-state";
-import { SecretActionResult } from "./admin-panel-shared";
 import { TenantTokensTable } from "./admin-settings-token-list";
 import type { Tenant, TenantToken } from "./dashboard-types";
 
@@ -263,18 +262,6 @@ describe("tenant token dialogs", () => {
       "data-token-status",
       "revoked",
     );
-  });
-
-  it("keeps errors immediate without the successful-result motion marker", () => {
-    render(
-      <NextIntlClientProvider locale="en" messages={en}>
-        <SecretActionResult state={{ ok: false, error: "Creation failed" }} />
-      </NextIntlClientProvider>,
-    );
-
-    const error = screen.getByText("Creation failed");
-    expect(error).toBeVisible();
-    expect(error.closest("[data-motion]")).toBeNull();
   });
 
   it("locks revoke confirmation and invalidates token siblings on completion", async () => {

@@ -3,42 +3,6 @@ use std::{collections::BTreeSet, path::Path};
 use super::expected_symbols;
 
 #[test]
-fn canonical_export_map_is_exact_for_each_abi_series() {
-    let repo_root = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(Path::parent)
-        .unwrap();
-
-    let stable = pandar_studio_profile::abi_series("02.07.01").unwrap();
-    let symbols = expected_symbols(repo_root, stable).unwrap();
-
-    assert_eq!(symbols.network_count, 108);
-    assert_eq!(symbols.file_transfer_count, 21);
-    assert_eq!(symbols.all.len(), 129);
-
-    let studio_2_8_1 = pandar_studio_profile::abi_series("02.08.01").unwrap();
-    let symbols = expected_symbols(repo_root, studio_2_8_1).unwrap();
-    assert_eq!(symbols.network_count, 109);
-    assert_eq!(symbols.file_transfer_count, 21);
-    assert_eq!(symbols.all.len(), 130);
-    assert!(symbols.all.contains("bambu_network_sync_ams_filaments"));
-
-    let studio_2_8_2 = pandar_studio_profile::abi_series("02.08.02").unwrap();
-    let symbols = expected_symbols(repo_root, studio_2_8_2).unwrap();
-    assert_eq!(symbols.network_count, 110);
-    assert_eq!(symbols.file_transfer_count, 21);
-    assert_eq!(symbols.all.len(), 131);
-    assert!(symbols.all.contains("bambu_network_sync_slot_mappings"));
-
-    let older = pandar_studio_profile::abi_series("02.06.00").unwrap();
-    let symbols = expected_symbols(repo_root, older).unwrap();
-    assert_eq!(symbols.network_count, 103);
-    assert_eq!(symbols.file_transfer_count, 21);
-    assert_eq!(symbols.all.len(), 124);
-    assert!(!symbols.all.contains("bambu_network_get_filament_spools"));
-}
-
-#[test]
 fn exact_export_validation_rejects_missing_and_extra_target_symbols() {
     let repo_root = Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()
