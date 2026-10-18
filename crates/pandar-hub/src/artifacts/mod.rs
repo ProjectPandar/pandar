@@ -281,7 +281,10 @@ mod tests {
 
         assert_eq!(artifact.filename, "plate_file.3mf");
         assert_eq!(artifact.size_bytes, 3);
-        assert_ne!(artifact.storage_key, "../plate_file.3mf");
+        assert_eq!(
+            artifact.storage_key,
+            format!("{tenant_id}/artifact/plate_file.3mf")
+        );
         assert!(
             temp_dir
                 .path()

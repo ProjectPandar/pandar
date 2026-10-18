@@ -35,10 +35,13 @@ impl FilesystemArtifactStorage {
 impl ArtifactStorage for FilesystemArtifactStorage {
     async fn put_artifact(&self, input: StoreArtifactInput<'_>) -> anyhow::Result<StoredArtifact> {
         let filename = sanitize_filename(input.filename);
-        let storage_key = PathBuf::from(input.tenant_id.to_string())
-            .join(input.artifact_id)
-            .join(&filename);
-        let path = self.spool_dir.join(&storage_key);
+        let storage_key = super::artifact_storage_key(
+            ArtifactStorageBackend::Filesystem,
+            input.tenant_id,
+            input.artifact_id,
+            &filename,
+        );
+        let path = self.spool_dir.join(safe_relative_path(&storage_key)?);
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent).await.with_context(|| {
                 format!("failed to create artifact directory {}", parent.display())
@@ -88,7 +91,6 @@ impl ArtifactStorage for FilesystemArtifactStorage {
             bail!("artifact bytes cannot be empty");
         }
 
-        let storage_key = storage_key.to_string_lossy().into_owned();
         Ok(StoredArtifact {
             filename,
             storage_key,
