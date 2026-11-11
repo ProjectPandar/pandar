@@ -11,6 +11,7 @@ import zip.iptables.pandar.android.domain.model.JobArtifact
 import zip.iptables.pandar.android.domain.model.JobPrint
 import zip.iptables.pandar.android.domain.model.PandarState
 import zip.iptables.pandar.android.domain.model.Printer
+import zip.iptables.pandar.android.domain.model.PrinterFamily
 import zip.iptables.pandar.android.ui.jobs.JobsRequestState
 import zip.iptables.pandar.android.ui.jobs.jobsUiState
 import zip.iptables.pandar.android.ui.printerdetail.PrinterDetailRequestState
@@ -112,6 +113,7 @@ class PandarUiStateProjectionTest {
         tenantId = "tenant-1",
         agentId = "agent-1",
         serialNumber = "serial-1",
+        family = PrinterFamily.BambuLab,
         name = "Printer",
         model = "A1",
         status = "idle",

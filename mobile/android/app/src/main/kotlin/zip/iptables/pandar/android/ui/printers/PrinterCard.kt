@@ -29,7 +29,10 @@ fun PrinterCard(printer: Printer, onClick: () -> Unit) {
                 Text(printer.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
                 StatusPill(printer.status)
             }
-            printer.model?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+            Text(
+                listOfNotNull(printer.family.label, printer.model).joinToString(" · "),
+                style = MaterialTheme.typography.bodySmall,
+            )
             Text(
                 printer.serialNumber,
                 style = MaterialTheme.typography.bodyMedium,

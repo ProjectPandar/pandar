@@ -44,6 +44,7 @@ export type HubSchemaMap = {
   NozzleSystem: Printer.NozzleSystem;
   Hms: Printer.Hms;
   PrinterPrint: Printer.PrinterPrint;
+  PrinterFamily: Printer.PrinterFamily;
   Printer: Printer.Printer;
   PrinterList: Printer.PrinterList;
   ArtifactFilament: Job.ArtifactFilament;

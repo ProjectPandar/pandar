@@ -2231,6 +2231,14 @@
         },
         "x-typescript-group": "printer"
       },
+      "PrinterFamily": {
+        "type": "string",
+        "enum": [
+          "bambu_lab",
+          "moonraker"
+        ],
+        "x-typescript-group": "printer"
+      },
       "Printer": {
         "type": "object",
         "required": [
@@ -2261,11 +2269,7 @@
             "type": "string"
           },
           "printer_family": {
-            "type": "string",
-            "enum": [
-              "bambu_lab",
-              "moonraker"
-            ]
+            "$ref": "#/components/schemas/PrinterFamily"
           },
           "name": {
             "type": "string"

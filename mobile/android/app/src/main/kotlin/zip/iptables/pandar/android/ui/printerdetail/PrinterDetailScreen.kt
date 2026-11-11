@@ -39,6 +39,7 @@ import zip.iptables.pandar.android.domain.model.Materials
 import zip.iptables.pandar.android.domain.model.Printer
 import zip.iptables.pandar.android.domain.model.PrinterAxis
 import zip.iptables.pandar.android.domain.model.PrinterControlIntent
+import zip.iptables.pandar.android.domain.model.PrinterFamily
 import zip.iptables.pandar.android.ui.components.StatusPill
 
 @Composable
@@ -101,7 +102,10 @@ private fun Header(printer: Printer) {
             Text(printer.name, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
             StatusPill(printer.status)
         }
-        printer.model?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+        Text(
+            listOfNotNull(printer.family.label, printer.model).joinToString(" · "),
+            style = MaterialTheme.typography.bodySmall,
+        )
         Text(printer.serialNumber, style = MaterialTheme.typography.bodyMedium, fontFamily = FontFamily.Monospace)
     }
 }
@@ -212,7 +216,12 @@ private fun MaterialsSection(
             return
         }
         materials.amsUnits.forEach { unit ->
-            Text("AMS ${unit.unitId ?: "?"}", style = MaterialTheme.typography.labelLarge)
+            // Moonraker filament channels are projected as a single AMS-shaped unit.
+            val unitTitle = when (printer.family) {
+                PrinterFamily.BambuLab -> "AMS ${unit.unitId ?: "?"}"
+                PrinterFamily.Moonraker -> "Filament channels"
+            }
+            Text(unitTitle, style = MaterialTheme.typography.labelLarge)
             unit.trays.forEach { tray ->
                 AmsTrayRow(
                     tray = tray,

@@ -336,6 +336,14 @@ data class PrinterPrintDto(
 )
 
 @Serializable
+enum class PrinterFamilyDto(val wireValue: String) {
+    @SerialName("bambu_lab")
+    BAMBU_LAB("bambu_lab"),
+    @SerialName("moonraker")
+    MOONRAKER("moonraker")
+}
+
+@Serializable
 data class PrinterDto(
     val id: String,
     @SerialName("tenant_id")
@@ -345,7 +353,7 @@ data class PrinterDto(
     @SerialName("serial_number")
     val serialNumber: String,
     @SerialName("printer_family")
-    val printerFamily: String,
+    val printerFamily: PrinterFamilyDto,
     val name: String,
     @Required
     val model: String?,

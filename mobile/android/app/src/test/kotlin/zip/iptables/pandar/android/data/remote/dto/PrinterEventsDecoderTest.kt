@@ -9,7 +9,7 @@ class PrinterEventsDecoderTest {
     @Test fun decodes_printer_snapshot_event() {
         val json = """
         {"type":"printer_snapshot","printer":{
-          "id":"p1","tenant_id":"t1","agent_id":"a1","serial_number":"SN001","name":"A",
+          "id":"p1","tenant_id":"t1","agent_id":"a1","serial_number":"SN001","printer_family":"bambu_lab","name":"A",
           "model":null,"compatibility":$UNKNOWN_PRINTER_COMPATIBILITY_JSON,"status":"idle","last_seen_at":"x","created_at":"y","materials":null}}
         """.trimIndent()
 
@@ -22,7 +22,7 @@ class PrinterEventsDecoderTest {
     @Test fun decodes_enriched_printer_snapshot_with_additive_live_fields() {
         val json = """
         {"type":"printer_snapshot","printer":{
-          "id":"p1","tenant_id":"t1","agent_id":"a1","serial_number":"20P001","name":"A",
+          "id":"p1","tenant_id":"t1","agent_id":"a1","serial_number":"20P001","printer_family":"bambu_lab","name":"A",
           "model":"A1","compatibility":$UNKNOWN_PRINTER_COMPATIBILITY_JSON,"status":"running","last_seen_at":"x","created_at":"y",
           "materials":{"ams_units":[],"external_spools":[],"active_tray":null,"observed_at":"m"},
           "state_revision":42,

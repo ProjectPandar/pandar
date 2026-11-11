@@ -187,12 +187,14 @@ export type PrinterPrint = {
   printer_job_id: string | null;
 };
 
+export type PrinterFamily = "bambu_lab" | "moonraker";
+
 export type Printer = {
   id: string;
   tenant_id: string;
   agent_id: string;
   serial_number: string;
-  printer_family: "bambu_lab" | "moonraker";
+  printer_family: PrinterFamily;
   name: string;
   model: string | null;
   compatibility: PrinterCompatibility;

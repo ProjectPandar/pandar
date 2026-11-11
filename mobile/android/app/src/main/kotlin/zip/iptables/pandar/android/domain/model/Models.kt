@@ -5,6 +5,7 @@ data class Printer(
     val tenantId: String,
     val agentId: String,
     val serialNumber: String,
+    val family: PrinterFamily,
     val name: String,
     val model: String?,
     val status: String,
@@ -18,6 +19,11 @@ data class Printer(
     val chamberLightOn: Boolean?,
     val materials: Materials?,
 )
+
+enum class PrinterFamily(val label: String) {
+    BambuLab("Bambu Lab"),
+    Moonraker("Klipper / Moonraker"),
+}
 
 data class PrinterNozzleTemp(
     val label: String?,

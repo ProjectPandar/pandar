@@ -8,6 +8,7 @@ import zip.iptables.pandar.android.data.remote.HubSession
 import zip.iptables.pandar.android.data.remote.HubSessionContext
 import zip.iptables.pandar.android.domain.model.Command
 import zip.iptables.pandar.android.domain.model.Printer
+import zip.iptables.pandar.android.domain.model.PrinterFamily
 
 class PrinterStateStoreTest {
     private var nextSessionEpoch = 0L
@@ -315,6 +316,7 @@ class PrinterStateStoreTest {
         tenantId = "tenant-1",
         agentId = "agent-1",
         serialNumber = "serial-1",
+        family = PrinterFamily.BambuLab,
         name = "Printer",
         model = "A1",
         status = status,

@@ -10,7 +10,8 @@ The Hub browser login update is described in
 
 ## Features (v1)
 
-- Printers dashboard with live WebSocket updates.
+- Printers dashboard with live WebSocket updates. Bambu Lab and Klipper /
+  Moonraker printers are both listed and labelled by printer family.
 - Per-printer detail: pause / resume / stop, X/Y/Z movement at `-10`, `-1`,
   `+1`, and `+10` mm, confirmed full-axis Home, chamber light, set hotend /
   bed / chamber temperature, AMS load / unload / reread RFID.

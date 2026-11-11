@@ -294,7 +294,7 @@ class PandarRepositorySessionTest {
     companion object {
         private const val PRINTERS = """
             {"printers":[{"id":"printer-1","tenant_id":"tenant-1","agent_id":"agent-1",
-            "serial_number":"SN001","name":"Printer","model":null,"compatibility":$UNKNOWN_PRINTER_COMPATIBILITY_JSON,"status":"idle",
+            "serial_number":"SN001","printer_family":"bambu_lab","name":"Printer","model":null,"compatibility":$UNKNOWN_PRINTER_COMPATIBILITY_JSON,"status":"idle",
             "last_seen_at":"seen","created_at":"created","materials":null}]}
         """
         private const val EMPTY_PRINTERS = """{"printers":[]}"""

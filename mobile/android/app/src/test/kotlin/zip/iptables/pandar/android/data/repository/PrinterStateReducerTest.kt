@@ -6,6 +6,7 @@ import zip.iptables.pandar.android.domain.model.Job
 import zip.iptables.pandar.android.domain.model.JobArtifact
 import zip.iptables.pandar.android.domain.model.JobPrint
 import zip.iptables.pandar.android.domain.model.Printer
+import zip.iptables.pandar.android.domain.model.PrinterFamily
 
 class PrinterStateReducerTest {
     @Test
@@ -124,6 +125,7 @@ class PrinterStateReducerTest {
         tenantId = "tenant-1",
         agentId = "agent-1",
         serialNumber = "serial-$id",
+        family = PrinterFamily.BambuLab,
         name = id,
         model = "A1",
         status = status,

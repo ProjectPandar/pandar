@@ -327,7 +327,7 @@ class PrinterEventsSessionLifecycleTest {
 
         private val PRINTER_EVENT = """
             {"type":"printer_snapshot","printer":{
-              "id":"p1","tenant_id":"t1","agent_id":"a1","serial_number":"SN001",
+              "id":"p1","tenant_id":"t1","agent_id":"a1","serial_number":"SN001","printer_family":"bambu_lab",
               "name":"A","model":null,"compatibility":$UNKNOWN_PRINTER_COMPATIBILITY_JSON,"status":"idle","last_seen_at":"x",
               "created_at":"y","materials":null}}
         """.trimIndent()

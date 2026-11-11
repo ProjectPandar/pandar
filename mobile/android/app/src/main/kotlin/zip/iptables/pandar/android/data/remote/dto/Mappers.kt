@@ -14,6 +14,7 @@ import zip.iptables.pandar.android.domain.model.JobArtifact
 import zip.iptables.pandar.android.domain.model.JobPrint
 import zip.iptables.pandar.android.domain.model.Materials
 import zip.iptables.pandar.android.domain.model.Printer
+import zip.iptables.pandar.android.domain.model.PrinterFamily
 import zip.iptables.pandar.android.domain.model.PrinterNozzleTemp
 
 fun PrinterDto.toDomain(): Printer = Printer(
@@ -21,6 +22,10 @@ fun PrinterDto.toDomain(): Printer = Printer(
     tenantId = tenantId,
     agentId = agentId,
     serialNumber = serialNumber,
+    family = when (printerFamily) {
+        PrinterFamilyDto.BAMBU_LAB -> PrinterFamily.BambuLab
+        PrinterFamilyDto.MOONRAKER -> PrinterFamily.Moonraker
+    },
     name = name,
     model = model,
     status = status,
