@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
-use pandar_core::compatibility::{normalize_model, studio_local_camera_supported};
+use pandar_core::compatibility::{
+    normalize_model, nozzle_rack_slot_count, studio_local_camera_supported,
+};
 use pandar_core::{
     AgentId, BambuNozzleSystem, PrinterFamily, PrinterFirmwareState, PrinterNozzleTemperature,
     TenantId,
@@ -225,22 +227,18 @@ fn studio_printer_record(
                 .bambu_device_features2
                 .map(|features| features.to_hex()),
         );
-    let nozzle_system = (printer
-        .model
-        .as_deref()
-        .and_then(normalize_model)
-        .as_deref()
-        == Some("H2C"))
-    .then(|| {
-        session
-            .filter(|session| session.supports(AgentCapability::H2cAutoNozzleMapping))
-            .filter(|session| {
-                printer.bambu_nozzle_system_session_id.as_deref()
-                    == Some(session.persisted_id().as_str())
-            })
-            .and(printer.bambu_nozzle_system.clone())
-    })
-    .flatten();
+    let nozzle_system = nozzle_rack_slot_count(printer.model.as_deref())
+        .is_some()
+        .then(|| {
+            session
+                .filter(|session| session.supports(AgentCapability::H2cAutoNozzleMapping))
+                .filter(|session| {
+                    printer.bambu_nozzle_system_session_id.as_deref()
+                        == Some(session.persisted_id().as_str())
+                })
+                .and(printer.bambu_nozzle_system.clone())
+        })
+        .flatten();
     let firmware = session
         .filter(|session| session.supports(AgentCapability::FirmwareControl))
         .filter(|session| firmware.session_id.as_deref() == Some(session.persisted_id().as_str()))
@@ -303,6 +301,7 @@ fn studio_model_id(model: &str) -> String {
         Some("P2S") => "N7",
         Some("A2L") => "N9",
         Some("H2C") => "O1C2",
+        Some("H3C") => "N10",
         Some("H2D") => "O1D",
         Some("H2D_PRO") => "O1E",
         Some("H2S") => "O1S",

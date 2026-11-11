@@ -132,6 +132,7 @@ message PrinterNozzleInfo {
   optional float wear = 6;
   optional sint32 print_time = 7;
   optional string color = 8;
+  optional sint32 addr_id = 9;
 }
 
 message PrinterNozzleHolder {

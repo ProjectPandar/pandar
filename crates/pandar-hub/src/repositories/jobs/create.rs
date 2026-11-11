@@ -166,11 +166,7 @@ where
     )?;
     let (serial_number, agent_id, model) =
         printer_for_existing_artifact(connection, &input).await?;
-    if model
-        .as_deref()
-        .and_then(pandar_core::compatibility::normalize_model)
-        .as_deref()
-        == Some("H2C")
+    if pandar_core::compatibility::nozzle_rack_slot_count(model.as_deref()).is_some()
         && !input.studio_metadata.as_ref().is_some_and(|metadata| {
             pandar_core::valid_h2c_nozzle_mapping(metadata.nozzle_mapping())
         })

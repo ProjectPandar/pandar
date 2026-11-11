@@ -354,6 +354,8 @@
     "rackMoveCentre": "回中",
     "rackMoveATop": "移至 A 顶",
     "rackMoveBTop": "移至 B 顶",
+    "rackMoveRaise": "升起",
+    "rackMoveLower": "降下",
     "rackMoveWarningTitle": "移动热端机架",
     "rackMoveWarningMessage": "挤出机和热端机架可能会移动，请勿将手伸入腔体。",
     "rackRereadAll": "重读全部",

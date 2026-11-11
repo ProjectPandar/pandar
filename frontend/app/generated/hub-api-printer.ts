@@ -141,6 +141,7 @@ export type NozzleInfo = {
   wear?: number | null;
   p_t?: number | null;
   color_m?: string | null;
+  addr_id?: number | null;
 };
 
 export type NozzleRack = {

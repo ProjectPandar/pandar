@@ -44,6 +44,7 @@ mod tests {
                 wear: None,
                 p_t: None,
                 color_m: None,
+                addr_id: None,
             }],
         }
     }

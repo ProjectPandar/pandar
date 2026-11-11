@@ -32,13 +32,13 @@ impl PrinterOperation {
                 invalid("invalid H2C auto nozzle mapping request")
             }
             Self::NozzleHolderCtrl { action } if *action > MAX_HOLDER_CTRL_ACTION => {
-                invalid("invalid H2C nozzle_holder_ctrl action; expected 0..=2")
+                invalid("invalid rack nozzle_holder_ctrl action; expected 0..=2")
             }
             Self::NozzleInfoConfirm { id } if !valid_rack_nozzle_id(*id) => {
-                invalid("invalid H2C nozzle_info_confirm id; expected 16..=21 or 255")
+                invalid("invalid rack nozzle_info_confirm id; expected 16..=24 or 255")
             }
             Self::HolderNozzleRefresh { id } if !valid_rack_nozzle_id(*id) => {
-                invalid("invalid H2C holder_nozzle_refresh id; expected 16..=21 or 255")
+                invalid("invalid rack holder_nozzle_refresh id; expected 16..=24 or 255")
             }
             Self::HandlePrintError { print_error, .. }
                 if !(1..=i32::MAX as u32).contains(print_error) =>
@@ -193,7 +193,7 @@ fn valid_ams_slot(ams_id: u32, slot_id: u32) -> bool {
 }
 
 fn valid_rack_nozzle_id(id: u32) -> bool {
-    (16..=21).contains(&id) || id == RACK_NOZZLE_ID_ALL
+    (16..=24).contains(&id) || id == RACK_NOZZLE_ID_ALL
 }
 
 fn invalid<T>(message: &'static str) -> Result<T, PrinterOperationValidationError> {

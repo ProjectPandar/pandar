@@ -120,12 +120,14 @@ pub fn supports_rtsp(model: Option<&str>) -> bool {
     model.contains("X1")
         || model.contains("X2")
         || model.contains("H2")
+        || model.contains("H3")
         || model.contains("P2")
-        || matches!(
-            model.as_str(),
-            "BL-P001" | "C13" | "N6" | "O1D" | "O1C" | "O1C2" | "O1S" | "O1E" | "O2D" | "N7"
-        )
+        || RTSP_MODEL_CODES.contains(&model.as_str())
 }
+
+const RTSP_MODEL_CODES: [&str; 11] = [
+    "BL-P001", "C13", "N6", "O1D", "O1C", "O1C2", "O1S", "O1E", "O2D", "N7", "N10",
+];
 
 pub fn build_camera_url(host: &str, access_code: &str) -> String {
     format!(

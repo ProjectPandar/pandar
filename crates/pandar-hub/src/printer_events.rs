@@ -6,7 +6,7 @@ use std::{
 use pandar_core::{
     BambuNozzleSystem, CommandRecord, DiagnosticCompatibility, PrinterCoolingSystem, PrinterFamily,
     PrinterNozzleTemperature, TenantId,
-    compatibility::{compatibility_for_model, normalize_model},
+    compatibility::{compatibility_for_model, nozzle_rack_slot_count},
 };
 use serde::{Deserialize, Serialize};
 use tokio::sync::{Mutex, broadcast, watch};
@@ -113,13 +113,7 @@ pub async fn fence_printer_nozzle_system(
     tenant_id: TenantId,
     mut printer: PrinterWithLiveStatus,
 ) -> PrinterWithLiveStatus {
-    let current = printer
-        .printer
-        .model
-        .as_deref()
-        .and_then(normalize_model)
-        .as_deref()
-        == Some("H2C")
+    let current = nozzle_rack_slot_count(printer.printer.model.as_deref()).is_some()
         && matches!(
             sessions
                 .current_token_for_capability(

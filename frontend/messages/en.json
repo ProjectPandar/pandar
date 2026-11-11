@@ -354,6 +354,8 @@
     "rackMoveCentre": "Centre",
     "rackMoveATop": "A top",
     "rackMoveBTop": "B top",
+    "rackMoveRaise": "Raise",
+    "rackMoveLower": "Lower",
     "rackMoveWarningTitle": "Move hotend rack",
     "rackMoveWarningMessage": "The toolhead and hotend rack may move. Keep your hands away from the chamber.",
     "rackRereadAll": "Re-read all",

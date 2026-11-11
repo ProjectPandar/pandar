@@ -6,7 +6,7 @@ use axum::{
     extract::{Path, State},
     http::HeaderMap,
 };
-use pandar_core::compatibility::normalize_model;
+use pandar_core::compatibility::nozzle_rack_slot_count;
 use pandar_core::{
     CommandStatus, H2cAutoNozzleMappingRequest, H2cAutoNozzleMappingResponseEnvelope,
 };
@@ -47,13 +47,7 @@ pub(crate) async fn get_auto_nozzle_mapping(
         .get_for_tenant(tenant_id, &printer_id)
         .await?
         .ok_or_else(|| ApiError::not_found("printer_not_found"))?;
-    if printer
-        .model
-        .as_deref()
-        .and_then(normalize_model)
-        .as_deref()
-        != Some("H2C")
-    {
+    if nozzle_rack_slot_count(printer.model.as_deref()).is_none() {
         return Err(unavailable());
     }
     let Some(token) = state

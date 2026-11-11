@@ -4,6 +4,7 @@ use crate::machine::{BambuPrinterEndpoint, mqtt::MachineReport};
 
 mod a2l;
 mod fixtures;
+mod h3c;
 
 use fixtures::*;
 

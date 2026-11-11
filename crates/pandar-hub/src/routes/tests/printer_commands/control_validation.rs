@@ -228,6 +228,52 @@ async fn printer_control_accepts_h2c_rack_operations() {
 }
 
 #[tokio::test]
+async fn printer_control_accepts_h3c_nine_position_rack_and_rejects_beyond_it() {
+    let state = state().await;
+    let app = router(state.clone());
+    let (tenant, agent, token) = tenant_and_agent(&state, app.clone()).await;
+    let tenant_id = TenantId::parse(&decode::<TenantResponse>(tenant).id).unwrap();
+    let agent_id = AgentId::parse(&decode::<AgentResponse>(agent).id).unwrap();
+    let printer_id = crate::repositories::test_helpers::insert_printer_fixture_with_model(
+        state.database(),
+        tenant_id,
+        agent_id,
+        Some("N10"),
+    )
+    .await
+    .unwrap();
+    let controls = format!("/api/v1/tenants/{tenant_id}/printers/{printer_id}/controls");
+
+    for payload in [
+        printer_control_value(PrinterControlRequest::nozzle_holder_ctrl(1)),
+        printer_control_value(PrinterControlRequest::rack_nozzle_operation(
+            "holder_nozzle_refresh",
+            24,
+        )),
+    ] {
+        let (status, body) =
+            request_as(app.clone(), Method::POST, &controls, Some(payload), &token).await;
+        assert_eq!(status, StatusCode::OK, "{body}");
+    }
+
+    let (status, body) = request_as(
+        app,
+        Method::POST,
+        &controls,
+        Some(printer_control_value(
+            PrinterControlRequest::rack_nozzle_operation("nozzle_info_confirm", 25),
+        )),
+        &token,
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
+    assert_eq!(
+        decode::<ErrorResponse>(body).error,
+        "invalid_printer_control"
+    );
+}
+
+#[tokio::test]
 async fn printer_control_rejects_invalid_h2c_rack_payloads() {
     let state = state().await;
     let app = router(state.clone());

@@ -146,3 +146,56 @@ describe("PrinterRackPanel", () => {
     expect(screen.getByRole("button", { name: "Confirm all" })).toBeDisabled();
   });
 });
+
+describe("PrinterRackPanel on the H3C", () => {
+  const h3cPrinter: Printer = {
+    ...printer,
+    serial_number: "32X0000",
+    name: "Lab H3C",
+    model: "N10",
+    compatibility: { ...printerCompatibility("unknown"), normalized_model: "H3C", nozzle_layout: "single" },
+    nozzle_system: {
+      nozzle: {
+        info: [
+          { id: 0, addr_id: 6, diameter: 0.4, type: "HS01" },
+          { id: 16, addr_id: 0, diameter: 0.4, type: "HS01" },
+          { id: 24, addr_id: 8, diameter: 0.6, type: "HS01" },
+        ],
+      },
+      holder: { stat: 0, pos: 1, info: 1 },
+    },
+  };
+
+  it("draws nine rack positions with the mounted hotend at its home position", () => {
+    renderWithMessages(<PrinterRackPanel printer={h3cPrinter} />);
+
+    expect(screen.getAllByRole("button", { name: /^Rack slot \d/ })).toHaveLength(9);
+    expect(screen.getByRole("button", { name: "Rack slot 1, 0.4 mm Hardened Steel" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Rack slot 7, 0.4 mm Hardened Steel, Mounted" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Rack slot 8, Empty" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Rack slot 9, 0.6 mm Hardened Steel" })).toBeVisible();
+    expect(screen.queryByText("Fixed")).toBeNull();
+    expect(screen.queryByText("A top · Calibrated")).toBeNull();
+  });
+
+  it("moves the direct rack up, to the centre and down", () => {
+    renderWithMessages(<PrinterRackPanel printer={h3cPrinter} />);
+
+    const holderAction = (name: string) =>
+      screen.getByRole("button", { name }).closest("form")?.querySelector('input[name="holder_action"]');
+    expect(holderAction("Centre")).toHaveValue("0");
+    expect(holderAction("Raise")).toHaveValue("1");
+    expect(holderAction("Lower")).toHaveValue("2");
+    expect(screen.queryByRole("button", { name: "A top" })).toBeNull();
+  });
+
+  it("addresses the mounted hotend by its rack position", async () => {
+    const user = userEvent.setup();
+    renderWithMessages(<PrinterRackPanel printer={h3cPrinter} />);
+
+    await user.click(screen.getByRole("button", { name: "Rack slot 7, 0.4 mm Hardened Steel, Mounted" }));
+
+    const rereadForm = (await screen.findByRole("button", { name: "Re-read hotend" })).closest("form");
+    expect(rereadForm?.querySelector('input[name="nozzle_id"]')).toHaveValue("22");
+  });
+});

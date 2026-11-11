@@ -83,6 +83,7 @@ pub fn proto_nozzle_system(system: BambuNozzleSystem) -> ProtoNozzleSystem {
                     wear: nozzle.wear.map(|wear| wear.get() as f32),
                     print_time: nozzle.p_t,
                     color: nozzle.color_m,
+                    addr_id: nozzle.addr_id,
                 })
                 .collect(),
         }),

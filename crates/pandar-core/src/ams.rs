@@ -9,6 +9,9 @@ pub enum AmsUnitKind {
     Ams2Pro,
     AmsHt,
     AmsLiteMixed,
+    /// The H3C's AMS 3H (Studio ZMULTI_A): nine slots, slot k feeds hotend k.
+    #[serde(rename = "ams_3h")]
+    Ams3h,
     #[default]
     #[serde(other)]
     Unknown,
@@ -27,6 +30,7 @@ impl AmsUnitKind {
             3 => Some(Self::Ams2Pro),
             4 => Some(Self::AmsHt),
             5 => Some(Self::AmsLiteMixed),
+            6 => Some(Self::Ams3h),
             _ => None,
         }
     }
@@ -46,20 +50,24 @@ impl AmsUnitKind {
             Self::Ams2Pro => Some(3),
             Self::AmsHt => Some(4),
             Self::AmsLiteMixed => Some(5),
+            Self::Ams3h => Some(6),
             Self::Unknown => None,
         }
     }
 
-    pub const fn uses_four_slot_exist_bits(self) -> bool {
-        matches!(
-            self,
-            Self::Ams | Self::AmsLite | Self::Ams2Pro | Self::AmsLiteMixed
-        )
+    /// Slots whose presence `tray_exist_bits` reports at their global tray id.
+    pub const fn exist_bits_slot_count(self) -> Option<u64> {
+        match self {
+            Self::Ams | Self::AmsLite | Self::Ams2Pro | Self::AmsLiteMixed => Some(4),
+            Self::Ams3h => Some(9),
+            Self::AmsHt | Self::Unknown => None,
+        }
     }
 
     pub fn global_tray_id(self, unit_id: u64, tray_id: u64) -> Option<u64> {
         match self {
             Self::AmsLiteMixed => (tray_id < 4).then(|| 24 + tray_id),
+            Self::Ams3h => (tray_id < 9).then(|| 28 + tray_id),
             Self::Ams | Self::AmsLite | Self::Ams2Pro => {
                 (unit_id < 64 && tray_id < 4).then(|| unit_id * 4 + tray_id)
             }
@@ -74,6 +82,7 @@ impl AmsUnitKind {
     pub fn studio_exist_bit(self, unit_id: u64) -> Option<u64> {
         match self {
             Self::AmsLiteMixed => Some(12),
+            Self::Ams3h => Some(13),
             Self::Ams | Self::AmsLite | Self::Ams2Pro => (unit_id < 64).then_some(unit_id),
             Self::AmsHt | Self::Unknown => None,
         }

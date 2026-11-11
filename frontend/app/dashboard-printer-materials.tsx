@@ -6,7 +6,7 @@ import { CheckCircle2Icon, DownloadIcon, DropletsIcon, RotateCwIcon, Thermometer
 import { DryingControl, type DryingProps, dryingProps } from './dashboard-printer-drying'
 import { SlotOperationForm } from './dashboard-printer-slot-operation-form'
 import type { Printer } from './dashboard-types'
-import { mixedAmsLiteGlobalTrayId } from './material-tray-routing'
+import { fixedRangeGlobalTrayId } from './material-tray-routing'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '../components/ui/popover'
 export function PrinterMaterialsPanel({ printer }: { printer: Printer }) {
@@ -14,6 +14,8 @@ export function PrinterMaterialsPanel({ printer }: { printer: Printer }) {
   const materials = printer.materials
   const amsUnits = materials?.ams_units ?? []
   const externalSpools = materials?.external_spools.filter((spool) => spool.exists !== false) ?? []
+  // The H3C has one external input per hotend (ids 247-255); id `v` feeds hotend `256 - v`.
+  const hotendInputs = printer.compatibility.normalized_model === 'H3C'
 
   if (!materials || (amsUnits.length === 0 && externalSpools.length === 0)) {
     return (
@@ -32,7 +34,7 @@ export function PrinterMaterialsPanel({ printer }: { printer: Printer }) {
           <MaterialUnitCard
             key={unit.unit_id ?? 'ams'}
             printer={printer}
-            title={amsUnitName(unit.unit_id)}
+            title={unit.unit_kind === 'ams_3h' ? 'AMS 3H' : amsUnitName(unit.unit_id)}
             toolhead={unit.toolhead}
             humidity={unit.humidity}
             temperature={unit.temperature_celsius}
@@ -61,7 +63,8 @@ export function PrinterMaterialsPanel({ printer }: { printer: Printer }) {
           <MaterialUnitCard
             printer={printer}
             title={t('external')}
-            slots={externalSpools.map((spool, index) => ({
+            slots={externalSpools.map((spool, index): MaterialSlot => ({
+              number: hotendInputs ? hotendInputNumber(spool.external_id) : undefined,
               key: `external:${spool.external_id ?? spool.global_tray_id ?? spool.tray_id ?? 'unknown'}`,
               amsId: 255,
               externalId: spool.external_id ?? null,
@@ -73,7 +76,7 @@ export function PrinterMaterialsPanel({ printer }: { printer: Printer }) {
               remaining: percentValue(spool.remaining_estimate),
               kValue: stringValue(spool.k_value),
               toolhead: spool.toolhead,
-            }))}
+            })).sort((a, b) => (a.number ?? 0) - (b.number ?? 0))}
             active={materials.active_tray}
           />
         ) : null}
@@ -84,6 +87,7 @@ export function PrinterMaterialsPanel({ printer }: { printer: Printer }) {
 
 export type MaterialSlot = {
   key: string
+  number?: number
   amsId: number | null
   externalId: string | null
   globalTrayId: number | null
@@ -172,10 +176,11 @@ function MaterialSlotButton({
   active: boolean
 }) {
   const t = useTranslations('inventory')
+  const slotNumber = slot.number ?? (slot.slotId !== null ? slot.slotId + 1 : index + 1)
   const labelParts = [
     t('slotAria', {
       title,
-      number: slot.slotId !== null ? slot.slotId + 1 : index + 1,
+      number: slotNumber,
       material: slot.label,
     }),
   ]
@@ -205,7 +210,7 @@ function MaterialSlotButton({
             className="inline-flex size-4 items-center justify-center rounded-full text-[10px] font-bold text-white shadow-sm"
             style={{ background: slotSwatch(slot) }}
           >
-            {slot.slotId !== null ? slot.slotId + 1 : index + 1}
+            {slotNumber}
           </span>
           <span className="flex items-center gap-1">
             {active ? <CheckCircle2Icon aria-hidden="true" className="size-3.5 text-success" /> : null}
@@ -283,6 +288,11 @@ function amsUnitName(unitId?: string) {
   return `AMS-${String.fromCharCode(65 + index)}`
 }
 
+function hotendInputNumber(externalId?: string | null) {
+  const id = parseOptionalInt(externalId)
+  return id !== null && id >= 247 && id <= 255 ? 256 - id : undefined
+}
+
 function materialLabel(value: { type?: string | null; name?: string | null; filament_id?: string | null }, fallback: string) {
   return value.type || value.name || value.filament_id || fallback
 }
@@ -314,7 +324,7 @@ function globalTrayId(unitId?: string, unitKind?: string | null, trayId?: string
   const unit = parseOptionalInt(unitId)
   const tray = parseOptionalInt(trayId)
   if (tray === null) return null
-  return mixedAmsLiteGlobalTrayId(unitKind, tray) ??
+  return fixedRangeGlobalTrayId(unitKind, tray) ??
     (unit !== null ? unit * 4 + tray : null)
 }
 

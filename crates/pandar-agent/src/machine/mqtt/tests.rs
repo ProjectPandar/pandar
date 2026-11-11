@@ -18,6 +18,7 @@ mod firmware_observation;
 mod firmware_persistent;
 mod firmware_session;
 mod fixtures;
+mod h3c;
 mod hms;
 mod interpretation;
 mod print_error;

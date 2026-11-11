@@ -118,7 +118,7 @@ fn success_requires_matching_version_and_physical_nozzle_ids() {
                 "sequence_id": "42",
                 "result": "success",
                 "version": 1,
-                "mapping": [22]
+                "mapping": [25]
             }
         }),
         json!({

@@ -55,10 +55,7 @@ pub(super) fn validate_h2c_admission(
     kind: MultipartPrintKind,
     metadata: Option<&StudioPrintMetadata>,
 ) -> Result<(), ApiError> {
-    if model
-        .and_then(pandar_core::compatibility::normalize_model)
-        .as_deref()
-        == Some("H2C")
+    if pandar_core::compatibility::nozzle_rack_slot_count(model).is_some()
         && (matches!(kind, MultipartPrintKind::Web)
             || !metadata.is_some_and(|metadata| {
                 pandar_core::valid_h2c_nozzle_mapping(metadata.nozzle_mapping())

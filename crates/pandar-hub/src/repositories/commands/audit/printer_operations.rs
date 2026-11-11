@@ -58,19 +58,22 @@ pub(in crate::repositories::commands) async fn enqueue_printer_operation_with_au
     if !pandar_core::compatibility::live_controls_supported(printer.model.as_deref()) {
         return Err(RepositoryError::PrinterControlUnavailable);
     }
-    if matches!(
-        &operation,
-        PrinterOperationKind::NozzleHolderCtrl { .. }
+    let rack_slots = pandar_core::compatibility::nozzle_rack_slot_count(printer.model.as_deref());
+    match (&operation, rack_slots) {
+        (
+            PrinterOperationKind::NozzleHolderCtrl { .. }
             | PrinterOperationKind::NozzleInfoConfirm { .. }
-            | PrinterOperationKind::HolderNozzleRefresh { .. }
-    ) && printer
-        .model
-        .as_deref()
-        .and_then(pandar_core::compatibility::normalize_model)
-        .as_deref()
-        != Some("H2C")
-    {
-        return Err(RepositoryError::PrinterControlUnavailable);
+            | PrinterOperationKind::HolderNozzleRefresh { .. },
+            None,
+        ) => return Err(RepositoryError::PrinterControlUnavailable),
+        (
+            PrinterOperationKind::NozzleInfoConfirm { id }
+            | PrinterOperationKind::HolderNozzleRefresh { id },
+            Some(slots),
+        ) if *id != 0xff && *id >= 16 + slots => {
+            return Err(RepositoryError::InvalidPrinterControl);
+        }
+        _ => {}
     }
 
     persist_printer_operation(

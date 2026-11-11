@@ -118,7 +118,7 @@ async fn printer_operation_invalid_rack_values_reject_ack_without_dispatch() {
         ),
         (
             printer_operation::Operation::HolderNozzleRefresh(HolderNozzleRefreshOperation {
-                id: 22,
+                id: 25,
             }),
             "holder_nozzle_refresh",
         ),

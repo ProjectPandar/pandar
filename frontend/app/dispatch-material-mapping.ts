@@ -1,5 +1,5 @@
 import type { ArtifactMetadata, Printer } from "./dashboard-types";
-import { mixedAmsLiteGlobalTrayId } from "./material-tray-routing";
+import { fixedRangeGlobalTrayId } from "./material-tray-routing";
 
 export type ProjectFilament = {
   mappingIndex: number;
@@ -119,7 +119,7 @@ export function printerAmsSlots(
       if (!Number.isInteger(slotId)) return [];
       const globalTrayId =
         tray.global_tray_id ??
-        mixedAmsLiteGlobalTrayId(unit.unit_kind, slotId) ??
+        fixedRangeGlobalTrayId(unit.unit_kind, slotId) ??
         (amsId < 64
           ? amsId * 4 + slotId
           : amsId >= 128 && amsId <= 135

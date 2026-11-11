@@ -39,6 +39,12 @@ Remaining acceptance work:
 
 ## Recently Completed
 
+- Added Bambu Lab H3C (`N10`) support, following BambuStudio's `N10` profile and bambuddy's H3C frame. The model normalizes to `H3C`, a single-nozzle printer with H2C-class print options, chamber fan, and RTSP camera, and it is projected to Studio as `N10`.
+  - **Hotend rack.** The nine-position direct rack (ids 16–24) flows through the Agent, gRPC, Hub, and Studio projection. Each mounted hotend keeps its `addr_id` home position. Rack operations, the Studio auto-nozzle-mapping proxy, and the nozzle-mapping print requirement are now gated by a shared `nozzle_rack_slot_count`, and the Hub rejects rack ids beyond the printer's own rack (the H2C still rejects 22–24).
+  - **AMS 3H.** The unit is a new `ams_3h` kind (Studio type 6, global trays 28–36, exist bit 13, slot-wide `tray_exist_bits`), and its raw `tray_now` slot resolves to the global tray.
+  - **External inputs.** The H3C's per-hotend inputs (247–255) keep their own ids instead of collapsing to 254/255.
+  - **Dashboard.** The card now draws nine rack positions with the mounted hotend ringed at its home slot, plus Raise/Centre/Lower controls, the "AMS 3H" unit, and external inputs numbered by hotend.
+  - **Known gaps.** A delta report carrying a raw `tray_now` without unit data cannot be mapped, and load/unload of an H3C external input still targets the main extruder.
 - Added generic Klipper/Moonraker printer support, targeting the Snapmaker U1 without hard-coding it. Printers carry a persisted `printer_family` (`bambu_lab` | `moonraker`) through proto, Hub (SQLite and PostgreSQL), the OpenAPI contract, Web and Android. The Agent links over Moonraker HTTP with an optional `X-Api-Key`; identity is the CPU serial, falling back to the MAC address, and the model is always `Klipper`. Telemetry streams over the WebSocket JSON-RPC subscription (`print_stats`, heaters, toolhead, LEDs). Print uploads go to `gcodes/pandar/<job_id>/` so jobs correlate across Agent restarts. Controls cover pause, resume, cancel, temperatures, home, move, speed, fan, light and tool select. Camera uses Moonraker webcam snapshots (MJPEG plus ffmpeg fMP4). Optional firmware extensions are detected by object presence: `print_task_config` projects filament channels as one AMS-shaped unit and enables `AUTO_FEEDING` load/unload and `FILAMENT_DT_UPDATE`. In Web, the link form gains a family selector with an optional API key and `host:port`, and dispatch to Moonraker printers is `.gcode`-only without AMS mapping. Evidence: an Agent E2E against an in-process Moonraker modelled on the U1 writes `target/e2e-artifacts/moonraker-agent.json`, and a family round-trip test runs on both database backends.
 - Moonraker follow-ups (not yet scheduled): mDNS/zeroconf discovery; Moonraker `force_logins` JWT auth; chamber/auxiliary fan control; selecting T2/T3 (core `SelectExtruder` validation and the Web nozzle switch only cover two extruders); `diagnose_printer` for Moonraker; hardware validation on a real U1.
 
@@ -86,7 +92,7 @@ Remaining acceptance work:
 These are not active roadmap items until they have an open GitHub issue and an explicitly safe test environment:
 
 - Additional authenticated, exact-version Studio evidence on Windows and both macOS architectures; see [`compatibility/bambu-studio-plugin.md`](compatibility/bambu-studio-plugin.md).
-- Hardware-dependent camera, FTPS, H2C rack, print, cancel, firmware, and live printer-control validation; see the relevant files under [`docs/compatibility/`](compatibility/).
+- Hardware-dependent camera, FTPS, H2C and H3C rack, AMS 3H, print, cancel, firmware, and live printer-control validation; see the relevant files under [`docs/compatibility/`](compatibility/).
 - Virtual-printer or LAN proxy behavior. It remains out of scope because it changes discovery, port ownership, and MQTT/file-transfer routing.
 
 ## Maintenance Rule

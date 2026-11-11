@@ -170,7 +170,7 @@ pub fn compatibility_for_model(model: Option<&str>) -> DiagnosticCompatibility {
                 ..CompatibilityFeatures::unknown()
             },
         ),
-        "X2D" | "H2C" | "H2D" | "H2D_PRO" => diagnostic(
+        "X2D" | "H2C" | "H3C" | "H2D" | "H2D_PRO" => diagnostic(
             normalized_model,
             Capability::Unknown,
             key == "X2D",
@@ -246,7 +246,7 @@ fn print_options_for_model(model: Option<&str>) -> PrintOptionCapabilities {
             flow_calibration: None,
             nozzle_offset_calibration: None,
         },
-        Some("H2C" | "H2D" | "H2D_PRO") => PrintOptionCapabilities {
+        Some("H2C" | "H3C" | "H2D" | "H2D_PRO") => PrintOptionCapabilities {
             timelapse: true,
             bed_leveling: Some(auto_on_off(PrintCalibrationMode::Auto)),
             flow_calibration: Some(auto_on_off(PrintCalibrationMode::Auto)),
@@ -260,7 +260,7 @@ fn dual_nozzle_capability(model: Option<&str>) -> Capability {
     match model {
         Some("X2D" | "H2C" | "H2D" | "H2D_PRO") => Capability::Supported,
         Some(
-            "A1" | "A1_MINI" | "A2L" | "X1" | "X1C" | "X1E" | "P1P" | "P1S" | "P2S" | "H2S"
+            "A1" | "A1_MINI" | "A2L" | "X1" | "X1C" | "X1E" | "P1P" | "P1S" | "P2S" | "H2S" | "H3C"
             | "KLIPPER",
         ) => Capability::Unsupported,
         _ => Capability::Unknown,
@@ -270,9 +270,10 @@ fn dual_nozzle_capability(model: Option<&str>) -> Capability {
 fn chamber_fan_capability(model: Option<&str>) -> Capability {
     match model {
         Some("A1" | "A1_MINI" | "A2L" | "P1P" | "KLIPPER") => Capability::Unsupported,
-        Some("X1" | "X1C" | "X1E" | "P1S" | "P2S" | "X2D" | "H2C" | "H2D" | "H2D_PRO" | "H2S") => {
-            Capability::Supported
-        }
+        Some(
+            "X1" | "X1C" | "X1E" | "P1S" | "P2S" | "X2D" | "H2C" | "H3C" | "H2D" | "H2D_PRO"
+            | "H2S",
+        ) => Capability::Supported,
         _ => Capability::Unknown,
     }
 }
@@ -281,9 +282,9 @@ fn nozzle_layout(model: Option<&str>) -> NozzleLayout {
     match model {
         Some("X2D") => NozzleLayout::MainAuxiliary,
         Some("H2C" | "H2D" | "H2D_PRO") => NozzleLayout::LeftRight,
-        Some("A1" | "A1_MINI" | "A2L" | "X1" | "X1C" | "X1E" | "P1P" | "P1S" | "P2S" | "H2S") => {
-            NozzleLayout::Single
-        }
+        Some(
+            "A1" | "A1_MINI" | "A2L" | "X1" | "X1C" | "X1E" | "P1P" | "P1S" | "P2S" | "H2S" | "H3C",
+        ) => NozzleLayout::Single,
         _ => NozzleLayout::Unknown,
     }
 }
@@ -310,6 +311,7 @@ pub fn normalize_model(model: &str) -> Option<String> {
         "C12" => "P1S",
         "N9" => "A2L",
         "O1C" | "O1C2" => "H2C",
+        "N10" => "H3C",
         "O1D" => "H2D",
         "O1E" => "H2D_PRO",
         "O1S" => "H2S",
@@ -318,7 +320,7 @@ pub fn normalize_model(model: &str) -> Option<String> {
         "X1CARBON" | "3DPRINTERX1CARBON" => "X1C",
         "A1MINI" | "A1M" | "A1MIN" => "A1_MINI",
         "A1" => "A1",
-        "P1P" | "P1S" | "A2L" | "H2C" | "H2D" | "H2S" => compact,
+        "P1P" | "P1S" | "A2L" | "H2C" | "H3C" | "H2D" | "H2S" => compact,
         "H2DPRO" => "H2D_PRO",
         "P2S" => "P2S",
         "X2D" => "X2D",
@@ -335,14 +337,14 @@ pub fn flow_calibration_supported(model: Option<&str>) -> bool {
 pub fn auto_flow_calibration_supported(model: Option<&str>) -> bool {
     matches!(
         model.and_then(normalize_model).as_deref(),
-        Some("P2S" | "X2D" | "A2L" | "H2C" | "H2D" | "H2D_PRO" | "H2S")
+        Some("P2S" | "X2D" | "A2L" | "H2C" | "H3C" | "H2D" | "H2D_PRO" | "H2S")
     )
 }
 
 pub fn auto_bed_leveling_supported(model: Option<&str>) -> bool {
     matches!(
         model.and_then(normalize_model).as_deref(),
-        Some("P2S" | "X2D" | "A2L" | "H2C" | "H2D" | "H2D_PRO" | "H2S")
+        Some("P2S" | "X2D" | "A2L" | "H2C" | "H3C" | "H2D" | "H2D_PRO" | "H2S")
     )
 }
 
@@ -359,6 +361,16 @@ pub fn live_controls_supported(model: Option<&str>) -> bool {
 
 pub fn ftps_tls_1_2_cap(model: Option<&str>) -> bool {
     compatibility_for_model(model).ftps_tls_1_2_cap
+}
+
+/// Hotend positions of a nozzle-rack printer's rack (Studio DevNozzleRack):
+/// six on the H2C's A/B rack, one per AMS 3H slot on the H3C's direct rack.
+pub fn nozzle_rack_slot_count(model: Option<&str>) -> Option<u32> {
+    match model.and_then(normalize_model).as_deref() {
+        Some("H2C") => Some(6),
+        Some("H3C") => Some(9),
+        _ => None,
+    }
 }
 
 pub fn studio_local_camera_supported(model: Option<&str>) -> bool {

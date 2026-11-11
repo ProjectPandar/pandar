@@ -2004,6 +2004,12 @@
               "string",
               "null"
             ]
+          },
+          "addr_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
           }
         },
         "x-typescript-group": "printer"

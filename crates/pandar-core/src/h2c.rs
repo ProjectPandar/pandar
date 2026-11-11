@@ -190,7 +190,7 @@ fn valid_flow(value: &str) -> bool {
 }
 
 pub fn valid_physical_nozzle_id(value: i32) -> bool {
-    matches!(value, 0 | 1 | 16..=21)
+    matches!(value, 0 | 1 | 16..=24)
 }
 
 pub fn valid_h2c_nozzle_mapping(mapping: &[i32]) -> bool {
@@ -297,6 +297,8 @@ pub struct BambuNozzleInfo {
     pub p_t: Option<i32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub color_m: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub addr_id: Option<i32>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

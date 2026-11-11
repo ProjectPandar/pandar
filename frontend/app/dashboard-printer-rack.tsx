@@ -23,7 +23,7 @@ import {
 } from './dashboard-printer-rack-label'
 import type { Printer, PrinterNozzleSystem } from './dashboard-types'
 
-const RACK_SLOT_IDS = [16, 17, 18, 19, 20, 21] as const
+const RACK_BASE_ID = 16
 const RACK_NOZZLE_ID_ALL = 255
 
 export function PrinterRackPanel({ printer }: { printer: Printer }) {
@@ -33,15 +33,31 @@ export function PrinterRackPanel({ printer }: { printer: Printer }) {
     return null
   }
 
-  const mounted = system.nozzle.info.filter((nozzle) => nozzle.id < 16)
+  // The H3C's direct rack holds nine hotends (one per AMS 3H slot) and moves
+  // up/down; the H2C's six-position rack flips between its A and B sides.
+  const directRack = printer.compatibility.normalized_model === 'H3C'
+  const slotCount = directRack ? 9 : 6
+  const mounted = system.nozzle.info.filter((nozzle) => nozzle.id < RACK_BASE_ID)
   // Bambu Studio DevDefs: extruder 1 (deputy/left) is fixed; extruder 0
   // (main/right) is the hotend the rack can swap.
   const fixed = mounted.filter((nozzle) => nozzle.id === 1)
-  const swappableMounted = mounted.filter((nozzle) => nozzle.id === 0)
   const rackNozzles = new Map(
     system.nozzle.info
-      .filter((nozzle) => nozzle.id >= 16)
+      .filter((nozzle) => nozzle.id >= RACK_BASE_ID)
       .map((nozzle) => [nozzle.id, nozzle]),
+  )
+  // A mounted hotend reports its home rack position as `addr_id`.
+  const mountedAt = (slot: number) =>
+    mounted.find((nozzle) => nozzle.id === 0 && nozzle.addr_id === slot)
+  const swappableMounted = mounted.filter(
+    (nozzle) =>
+      nozzle.id === 0 &&
+      !(
+        nozzle.addr_id !== null &&
+        nozzle.addr_id !== undefined &&
+        nozzle.addr_id < slotCount &&
+        !rackNozzles.has(RACK_BASE_ID + nozzle.addr_id)
+      ),
   )
   const disabled = rackOperationsDisabled(printer)
 
@@ -49,7 +65,7 @@ export function PrinterRackPanel({ printer }: { printer: Printer }) {
     <div className="mt-4 space-y-2">
       <div className="flex items-center justify-between gap-2">
         <div className="text-xs font-medium text-muted-foreground">{t('rackLabel')}</div>
-        <RackHolderStatus holder={system.holder} />
+        <RackHolderStatus holder={system.holder} showPosition={!directRack} />
       </div>
       {fixed.length > 0 ? (
         <div className="rounded-md bg-muted/40 p-2">
@@ -85,23 +101,29 @@ export function PrinterRackPanel({ printer }: { printer: Printer }) {
             ))}
           </div>
         ) : null}
-        <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6">
-          {RACK_SLOT_IDS.map((slotId, index) => (
-            <RackSlotButton
-              disabled={disabled}
-              key={slotId}
-              nozzle={rackNozzles.get(slotId) ?? null}
-              printer={printer}
-              slotId={slotId}
-              slotNumber={index + 1}
-            />
-          ))}
+        <div className={directRack ? 'grid grid-cols-3 gap-1.5 sm:grid-cols-9' : 'grid grid-cols-3 gap-1.5 sm:grid-cols-6'}>
+          {Array.from({ length: slotCount }, (_, index) => {
+            const slotId = RACK_BASE_ID + index
+            const docked = rackNozzles.get(slotId)
+            const homed = docked ? undefined : mountedAt(index)
+            return (
+              <RackSlotButton
+                disabled={disabled}
+                key={slotId}
+                mounted={homed !== undefined}
+                nozzle={docked ?? homed ?? null}
+                printer={printer}
+                slotId={slotId}
+                slotNumber={index + 1}
+              />
+            )
+          })}
         </div>
       </div>
       <div className="grid grid-cols-3 gap-1.5" role="group">
         <RackMoveButton action={0} disabled={disabled} label={t('rackMoveCentre')} printer={printer} />
-        <RackMoveButton action={1} disabled={disabled} label={t('rackMoveATop')} printer={printer} />
-        <RackMoveButton action={2} disabled={disabled} label={t('rackMoveBTop')} printer={printer} />
+        <RackMoveButton action={1} disabled={disabled} label={t(directRack ? 'rackMoveRaise' : 'rackMoveATop')} printer={printer} />
+        <RackMoveButton action={2} disabled={disabled} label={t(directRack ? 'rackMoveLower' : 'rackMoveBTop')} printer={printer} />
       </div>
       <div className="grid grid-cols-2 gap-1.5" role="group">
         <RackOperationForm
@@ -126,13 +148,19 @@ export function PrinterRackPanel({ printer }: { printer: Printer }) {
   )
 }
 
-function RackHolderStatus({ holder }: { holder: PrinterNozzleSystem['holder'] }) {
+function RackHolderStatus({
+  holder,
+  showPosition,
+}: {
+  holder: PrinterNozzleSystem['holder']
+  showPosition: boolean
+}) {
   const t = useTranslations('inventory')
   if (!holder) {
     return null
   }
   const parts: string[] = []
-  if (holder.pos !== null && holder.pos !== undefined) {
+  if (showPosition && holder.pos !== null && holder.pos !== undefined) {
     parts.push(
       holder.pos === 1
         ? t('rackPositionATop')
@@ -162,16 +190,19 @@ function RackSlotButton({
   slotId,
   slotNumber,
   nozzle,
+  mounted,
   disabled,
 }: {
   printer: Printer
   slotId: number
   slotNumber: number
   nozzle: RackNozzle | null
+  mounted: boolean
   disabled: boolean
 }) {
   const t = useTranslations('inventory')
-  const label = nozzle ? nozzleLabel(nozzle, t, t('rackHotendUnknown')) : t('rackSlotEmpty')
+  const hotend = nozzle ? nozzleLabel(nozzle, t, t('rackHotendUnknown')) : t('rackSlotEmpty')
+  const label = mounted ? `${hotend}, ${t('rackMounted')}` : hotend
   const flow = nozzle ? nozzleFlowLabel(nozzle.type, t) : null
   return (
     <Popover>
@@ -179,7 +210,7 @@ function RackSlotButton({
         render={
           <Button
             aria-label={t('rackSlotAria', { number: slotNumber, hotend: label })}
-            className="h-auto min-h-12 w-full flex-col rounded-md bg-muted/50 px-1 py-1.5 text-center font-normal hover:bg-muted dark:hover:bg-muted"
+            className={`h-auto min-h-12 w-full flex-col rounded-md bg-muted/50 px-1 py-1.5 text-center font-normal hover:bg-muted dark:hover:bg-muted${mounted ? ' ring-2 ring-primary' : ''}`}
             type="button"
             variant="ghost"
           />

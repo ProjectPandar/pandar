@@ -252,7 +252,9 @@ data class NozzleInfoDto(
     @SerialName("p_t")
     val pT: Int? = null,
     @SerialName("color_m")
-    val colorM: String? = null
+    val colorM: String? = null,
+    @SerialName("addr_id")
+    val addrId: Int? = null
 )
 
 @Serializable

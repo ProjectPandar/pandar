@@ -245,6 +245,8 @@ pub(in crate::machine::mqtt) struct NozzleInfo {
     pub(in crate::machine::mqtt) p_t: Option<i32>,
     #[serde(default)]
     pub(in crate::machine::mqtt) color_m: Option<String>,
+    #[serde(default)]
+    pub(in crate::machine::mqtt) addr_id: Option<i32>,
 }
 
 #[derive(Debug, Deserialize)]

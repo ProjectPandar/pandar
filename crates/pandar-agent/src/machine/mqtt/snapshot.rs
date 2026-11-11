@@ -264,6 +264,7 @@ fn normalize_nozzle_info(nozzle: &super::report::snapshot::NozzleInfo) -> Option
         wear: wear.and_then(|value| pandar_core::StudioFiniteF64::try_from(f64::from(value)).ok()),
         p_t: nozzle.p_t.filter(|value| *value >= 0),
         color_m: nozzle.color_m.clone().filter(|value| value.len() <= 16),
+        addr_id: nozzle.addr_id.filter(|value| *value >= 0),
     })
 }
 

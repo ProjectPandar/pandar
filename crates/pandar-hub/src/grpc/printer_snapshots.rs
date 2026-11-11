@@ -268,6 +268,7 @@ fn proto_nozzle_system(
                 .map_err(|_| Status::invalid_argument("invalid nozzle wear"))?,
             p_t: value.print_time,
             color_m: value.color,
+            addr_id: value.addr_id,
         });
     }
     info.sort_by_key(|value| value.id);

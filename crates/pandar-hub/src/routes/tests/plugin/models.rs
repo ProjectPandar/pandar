@@ -26,6 +26,8 @@ async fn plugin_printer_list_projects_every_studio_model_resource_id() {
         ("h2d-pro", "Bambu Lab H2D Pro", "O1E"),
         ("h2c", "Bambu Lab H2C", "O1C2"),
         ("h2c-alias", "O1C", "O1C2"),
+        ("h3c", "Bambu Lab H3C", "N10"),
+        ("h3c-code", "N10", "N10"),
         ("unknown", "Custom Prototype", "Custom Prototype"),
     ];
     for (serial, model, _) in models {

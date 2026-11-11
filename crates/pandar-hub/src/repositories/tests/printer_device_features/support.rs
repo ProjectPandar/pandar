@@ -69,6 +69,7 @@ pub(super) fn nozzle_system(id: i32) -> BambuNozzleSystem {
                 wear: None,
                 p_t: None,
                 color_m: None,
+                addr_id: None,
             }],
         },
         holder: None,

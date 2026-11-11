@@ -40,10 +40,21 @@ fn normalize_external_source(
     }
 
     let multi = entries.len() > 1;
+    // A nozzle-rack printer (H3C) reports one input per hotend, vir_slot
+    // 247-255, each feeding hotend `255 - id`; keep their own ids.
+    let rack_inputs = entries
+        .iter()
+        .any(|spool| external_slot_id(spool).is_some_and(|id| is_rack_input_id(&id)));
     let spools = entries
         .iter()
         .enumerate()
-        .map(|(index, spool)| normalize_external_spool(spool, index, multi))
+        .map(|(index, spool)| {
+            let mut patch = normalize_external_spool(spool, index, multi);
+            if rack_inputs && let Some(id) = external_slot_id(spool) {
+                patch.external_id = id;
+            }
+            patch
+        })
         .collect();
 
     Some(ExternalSpoolsPatch {
@@ -98,6 +109,10 @@ fn has_dual_external_source(source: Option<&ExternalMaterialSource>) -> bool {
 
 fn external_slot_id(slot: &MaterialSlotReport) -> Option<String> {
     normalized_string(slot.id.as_ref()).or_else(|| normalized_string(slot.external_id.as_ref()))
+}
+
+fn is_rack_input_id(id: &str) -> bool {
+    id.parse::<u8>().is_ok_and(|id| (247..=253).contains(&id))
 }
 
 fn normalize_external_id(spool: &MaterialSlotReport, index: usize, multi: bool) -> String {

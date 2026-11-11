@@ -30,6 +30,7 @@ pub(super) fn fallback_nozzle_device(nozzles: &[NozzleTemperature]) -> BambuNozz
                 wear: None,
                 p_t: None,
                 color_m: None,
+                addr_id: None,
             },
         ));
     }
