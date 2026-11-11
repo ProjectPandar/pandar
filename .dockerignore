@@ -1,5 +1,8 @@
 .git
-target
+reference
+mobile
+dist
+**/target
 node_modules
 .next
 frontend/node_modules

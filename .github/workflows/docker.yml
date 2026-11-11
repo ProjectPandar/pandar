@@ -4,6 +4,13 @@ on:
   push:
     branches: ["main"]
     tags: ["v*"]
+    # Documentation-only commits produce identical images; the Helm chart under
+    # docs/deployment is still published from here.
+    paths:
+      - "**"
+      - "!**/*.md"
+      - "!docs/**"
+      - "docs/deployment/**"
   workflow_dispatch:
 
 permissions:
@@ -14,13 +21,25 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  quality-gate:
-    name: Verify Checks for image SHA
+  docker:
+    name: Build and publish ${{ matrix.image.name }}
     runs-on: ubuntu-latest
-    timeout-minutes: 125
+    timeout-minutes: 150
     permissions:
       actions: read
       contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - name: hub
+            context: .
+            dockerfile: Dockerfile
+          - name: web
+            context: .
+            dockerfile: frontend/Dockerfile
+
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -30,6 +49,36 @@ jobs:
       - name: Verify tagged release versions
         if: startsWith(github.ref, 'refs/tags/v')
         run: bash scripts/check-release-version.sh "${GITHUB_REF_NAME#v}"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
+
+      - name: Log in to GHCR
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9 # v6.1.0
+        with:
+          images: ghcr.io/projectpandar/pandar/${{ matrix.image.name }}
+          tags: |
+            type=ref,event=branch,enable=${{ github.event_name == 'push' }}
+            type=ref,event=tag
+            type=raw,value=main,enable=${{ github.event_name == 'workflow_dispatch' }}
+
+      # Build while Checks is still running; only the push waits for the gate.
+      - name: Build image
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
+        with:
+          context: ${{ matrix.image.context }}
+          file: ${{ matrix.image.dockerfile }}
+          push: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
       - name: Wait for successful Checks workflow
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
@@ -63,53 +112,7 @@ jobs:
             }
             core.setFailed(`Timed out waiting for Checks on ${context.sha}`);
 
-  docker:
-    name: Build and publish ${{ matrix.image.name }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 90
-    needs:
-      - quality-gate
-    permissions:
-      contents: read
-      packages: write
-    strategy:
-      fail-fast: false
-      matrix:
-        image:
-          - name: hub
-            context: .
-            dockerfile: Dockerfile
-          - name: web
-            context: .
-            dockerfile: frontend/Dockerfile
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          persist-credentials: false
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
-
-      - name: Log in to GHCR
-        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract Docker metadata
-        id: meta
-        uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9 # v6.1.0
-        with:
-          images: ghcr.io/projectpandar/pandar/${{ matrix.image.name }}
-          tags: |
-            type=ref,event=branch,enable=${{ github.event_name == 'push' }}
-            type=ref,event=tag
-            type=raw,value=main,enable=${{ github.event_name == 'workflow_dispatch' }}
-
-      - name: Build and push
+      - name: Push image
         uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
         with:
           context: ${{ matrix.image.context }}
@@ -169,12 +172,6 @@ jobs:
             echo "app-version=$app_version"
             echo "prerelease=$prerelease"
           } >> "$GITHUB_OUTPUT"
-
-      - name: Lint chart
-        run: helm lint docs/deployment/kubernetes --set hub.accessCodeEncryption.existingSecret=pandar-hub-secrets
-
-      - name: Verify deployment security defaults
-        run: scripts/check-deployment-security.sh
 
       - name: Package chart
         run: |

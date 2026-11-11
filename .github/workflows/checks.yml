@@ -5,19 +5,58 @@ on:
   push:
     branches:
       - main
-    tags:
-      - "v*"
 
 permissions:
   contents: read
 
+# Pull requests only need their newest push checked. Every main commit gets a
+# unique group so it is never cancelled or replaced while pending; Docker and
+# Release gate on the main run for the exact SHA they publish.
 concurrency:
-  group: checks-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: checks-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # Documentation-only changes skip the heavy jobs inside the workflow instead of
+  # through `on.paths`: a workflow that never starts leaves required checks
+  # pending forever and leaves the Docker/Release gates without a Checks run.
+  changes:
+    name: Detect code changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - name: Classify changed files
+        id: filter
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          if [ -n "$PR_NUMBER" ]; then
+            files="$(gh api --paginate "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files" --jq '.[].filename')"
+          elif [ "$BEFORE" = 0000000000000000000000000000000000000000 ] \
+            || ! files="$(gh api --paginate "repos/$GITHUB_REPOSITORY/compare/$BEFORE...$GITHUB_SHA" --jq '.files[].filename')"; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Markdown and docs/ are documentation, except docs/deployment, which
+          # CI lints (Helm chart) and diffs (NixOS options reference).
+          if grep -Evq '\.md$|^docs/|^$' <<< "$files" || grep -q '^docs/deployment/' <<< "$files"; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+
   frontend-quality:
     name: Frontend tests and type checks
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -33,10 +72,6 @@ jobs:
           node-version: "24"
           cache: npm
           cache-dependency-path: package-lock.json
-
-      - name: Verify tagged release versions
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: bash scripts/check-release-version.sh "${GITHUB_REF_NAME#v}"
 
       - name: Install dependencies
         run: npm ci
@@ -64,8 +99,10 @@ jobs:
 
   rust-security:
     name: Rust security audit
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
 
     steps:
       - name: Checkout
@@ -73,18 +110,46 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
+      - name: Install prebuilt cargo-audit
+        uses: taiki-e/install-action@68a389c788b2cd04016ce8c80ee23b80d2ab3d68 # v2.88.1
         with:
-          toolchain: stable
+          tool: cargo-audit
 
       - name: Audit Rust dependencies
-        run: cargo install cargo-audit --locked && cargo audit
+        run: cargo audit
+
+  helm-chart:
+    name: Helm chart
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Helm
+        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+
+      - name: Lint chart
+        run: helm lint docs/deployment/kubernetes --set hub.accessCodeEncryption.existingSecret=pandar-hub-secrets
+
+      - name: Verify deployment security defaults
+        run: scripts/check-deployment-security.sh
 
   studio-contract-checks:
-    name: Pinned Bambu Studio contracts
+    name: Pinned Bambu Studio contracts (${{ matrix.partition }}/3)
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        partition: [1, 2, 3]
 
     steps:
       - name: Checkout Pandar
@@ -98,17 +163,13 @@ jobs:
           repository: bambulab/BambuStudio
           ref: 42d319c6692fa8e64790fddf0cdaafd2a4254bcc
           path: reference/BambuStudio
-          fetch-depth: 0
           persist-credentials: false
 
       - name: Fetch every catalogued Studio commit
         shell: bash
         run: |
           set -euo pipefail
-          {
-            jq -r '.abi_series[].studio_commit' studio-abi-profiles.json
-            echo 42d319c6692fa8e64790fddf0cdaafd2a4254bcc
-          } | sort -u | while read -r commit; do
+          jq -r '.abi_series[].studio_commit' studio-abi-profiles.json | sort -u | while read -r commit; do
             git -C reference/BambuStudio fetch --no-tags --depth=1 origin "$commit"
           done
 
@@ -130,47 +191,15 @@ jobs:
           nix develop --command cargo nextest run
           -p pandar-network-plugin
           -E 'binary(studio_print_contract_red) | binary(studio_projection_contract) | binary(personal_presets)'
+          --partition count:${{ matrix.partition }}/3
           --no-tests=fail
 
-  helm-chart:
-    name: Helm chart
+  nix-lint:
+    name: Nix lint checks
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          persist-credentials: false
-
-      - name: Set up Helm
-        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
-
-      - name: Lint chart
-        run: helm lint docs/deployment/kubernetes --set hub.accessCodeEncryption.existingSecret=pandar-hub-secrets
-
-      - name: Verify deployment security defaults
-        run: scripts/check-deployment-security.sh
-
-  nix-quality-checks:
-    name: Nix quality checks
-    runs-on: ubuntu-latest
-    timeout-minutes: 90
-
-    services:
-      postgres:
-        image: postgres:17@sha256:a426e44bac0b759c95894d68e1a0ac03ecc20b619f498a91aae373bf06d8508d
-        env:
-          POSTGRES_DB: pandar_test
-          POSTGRES_PASSWORD: pandar_test
-          POSTGRES_USER: pandar_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U pandar_test -d pandar_test"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+    timeout-minutes: 60
 
     steps:
       - name: Checkout
@@ -194,32 +223,49 @@ jobs:
       - name: Verify generated Hub migrations
         run: scripts/sync-hub-migrations.sh --check
 
-      - name: Run checks
+      - name: Run lint checks
         run: |
-          nix build --show-trace \
+          nix build --print-build-logs \
             .#checks.x86_64-linux.pandar-fmt \
             .#checks.x86_64-linux.pandar-clippy \
             .#checks.x86_64-linux.pandar-module-size \
-            .#checks.x86_64-linux.pandar-nextest \
-            .#checks.x86_64-linux.pandar-auth-migrate \
-            .#checks.x86_64-linux.pandar-auth-jwt-smoke \
-            .#checks.x86_64-linux.pandar-auth-cookie-smoke \
-            .#checks.x86_64-linux.pandar-web-auth-redirect-smoke \
-            .#checks.x86_64-linux.pandar-nixos-module \
             .#checks.x86_64-linux.pandar-nixos-options-doc
 
-      - name: Run PostgreSQL parity tests
-        env:
-          PANDAR_REQUIRE_POSTGRES_TESTS: "true"
-          PANDAR_TEST_POSTGRES_URL: "postgresql://pandar_test:pandar_test@127.0.0.1:5432/pandar_test"
-        run: >-
-          nix develop --command cargo nextest run
-          -p pandar-hub
-          -E 'test(/postgres/)'
-          --no-tests=fail
+  nix-test:
+    name: Nix Rust tests (SQLite + PostgreSQL)
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
 
-  nix-package-checks:
-    name: Nix package checks (${{ matrix.system }})
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3 # v31.10.6
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Set up hestia cache
+        uses: Mic92/hestia@b21a1aaf8c3d5c2e430c9ba278c0f78abd46a320 # v3.0.0
+        with:
+          version: v3.0.0
+          upstream-cache-filter: true
+          no-closure: true
+
+      - name: Run workspace tests
+        run: nix build --print-build-logs .#checks.x86_64-linux.pandar-nextest
+
+  # Packages and the NixOS VM tests that boot them share one job per system so
+  # each package is built once and the VMs reuse it from the local store.
+  nix-packages:
+    name: Nix packages and NixOS VM tests (${{ matrix.system }})
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
     strategy:
@@ -228,8 +274,16 @@ jobs:
         include:
           - system: x86_64-linux
             runner: ubuntu-latest
+            checks: >-
+              pandar-hub pandar-agent pandar-cli pandar-auth pandar-web pandar-network-plugin
+              pandar-auth-migrate pandar-auth-jwt-smoke pandar-auth-cookie-smoke
+              pandar-web-auth-redirect-smoke pandar-nixos-module
+              pandar-nixos-test-sqlite pandar-nixos-test-postgres
           - system: aarch64-linux
             runner: ubuntu-24.04-arm
+            checks: >-
+              pandar-hub pandar-agent pandar-cli pandar-auth pandar-web
+              pandar-nixos-test-sqlite pandar-nixos-test-postgres
 
     steps:
       - name: Checkout
@@ -250,59 +304,42 @@ jobs:
           upstream-cache-filter: true
           no-closure: true
 
-      - name: Build packages
+      - name: Build packages and run VM tests
+        env:
+          SYSTEM: ${{ matrix.system }}
+          CHECKS: ${{ matrix.checks }}
         run: |
-          packages=(
-            .#checks.${{ matrix.system }}.pandar-hub \
-            .#checks.${{ matrix.system }}.pandar-agent \
-            .#checks.${{ matrix.system }}.pandar-cli \
-            .#checks.${{ matrix.system }}.pandar-auth \
-            .#checks.${{ matrix.system }}.pandar-web
-          )
-          if [ "${{ matrix.system }}" = "x86_64-linux" ]; then
-            packages+=(.#checks.${{ matrix.system }}.pandar-network-plugin)
-          fi
-          nix build --show-trace "${packages[@]}"
+          installables=()
+          for check in $CHECKS; do
+            installables+=(".#checks.$SYSTEM.$check")
+          done
+          nix build --print-build-logs "${installables[@]}"
 
-  nixos-vm-tests:
-    name: NixOS VM test (${{ matrix.backend }}, ${{ matrix.system }})
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - backend: sqlite
-            system: x86_64-linux
-            runner: ubuntu-latest
-          - backend: postgres
-            system: x86_64-linux
-            runner: ubuntu-latest
-          - backend: sqlite
-            system: aarch64-linux
-            runner: ubuntu-24.04-arm
-          - backend: postgres
-            system: aarch64-linux
-            runner: ubuntu-24.04-arm
-
+  # Single required check: skipped jobs (documentation-only changes) count as
+  # passing, failures and cancellations do not.
+  checks-passed:
+    name: Checks passed
+    if: always()
+    needs:
+      - changes
+      - frontend-quality
+      - rust-security
+      - helm-chart
+      - studio-contract-checks
+      - nix-lint
+      - nix-test
+      - nix-packages
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          persist-credentials: false
-
-      - name: Install Nix
-        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3 # v31.10.6
-        with:
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-
-      - name: Set up hestia cache
-        uses: Mic92/hestia@b21a1aaf8c3d5c2e430c9ba278c0f78abd46a320 # v3.0.0
-        with:
-          version: v3.0.0
-          upstream-cache-filter: true
-          no-closure: true
-
-      - name: Run NixOS VM test
-        run: nix build --show-trace .#checks.${{ matrix.system }}.pandar-nixos-test-${{ matrix.backend }}
+      - name: Verify job results
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "$RESULTS"
+          for result in $RESULTS; do
+            case "$result" in
+              success | skipped) ;;
+              *) exit 1 ;;
+            esac
+          done

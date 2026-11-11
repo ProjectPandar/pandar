@@ -18,9 +18,10 @@ on:
 permissions:
   contents: read
 
+# Only the newest push of a pull request matters; every main commit runs to completion.
 concurrency:
-  group: android-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: android-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:

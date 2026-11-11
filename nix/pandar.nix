@@ -156,11 +156,12 @@
           commonArgs
           // {
             inherit cargoArtifacts cargoExtraArgs pname;
+            doCheck = false;
           }
         );
 
-      pandar-hub = buildRustPackage "pandar-hub" "-p pandar-hub --bin pandar-hub";
-      pandar-agent-unwrapped = buildRustPackage "pandar-agent-unwrapped" "-p pandar-agent --bin pandar-agent";
+      pandar-hub = buildRustPackage "pandar-hub" "--workspace --bin pandar-hub";
+      pandar-agent-unwrapped = buildRustPackage "pandar-agent-unwrapped" "--workspace --bin pandar-agent";
       pandar-agent =
         pkgs.runCommand "pandar-agent-${version}" { nativeBuildInputs = [ pkgs.makeWrapper ]; }
           ''
@@ -169,8 +170,8 @@
               --set-default PANDAR_FFMPEG_PATH ${lib.getExe pkgs.ffmpeg} \
               --prefix PATH : ${lib.makeBinPath [ pkgs.ffmpeg ]}
           '';
-      pandar-cli = buildRustPackage "pandar-cli" "-p pandar-app --bin pandar";
-      pandar-quality = buildRustPackage "pandar-quality" "-p pandar-quality --bin pandar-quality";
+      pandar-cli = buildRustPackage "pandar-cli" "--workspace --bin pandar";
+      pandar-quality = buildRustPackage "pandar-quality" "--workspace --bin pandar-quality";
       pandar-network-plugin = craneLib.buildPackage (
         commonArgs
         // {
@@ -770,8 +771,24 @@
           // {
             inherit cargoArtifacts;
             pname = "pandar-nextest";
+            nativeBuildInputs = nativeBuildInputs ++ [ pkgs.postgresql_17 ];
             # These contract gates require an external pinned BambuStudio Git checkout.
             cargoNextestExtraArgs = "--workspace -E 'not (binary(studio_print_contract_red) | binary(studio_projection_contract) | binary(personal_presets))'";
+            # Run the PostgreSQL parity tests against a throwaway server in the same
+            # nextest invocation instead of recompiling the workspace outside Nix.
+            PANDAR_REQUIRE_POSTGRES_TESTS = "true";
+            preCheck = ''
+              export PGDATA="$TMPDIR/postgres"
+              initdb --username pandar_test --auth trust --no-sync > /dev/null
+              pg_ctl --wait --log "$TMPDIR/postgres.log" \
+                --options "-c listen_addresses=127.0.0.1 -c port=55432 -c unix_socket_directories=$TMPDIR -c fsync=off" \
+                start
+              createdb --host 127.0.0.1 --port 55432 --username pandar_test pandar_test
+              export PANDAR_TEST_POSTGRES_URL="postgresql://pandar_test@127.0.0.1:55432/pandar_test"
+            '';
+            postCheck = ''
+              pg_ctl --wait stop
+            '';
           }
         );
 
