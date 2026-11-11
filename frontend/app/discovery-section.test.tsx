@@ -85,6 +85,7 @@ const linkedPrinter: Printer = {
   tenant_id: tenant.id,
   agent_id: agent.id,
   serial_number: "SN-LINKED",
+  printer_family: "bambu_lab",
   name: "Office A1",
   model: "A1",
   compatibility: printerCompatibility("a1"),

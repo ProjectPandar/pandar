@@ -42,6 +42,7 @@ async fn firmware_runtime_existing_generation_link_retries_invalidation_before_m
                     device_features2: None,
                     nozzle_system: None,
                     telemetry_authoritative: true,
+                    printer_family: pandar_core::PrinterFamily::BambuLab,
                 },
                 materials: None,
             },

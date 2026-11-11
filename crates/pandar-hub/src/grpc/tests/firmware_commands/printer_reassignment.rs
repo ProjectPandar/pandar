@@ -299,6 +299,7 @@ async fn reassign_to_original_agent(fixture: &FirmwareFixture) {
 
 fn reassignment_snapshot(fixture: &FirmwareFixture) -> PrinterSnapshotUpsert {
     PrinterSnapshotUpsert {
+        printer_family: pandar_core::PrinterFamily::BambuLab,
         serial_number: fixture.serial.clone(),
         host: None,
         access_code: None,

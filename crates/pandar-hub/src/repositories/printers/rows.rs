@@ -1,7 +1,7 @@
 use anyhow::{Context, bail};
 use pandar_core::{
-    AgentId, BambuDeviceFeatures, BambuNozzleSystem, Printer, PrinterCoolingSystem, PrinterParts,
-    TenantId,
+    AgentId, BambuDeviceFeatures, BambuNozzleSystem, Printer, PrinterCoolingSystem, PrinterFamily,
+    PrinterParts, TenantId,
 };
 
 use crate::{
@@ -33,10 +33,17 @@ pub(super) fn printer_from_model(
             (None, None) => None,
         };
 
+        let printer_family = PrinterFamily::parse(&model.printer_family).with_context(|| {
+            format!(
+                "printer {} has unknown family {}",
+                model.id, model.printer_family
+            )
+        })?;
         Printer::from_parts(PrinterParts {
             id: model.id,
             tenant_id: TenantId::parse(&model.tenant_id).map_err(anyhow::Error::from)?,
             agent_id: AgentId::parse(&model.agent_id).map_err(anyhow::Error::from)?,
+            printer_family,
             serial_number: model.serial_number,
             host: model.host,
             access_code,

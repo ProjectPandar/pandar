@@ -23,6 +23,7 @@ pub(in crate::repositories::tests) fn rich_snapshot(
     status: &str,
 ) -> PrinterSnapshotUpsert {
     PrinterSnapshotUpsert {
+        printer_family: pandar_core::PrinterFamily::BambuLab,
         serial_number: serial_number.to_owned(),
         host: Some("192.0.2.55".to_owned()),
         access_code: Some("feature-access".to_owned()),

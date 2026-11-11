@@ -207,6 +207,7 @@ pub async fn seed_fixture(state: &AppState, suffix: &str) -> anyhow::Result<Smok
             tenant.id,
             agent.id,
             PrinterSnapshotUpsert {
+                printer_family: pandar_core::PrinterFamily::BambuLab,
                 serial_number: format!("scaled-smoke-serial-{suffix}"),
                 name: format!("Scaled Smoke Printer {suffix}"),
                 model: Some("X1C".to_owned()),

@@ -20,6 +20,7 @@ const printer: Printer = {
   tenant_id: tenant.id,
   agent_id: "agent-1",
   serial_number: "SERIAL-1",
+  printer_family: "bambu_lab",
   name: "Office X2D",
   model: "X2D",
   compatibility: printerCompatibility("x2d"),

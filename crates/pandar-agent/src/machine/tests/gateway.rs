@@ -48,6 +48,7 @@ async fn configured_refresh_printers_refreshes_endpoints_sequentially() {
                 device_features2: None,
                 nozzle_system: None,
                 telemetry_authoritative: true,
+                printer_family: pandar_core::PrinterFamily::BambuLab,
             },
             MachineSnapshot {
                 serial: "SERIAL2".to_string(),
@@ -68,6 +69,7 @@ async fn configured_refresh_printers_refreshes_endpoints_sequentially() {
                 device_features2: None,
                 nozzle_system: None,
                 telemetry_authoritative: true,
+                printer_family: pandar_core::PrinterFamily::BambuLab,
             },
         ]
     );

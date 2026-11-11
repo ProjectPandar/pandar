@@ -165,6 +165,7 @@ impl RuntimeBambuMachineGateway {
     }
 
     pub(crate) async fn teardown_session_report_forwarders(&self) -> anyhow::Result<()> {
+        self.moonraker.teardown_session().await;
         let mut failure = None;
         loop {
             let serial = self.report_tasks.lock().await.keys().next().cloned();

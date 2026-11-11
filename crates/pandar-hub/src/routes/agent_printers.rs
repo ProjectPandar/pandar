@@ -3,6 +3,7 @@ use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
 };
+use pandar_core::PrinterFamily;
 use serde::Serialize;
 
 use crate::{AppState, routes::ApiError};
@@ -23,9 +24,13 @@ pub(in crate::routes) async fn list_agent_printers(
         .filter(|printer| printer.agent_id == agent_id)
         .filter_map(|printer| {
             let host = non_blank(printer.host)?;
-            let access_code = non_blank(printer.access_code)?;
+            let access_code = non_blank(printer.access_code);
+            if printer.printer_family == PrinterFamily::BambuLab && access_code.is_none() {
+                return None;
+            }
             Some(AgentPrinterConnectionResponse {
                 serial: printer.serial_number,
+                printer_family: printer.printer_family,
                 host,
                 access_code,
                 name: printer.name,
@@ -49,8 +54,9 @@ pub(in crate::routes) struct AgentPrinterConnectionsResponse {
 #[derive(Debug, Serialize)]
 struct AgentPrinterConnectionResponse {
     serial: String,
+    printer_family: PrinterFamily,
     host: String,
-    access_code: String,
+    access_code: Option<String>,
     name: String,
     model: Option<String>,
 }

@@ -29,6 +29,7 @@ const printer: Printer = {
   tenant_id: "tenant-1",
   agent_id: "agent-1",
   serial_number: "H2CSERIAL",
+  printer_family: "bambu_lab",
   name: "Lab H2C",
   model: "H2C",
   compatibility: printerCompatibility("unknown"),

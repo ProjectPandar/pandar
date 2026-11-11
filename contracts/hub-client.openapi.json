@@ -2232,6 +2232,7 @@
           "tenant_id",
           "agent_id",
           "serial_number",
+          "printer_family",
           "name",
           "model",
           "compatibility",
@@ -2252,6 +2253,13 @@
           },
           "serial_number": {
             "type": "string"
+          },
+          "printer_family": {
+            "type": "string",
+            "enum": [
+              "bambu_lab",
+              "moonraker"
+            ]
           },
           "name": {
             "type": "string"

@@ -54,6 +54,7 @@ async fn h2c_auto_mapping_returns_correlated_failure_from_failed_command() {
             agent_id,
             &session.persisted_id(),
             crate::repositories::PrinterSnapshotUpsert {
+                printer_family: pandar_core::PrinterFamily::BambuLab,
                 serial_number: "H2C-MAPPING".to_owned(),
                 host: None,
                 access_code: None,

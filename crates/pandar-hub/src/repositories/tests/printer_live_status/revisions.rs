@@ -66,7 +66,7 @@ pub(crate) async fn exercise_atomic_revisions(database: Database) {
             &printer_id,
             "Revision Printer".to_owned(),
             "192.0.2.10".to_owned(),
-            "access-code".to_owned(),
+            Some("access-code".to_owned()),
             AuditActor::no_auth(),
         )
         .await
@@ -78,6 +78,7 @@ pub(crate) async fn exercise_atomic_revisions(database: Database) {
             tenant.id,
             agent.id,
             PrinterSnapshotUpsert {
+                printer_family: pandar_core::PrinterFamily::BambuLab,
                 serial_number: serial.clone(),
                 host: None,
                 access_code: None,

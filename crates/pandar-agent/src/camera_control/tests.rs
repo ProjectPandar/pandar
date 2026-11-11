@@ -28,7 +28,7 @@ async fn firmware_camera_eof_drops_blocking_producer_before_return() {
     forward_reverse_camera_session(
         &test_config(),
         "stream",
-        &endpoint(),
+        &CameraSource::Bambu(endpoint()),
         events,
         tokio_stream::empty(),
         move |_| producer,
@@ -55,7 +55,7 @@ async fn firmware_camera_status_drops_blocking_producer_before_return() {
     let error = forward_reverse_camera_session(
         &test_config(),
         "stream",
-        &endpoint(),
+        &CameraSource::Bambu(endpoint()),
         events,
         tokio_stream::iter([Err(Status::unavailable("camera stream status sentinel"))]),
         move |_| producer,

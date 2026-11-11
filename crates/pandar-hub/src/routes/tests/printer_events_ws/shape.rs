@@ -9,6 +9,7 @@ fn printer_event_decode_requires_compatibility_and_old_shape_ignores_enrichment(
             "tenant_id": "00000000-0000-4000-8000-000000000001",
             "agent_id": "00000000-0000-4000-8000-000000000002",
             "serial_number": "SN-1",
+            "printer_family": "bambu_lab",
             "name": "Printer",
             "model": null,
             "status": "IDLE",

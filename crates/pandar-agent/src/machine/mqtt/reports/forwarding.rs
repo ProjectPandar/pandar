@@ -330,6 +330,7 @@ async fn mark_mqtt_offline(
         device_features2: None,
         nozzle_system: None,
         telemetry_authoritative: false,
+        printer_family: pandar_core::PrinterFamily::BambuLab,
     };
     if sender
         .send(printer_snapshot_event(config, snapshot))

@@ -4,8 +4,8 @@ use tokio::sync::mpsc;
 
 use crate::{
     AgentConfig,
-    machine::{BambuMachineGateway, BambuPrinterEndpoint},
-    startup::fetch_saved_printer_connections,
+    machine::{BambuMachineGateway, moonraker::MoonrakerLinkRequest},
+    startup::{SavedPrinter, fetch_saved_printer_connections},
 };
 use pandar_protocol::agent::v1::{AgentEvent, ReloadPrinterConnection};
 
@@ -28,12 +28,12 @@ where
 
     let result = reload_printer_connection(config, gateway, sender, &command).await;
     match result {
-        Ok(endpoint) => {
+        Ok(host) => {
             let result_json = serde_json::to_string(&PrinterConnectionReloadResult {
                 kind: "printer_connection_reload",
                 printer_id: &command.printer_id,
-                serial_number: &endpoint.serial,
-                host: &endpoint.host,
+                serial_number: &command.serial_number,
+                host: &host,
             })
             .expect("printer connection reload result is serializable");
             sender
@@ -58,7 +58,7 @@ async fn reload_printer_connection<G>(
     gateway: &G,
     sender: &mpsc::Sender<AgentEvent>,
     command: &ReloadPrinterConnection,
-) -> Result<BambuPrinterEndpoint, (anyhow::Error, Option<String>)>
+) -> Result<String, (anyhow::Error, Option<String>)>
 where
     G: BambuMachineGateway,
 {
@@ -73,12 +73,12 @@ where
                 None,
             )
         })?;
-    let endpoint = fetch_saved_printer_connections(config, hub_api_url)
+    let saved = fetch_saved_printer_connections(config, hub_api_url)
         .await
         .context("reload saved printer connections from pandar-hub")
         .map_err(|error| (error, None))?
         .into_iter()
-        .find(|endpoint| endpoint.serial == command.serial_number)
+        .find(|saved| saved.serial() == command.serial_number)
         .ok_or_else(|| {
             (
                 anyhow!(
@@ -88,18 +88,39 @@ where
                 None,
             )
         })?;
-    let access_code = Some(endpoint.access_code.clone());
-    gateway
-        .validate_printer_endpoint_identity(&endpoint)
-        .await
-        .context("validate reloaded printer endpoint identity")
-        .map_err(|error| (error, access_code.clone()))?;
-    gateway
-        .link_printer(endpoint.clone(), config, sender)
-        .await
-        .context("replace runtime printer connection")
-        .map_err(|error| (error, access_code))?;
-    Ok(endpoint)
+    match saved {
+        SavedPrinter::Bambu(endpoint) => {
+            let access_code = Some(endpoint.access_code.clone());
+            gateway
+                .validate_printer_endpoint_identity(&endpoint)
+                .await
+                .context("validate reloaded printer endpoint identity")
+                .map_err(|error| (error, access_code.clone()))?;
+            gateway
+                .link_printer(endpoint.clone(), config, sender)
+                .await
+                .context("replace runtime printer connection")
+                .map_err(|error| (error, access_code))?;
+            Ok(endpoint.host)
+        }
+        SavedPrinter::Moonraker(endpoint) => {
+            let api_key = endpoint.api_key.clone();
+            gateway
+                .link_moonraker_printer(
+                    MoonrakerLinkRequest {
+                        host: endpoint.host.clone(),
+                        api_key: endpoint.api_key,
+                        name: endpoint.name,
+                        expected_serial: Some(endpoint.serial),
+                    },
+                    sender,
+                )
+                .await
+                .context("replace runtime Moonraker printer connection")
+                .map_err(|error| (error, api_key))?;
+            Ok(endpoint.host)
+        }
+    }
 }
 
 fn redact_reload_error<G>(gateway: &G, message: &str, access_code: Option<&str>) -> String

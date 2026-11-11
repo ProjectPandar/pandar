@@ -4,12 +4,41 @@ use anyhow::{Context, bail};
 use futures_util::StreamExt;
 use serde::Deserialize;
 
-use crate::{AgentConfig, commands::parse_printer_config, machine::BambuPrinterEndpoint};
+use pandar_core::PrinterFamily;
 
-pub(crate) async fn startup_printers(
-    config: &AgentConfig,
-) -> anyhow::Result<Vec<BambuPrinterEndpoint>> {
-    let mut printers = parse_printer_config(&config.printers)?;
+use crate::{
+    AgentConfig,
+    commands::parse_printer_config,
+    machine::{BambuPrinterEndpoint, moonraker::MoonrakerEndpoint},
+};
+
+/// A printer connection saved in pandar-hub for this Agent.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum SavedPrinter {
+    Bambu(BambuPrinterEndpoint),
+    Moonraker(MoonrakerEndpoint),
+}
+
+impl SavedPrinter {
+    pub(crate) fn serial(&self) -> &str {
+        match self {
+            Self::Bambu(endpoint) => &endpoint.serial,
+            Self::Moonraker(endpoint) => &endpoint.serial,
+        }
+    }
+}
+
+#[derive(Debug, Default, PartialEq, Eq)]
+pub(crate) struct StartupPrinters {
+    pub(crate) bambu: Vec<BambuPrinterEndpoint>,
+    pub(crate) moonraker: Vec<MoonrakerEndpoint>,
+}
+
+pub(crate) async fn startup_printers(config: &AgentConfig) -> anyhow::Result<StartupPrinters> {
+    let mut printers = StartupPrinters {
+        bambu: parse_printer_config(&config.printers)?,
+        moonraker: Vec::new(),
+    };
     let Some(hub_api_url) = config
         .hub_api_url
         .as_deref()
@@ -23,13 +52,12 @@ pub(crate) async fn startup_printers(
         .await
         .context("load saved printer connections from pandar-hub")?;
     for printer in saved {
-        if let Some(configured) = printers
-            .iter_mut()
-            .find(|configured| configured.serial == printer.serial)
-        {
-            *configured = printer;
-        } else {
-            printers.push(printer);
+        printers
+            .bambu
+            .retain(|configured| configured.serial != printer.serial());
+        match printer {
+            SavedPrinter::Bambu(endpoint) => printers.bambu.push(endpoint),
+            SavedPrinter::Moonraker(endpoint) => printers.moonraker.push(endpoint),
         }
     }
 
@@ -39,7 +67,7 @@ pub(crate) async fn startup_printers(
 pub(crate) async fn fetch_saved_printer_connections(
     config: &AgentConfig,
     hub_api_url: &str,
-) -> anyhow::Result<Vec<BambuPrinterEndpoint>> {
+) -> anyhow::Result<Vec<SavedPrinter>> {
     let url = format!(
         "{}/api/v1/agents/{}/printers",
         hub_api_url.trim_end_matches('/'),
@@ -101,21 +129,34 @@ struct SavedPrinterConnectionsResponse {
 struct SavedPrinterConnection {
     serial: String,
     host: String,
-    access_code: String,
+    printer_family: PrinterFamily,
+    access_code: Option<String>,
     name: String,
     model: Option<String>,
 }
 
-fn saved_printer_endpoint(value: SavedPrinterConnection) -> anyhow::Result<BambuPrinterEndpoint> {
+fn saved_printer_endpoint(value: SavedPrinterConnection) -> anyhow::Result<SavedPrinter> {
     validate_required("serial", &value.serial)?;
     validate_required("host", &value.host)?;
-    validate_required("access_code", &value.access_code)?;
-    Ok(BambuPrinterEndpoint {
-        host: value.host,
-        serial: value.serial,
-        access_code: value.access_code,
-        model: value.model,
-        name: Some(value.name),
+    Ok(match value.printer_family {
+        PrinterFamily::BambuLab => {
+            let access_code = value.access_code.unwrap_or_default();
+            validate_required("access_code", &access_code)?;
+            SavedPrinter::Bambu(BambuPrinterEndpoint {
+                host: value.host,
+                serial: value.serial,
+                access_code,
+                model: value.model,
+                name: Some(value.name),
+            })
+        }
+        PrinterFamily::Moonraker => SavedPrinter::Moonraker(MoonrakerEndpoint {
+            host: value.host,
+            serial: value.serial,
+            api_key: value.access_code.filter(|key| !key.trim().is_empty()),
+            model: value.model,
+            name: Some(value.name),
+        }),
     })
 }
 

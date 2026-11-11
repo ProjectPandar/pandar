@@ -30,8 +30,11 @@ pub(in crate::routes) async fn update_printer(
     else {
         return Err(ApiError::not_found("printer_not_found"));
     };
-    let (name, host, access_code) =
-        payload.into_fields(printer.host.clone(), printer.access_code.clone())?;
+    let (name, host, access_code) = payload.into_fields(
+        printer.printer_family,
+        printer.host.clone(),
+        printer.access_code.clone(),
+    )?;
 
     let updated = state
         .printers()

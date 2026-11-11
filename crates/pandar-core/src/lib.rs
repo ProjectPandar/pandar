@@ -14,6 +14,7 @@ pub mod job;
 pub mod print_error;
 pub mod print_transfer;
 pub mod printer;
+pub mod printer_family;
 pub mod printer_operation;
 pub mod studio_print;
 pub mod tenant;
@@ -51,6 +52,7 @@ pub use job::{
 pub use print_error::PrintErrorAction;
 pub use print_transfer::{PrintTransferFailure, PrintTransferPhase};
 pub use printer::{Printer, PrinterNozzleTemperature, PrinterParts};
+pub use printer_family::PrinterFamily;
 pub use printer_operation::{
     PrinterAxis, PrinterAxisMovement, PrinterOperation, PrinterOperationValidationError,
 };

@@ -4,7 +4,7 @@ use std::{
 };
 
 use pandar_core::{
-    BambuNozzleSystem, CommandRecord, DiagnosticCompatibility, PrinterCoolingSystem,
+    BambuNozzleSystem, CommandRecord, DiagnosticCompatibility, PrinterCoolingSystem, PrinterFamily,
     PrinterNozzleTemperature, TenantId,
     compatibility::{compatibility_for_model, normalize_model},
 };
@@ -45,6 +45,7 @@ pub struct PrinterEventPrinter {
     pub tenant_id: String,
     pub agent_id: String,
     pub serial_number: String,
+    pub printer_family: PrinterFamily,
     pub name: String,
     pub model: Option<String>,
     pub compatibility: DiagnosticCompatibility,
@@ -150,6 +151,7 @@ pub fn printer_event_printer(
         tenant_id: printer.tenant_id.to_string(),
         agent_id: printer.agent_id.to_string(),
         serial_number: printer.serial_number,
+        printer_family: printer.printer_family,
         name: printer.name,
         model: printer.model,
         compatibility,

@@ -21,6 +21,7 @@ export type MetadataPreviewState = {
 export function DispatchArtifactField({
   artifact,
   fileStatusId,
+  gcodeOnly,
   metadataPreview,
   onSelectArtifact,
   plateId,
@@ -29,6 +30,7 @@ export function DispatchArtifactField({
 }: {
   artifact: DispatchArtifactState
   fileStatusId: string
+  gcodeOnly: boolean
   metadataPreview: MetadataPreviewState
   onSelectArtifact: (file: File | null) => void
   plateId: number | null
@@ -45,7 +47,7 @@ export function DispatchArtifactField({
       {!sourceArtifact ? (
         <>
           <input
-            accept=".3mf,.gcode,.gcode.3mf,application/octet-stream,model/3mf"
+            accept={gcodeOnly ? '.gcode' : '.3mf,.gcode,.gcode.3mf,application/octet-stream,model/3mf'}
             aria-label={t('artifact')}
             aria-describedby={fileStatusId}
             aria-invalid={artifact.state === 'too_large'}

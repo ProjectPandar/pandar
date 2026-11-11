@@ -275,7 +275,7 @@ async fn rename_studio_printer(fixture: &StudioFixture, name: &str) {
             &fixture.printer_id,
             name.to_owned(),
             previous.host.unwrap_or_default(),
-            previous.access_code.unwrap_or_default(),
+            previous.access_code,
             test_audit_actor(),
         )
         .await

@@ -1,7 +1,10 @@
-use std::{future::Future, net::Ipv4Addr};
+use std::{
+    future::Future,
+    net::{Ipv4Addr, SocketAddrV4},
+};
 
 use axum::http::StatusCode;
-use pandar_core::{AgentId, CommandId, CommandRecord, TenantId};
+use pandar_core::{AgentId, CommandId, CommandRecord, PrinterFamily, TenantId};
 
 use crate::{
     repositories::{LinkPrinterPayload, RepositoryResult},
@@ -25,17 +28,20 @@ pub(super) fn parse_printer_id(value: &str) -> Result<&str, ApiError> {
 impl super::LinkPrinterRequest {
     pub(super) fn into_payload(self) -> Result<LinkPrinterPayload, ApiError> {
         let printer_type = trim_required(self.printer_type)?;
-        if printer_type != "BambuLab" {
-            return Err(ApiError::bad_request("bad_request"));
-        }
+        let family = PrinterFamily::from_link_type(&printer_type)
+            .ok_or_else(|| ApiError::bad_request("bad_request"))?;
 
         let host = trim_required(self.host)?;
-        parse_lan_host(&host)?;
+        parse_lan_host(&host, family)?;
+        let access_code = match family {
+            PrinterFamily::BambuLab => trim_required(self.access_code)?,
+            PrinterFamily::Moonraker => self.access_code.trim().to_owned(),
+        };
 
         Ok(LinkPrinterPayload {
             printer_type,
             host,
-            access_code: trim_required(self.access_code)?,
+            access_code,
             name: trim_optional(self.name),
         })
     }
@@ -44,36 +50,54 @@ impl super::LinkPrinterRequest {
 impl super::UpdatePrinterRequest {
     pub(super) fn into_fields(
         self,
+        family: PrinterFamily,
         existing_host: Option<String>,
         existing_access_code: Option<String>,
-    ) -> Result<(String, String, String), ApiError> {
+    ) -> Result<(String, String, Option<String>), ApiError> {
         let requested_host = trim_optional(Some(self.host));
         let host = requested_host
             .clone()
             .or_else(|| existing_host.clone())
             .ok_or_else(|| ApiError::bad_request("bad_request"))?;
-        parse_lan_host(&host)?;
+        parse_lan_host(&host, family)?;
         let requested_access_code = trim_optional(Some(self.access_code));
-        if requested_host.is_some()
-            && existing_host.as_deref() != Some(host.as_str())
-            && requested_access_code.is_none()
-        {
-            return Err(ApiError::bad_request(
-                "access_code_required_for_host_change",
-            ));
-        }
-        let access_code = requested_access_code
-            .or(existing_access_code)
-            .ok_or_else(|| ApiError::bad_request("bad_request"))?;
+        let access_code = match family {
+            PrinterFamily::BambuLab => {
+                if requested_host.is_some()
+                    && existing_host.as_deref() != Some(host.as_str())
+                    && requested_access_code.is_none()
+                {
+                    return Err(ApiError::bad_request(
+                        "access_code_required_for_host_change",
+                    ));
+                }
+                Some(
+                    requested_access_code
+                        .or(existing_access_code)
+                        .ok_or_else(|| ApiError::bad_request("bad_request"))?,
+                )
+            }
+            PrinterFamily::Moonraker => requested_access_code.or(existing_access_code),
+        };
 
         Ok((trim_required(self.name)?, host, access_code))
     }
 }
 
-fn parse_lan_host(value: &str) -> Result<Ipv4Addr, ApiError> {
-    let address = value
-        .parse::<Ipv4Addr>()
-        .map_err(|_| ApiError::bad_request("bad_request"))?;
+/// Bambu printers are addressed by bare private IPv4; Moonraker printers may add
+/// an explicit port because Moonraker is commonly reached through nginx or 7125.
+fn parse_lan_host(value: &str, family: PrinterFamily) -> Result<Ipv4Addr, ApiError> {
+    let address = match family {
+        PrinterFamily::BambuLab => value.parse::<Ipv4Addr>().ok(),
+        PrinterFamily::Moonraker => value.parse::<Ipv4Addr>().ok().or_else(|| {
+            value
+                .parse::<SocketAddrV4>()
+                .ok()
+                .filter(|address| address.port() != 0)
+                .map(|address| *address.ip())
+        }),
+    }
+    .ok_or_else(|| ApiError::bad_request("bad_request"))?;
     if !(address.is_private() || address.is_link_local()) {
         return Err(ApiError::bad_request("printer_host_must_be_private"));
     }

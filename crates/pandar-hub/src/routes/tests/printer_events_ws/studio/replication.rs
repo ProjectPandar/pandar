@@ -57,7 +57,7 @@ async fn studio_projection_receives_sibling_change_once_and_ignores_wrong_tenant
             &fixture.printer_id,
             "Sibling rename".to_owned(),
             previous.host.unwrap_or_default(),
-            previous.access_code.unwrap_or_default(),
+            previous.access_code,
             test_audit_actor(),
         )
         .await

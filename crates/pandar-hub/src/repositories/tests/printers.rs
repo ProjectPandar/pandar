@@ -15,6 +15,7 @@ fn snapshot(
     observed_at: &str,
 ) -> PrinterSnapshotUpsert {
     PrinterSnapshotUpsert {
+        printer_family: pandar_core::PrinterFamily::BambuLab,
         serial_number: serial_number.to_string(),
         host: Some("192.0.2.10".to_string()),
         access_code: Some("test-access-code".to_string()),
@@ -145,7 +146,7 @@ async fn printer_repository_updates_connection_details() {
             &printer_id,
             "Office A1".to_string(),
             "192.0.2.12".to_string(),
-            "updated-access-code".to_string(),
+            Some("updated-access-code".to_string()),
             AuditActor::no_auth(),
         )
         .await
@@ -251,7 +252,7 @@ async fn printer_repository_rejects_stale_connection_snapshot_after_edit() {
             &created.id,
             "Printer".to_owned(),
             "192.0.2.11".to_owned(),
-            "edited-access-code".to_owned(),
+            Some("edited-access-code".to_owned()),
             AuditActor::no_auth(),
         )
         .await

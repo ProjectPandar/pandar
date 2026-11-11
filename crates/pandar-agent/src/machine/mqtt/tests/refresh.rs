@@ -34,6 +34,7 @@ async fn refresh_subscribes_publishes_and_maps_report() {
             device_features2: None,
             nozzle_system: None,
             telemetry_authoritative: true,
+            printer_family: pandar_core::PrinterFamily::BambuLab,
         }
     );
     assert_eq!(

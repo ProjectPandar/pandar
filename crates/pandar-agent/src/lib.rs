@@ -246,11 +246,10 @@ pub fn heartbeat_event(config: &AgentConfig) -> AgentEvent {
 pub async fn run(config: AgentConfig) -> anyhow::Result<()> {
     validate_hub_transport_urls(&config)?;
     let printers = startup_printers(&config).await?;
-    let gateway = Arc::new(RuntimeBambuMachineGateway::new(
-        config.clone(),
-        printers,
-        DEFAULT_REPORT_TIMEOUT,
-    ));
+    let gateway = Arc::new(
+        RuntimeBambuMachineGateway::new(config.clone(), printers.bambu, DEFAULT_REPORT_TIMEOUT)
+            .with_moonraker_printers(printers.moonraker),
+    );
     let mut backoff = ReconnectBackoff::new();
     loop {
         match run_once(config.clone(), Arc::clone(&gateway)).await {

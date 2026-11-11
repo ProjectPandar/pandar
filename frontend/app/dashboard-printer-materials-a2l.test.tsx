@@ -38,6 +38,7 @@ function a2lPrinter(): Printer {
     tenant_id: "tenant-1",
     agent_id: "agent-1",
     serial_number: "A2L001",
+    printer_family: "bambu_lab",
     name: "Office A2L",
     model: "Bambu Lab A2L",
     compatibility: printerCompatibility("a2l"),

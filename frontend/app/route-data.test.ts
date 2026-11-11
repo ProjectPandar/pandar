@@ -62,6 +62,7 @@ const printer = (id: string): Printer => ({
   tenant_id: "t1",
   agent_id: "a1",
   serial_number: `serial-${id}`,
+  printer_family: "bambu_lab",
   name: id,
   model: null,
   compatibility: printerCompatibility("unknown"),

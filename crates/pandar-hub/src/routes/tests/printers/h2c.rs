@@ -108,6 +108,7 @@ async fn upsert_h2c_rack_snapshot(
             agent_id,
             &session.persisted_id(),
             crate::repositories::PrinterSnapshotUpsert {
+                printer_family: pandar_core::PrinterFamily::BambuLab,
                 serial_number: serial.to_owned(),
                 host: None,
                 access_code: None,

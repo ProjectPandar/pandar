@@ -191,7 +191,7 @@ async fn studio_projection_change_published_during_snapshot_arrives_after_snapsh
             &fixture.printer_id,
             "Renamed during snapshot".to_owned(),
             previous.host.unwrap_or_default(),
-            previous.access_code.unwrap_or_default(),
+            previous.access_code,
             test_audit_actor(),
         )
         .await

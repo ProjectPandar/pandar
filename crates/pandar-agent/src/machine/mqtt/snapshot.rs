@@ -70,6 +70,7 @@ pub(super) fn project_snapshot(
             })
         }),
         telemetry_authoritative: false,
+        printer_family: pandar_core::PrinterFamily::BambuLab,
     }
 }
 

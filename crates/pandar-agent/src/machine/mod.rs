@@ -8,6 +8,7 @@ pub mod file_transfer;
 mod firmware;
 pub mod ftps;
 pub mod materials;
+pub mod moonraker;
 pub mod mqtt;
 mod noop;
 mod operations;
@@ -40,6 +41,7 @@ pub use firmware::{
     FirmwareStatusObservation, FirmwareVersionObservation, firmware_modules_event,
     firmware_status_event,
 };
+use moonraker::{MoonrakerCameraSource, MoonrakerLinkRequest};
 pub(crate) use mqtt::report::FirmwareReportReducer;
 use mqtt::{BambuMqttTransport, refresh_printer, refresh_printer_materials};
 pub use noop::NoopMachineGateway;
@@ -57,6 +59,27 @@ pub use types::{
     PrinterOperationMqttSummary, PrinterRefreshResult,
 };
 pub use unavailable_transfer::UnavailableMachineFileTransfer;
+
+/// Where a printer camera stream is produced from.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CameraSource {
+    Bambu(BambuPrinterEndpoint),
+    Moonraker(MoonrakerCameraSource),
+}
+
+impl CameraSource {
+    pub fn redact(&self, message: &str) -> String {
+        match self {
+            Self::Bambu(endpoint) => {
+                diagnostics::redact_access_code(message, &endpoint.access_code)
+            }
+            Self::Moonraker(source) => match source.client.api_key() {
+                Some(key) => message.replace(key, "[REDACTED_API_KEY]"),
+                None => message.to_owned(),
+            },
+        }
+    }
+}
 
 #[async_trait]
 pub trait BambuMachineGateway: Send + Sync {
@@ -108,6 +131,11 @@ pub trait BambuMachineGateway: Send + Sync {
     async fn camera_endpoint(&self, serial_number: &str) -> anyhow::Result<BambuPrinterEndpoint> {
         bail!("no Bambu printer configured for serial {serial_number}")
     }
+    async fn camera_source(&self, serial_number: &str) -> anyhow::Result<CameraSource> {
+        self.camera_endpoint(serial_number)
+            .await
+            .map(CameraSource::Bambu)
+    }
     async fn link_printer(
         &self,
         endpoint: BambuPrinterEndpoint,
@@ -116,6 +144,14 @@ pub trait BambuMachineGateway: Send + Sync {
     ) -> anyhow::Result<MachineSnapshot> {
         let _ = (endpoint, config, sender);
         bail!("runtime printer linking is not supported by this gateway")
+    }
+    async fn link_moonraker_printer(
+        &self,
+        request: MoonrakerLinkRequest,
+        sender: &tokio::sync::mpsc::Sender<AgentEvent>,
+    ) -> anyhow::Result<MachineSnapshot> {
+        let _ = (request, sender);
+        bail!("Moonraker printer linking is not supported by this gateway")
     }
 }
 

@@ -287,6 +287,7 @@ async fn feature_advertisement_printer_with_model(
             tenant_id,
             agent.id,
             crate::repositories::PrinterSnapshotUpsert {
+                printer_family: pandar_core::PrinterFamily::BambuLab,
                 serial_number: serial.to_owned(),
                 host: Some("192.0.2.10".to_owned()),
                 access_code: Some("feature-access".to_owned()),

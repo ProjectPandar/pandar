@@ -104,6 +104,7 @@ pub(super) async fn exercise_printer_live_status(database: Database) {
             tenant.id,
             agent.id,
             PrinterSnapshotUpsert {
+                printer_family: pandar_core::PrinterFamily::BambuLab,
                 serial_number: serial.clone(),
                 host: None,
                 access_code: None,

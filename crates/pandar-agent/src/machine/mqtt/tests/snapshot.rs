@@ -33,6 +33,7 @@ fn report_maps_to_snapshot_uses_configured_model() {
             device_features2: None,
             nozzle_system: None,
             telemetry_authoritative: false,
+            printer_family: pandar_core::PrinterFamily::BambuLab,
         }
     );
 }

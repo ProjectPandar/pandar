@@ -37,6 +37,7 @@ async fn plugin_local_camera_opens_mjpeg_tunnel_for_capable_agent() {
             agent.id,
             &session.persisted_id(),
             crate::repositories::PrinterSnapshotUpsert {
+                printer_family: pandar_core::PrinterFamily::BambuLab,
                 serial_number: "SERIAL-1".to_owned(),
                 host: None,
                 access_code: None,

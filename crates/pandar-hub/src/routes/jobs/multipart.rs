@@ -258,6 +258,11 @@ async fn prepare_print_job(
         .get_for_tenant(tenant_id, &printer_id)
         .await?
         .ok_or_else(|| ApiError::not_found("printer_not_found"))?;
+    if printer.printer_family == pandar_core::PrinterFamily::Moonraker
+        && !filename.to_ascii_lowercase().ends_with(".gcode")
+    {
+        return Err(ApiError::bad_request("artifact_requires_gcode"));
+    }
     studio::validate_h2c_admission(printer.model.as_deref(), kind, studio_metadata)?;
     let upload_file = fs::File::open(&file.path).await.map_err(|err| {
         tracing::error!(

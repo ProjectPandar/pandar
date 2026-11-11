@@ -8,6 +8,7 @@ mod snapshot;
 
 fn printer_snapshot(serial_number: &str, name: &str) -> PrinterSnapshotUpsert {
     PrinterSnapshotUpsert {
+        printer_family: pandar_core::PrinterFamily::BambuLab,
         serial_number: serial_number.to_owned(),
         host: None,
         access_code: None,

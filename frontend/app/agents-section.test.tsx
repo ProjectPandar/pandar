@@ -65,6 +65,7 @@ const printer: Printer = {
   tenant_id: tenant.id,
   agent_id: onlineAgent.id,
   serial_number: "SN1",
+  printer_family: "bambu_lab",
   name: "Office A1",
   model: "X1C",
   compatibility: printerCompatibility("unknown"),

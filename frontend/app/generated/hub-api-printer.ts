@@ -191,6 +191,7 @@ export type Printer = {
   tenant_id: string;
   agent_id: string;
   serial_number: string;
+  printer_family: "bambu_lab" | "moonraker";
   name: string;
   model: string | null;
   compatibility: PrinterCompatibility;

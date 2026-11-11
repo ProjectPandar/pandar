@@ -50,14 +50,14 @@ pub(crate) use report::{
     MachineReport, MachineReports, PrintTelemetryClass, SnapshotAuthority, SnapshotContent,
 };
 pub(crate) use report_payload::decode_mqtt_report_payload;
+pub(crate) use reports::print_job_report_event;
 pub(crate) use reports::{
     MqttForwardingContext, MqttPresenceState, forward_print_reports_with_context,
     printer_materials_snapshot_event,
 };
 #[cfg(test)]
 pub(crate) use reports::{
-    forward_print_reports, forward_print_reports_with_firmware, print_job_report_event,
-    printer_snapshot_event,
+    forward_print_reports, forward_print_reports_with_firmware, printer_snapshot_event,
 };
 pub(crate) use snapshot::snapshot_from_endpoint;
 pub(crate) use transport::BambuLanCertificateVerifier;

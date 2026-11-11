@@ -272,6 +272,7 @@ fn mixed_replica_control_plane_requires_compatibility_and_decodes_enrichment() {
                 "tenant_id": tenant_id.to_string(),
                 "agent_id": AgentId::new().to_string(),
                 "serial_number": "SN-1",
+                "printer_family": "bambu_lab",
                 "name": "Printer",
                 "model": null,
                 "status": "RUNNING",

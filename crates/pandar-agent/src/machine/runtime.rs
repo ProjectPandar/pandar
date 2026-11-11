@@ -19,6 +19,7 @@ use crate::{
         BambuMachineGateway, BambuPrinterEndpoint, ConfiguredBambuMachineGateway,
         DeviceFeatureCache, FirmwareObservationCache, FirmwareReportContext,
         diagnostics::PrinterEndpointSecrets,
+        moonraker::{MoonrakerEndpoint, MoonrakerRuntime},
         mqtt::{FirmwareMqttTaskSet, RumqttcBambuMqttTransport},
     },
 };
@@ -57,6 +58,7 @@ pub struct RuntimeBambuMachineGateway {
     firmware_mqtt_tasks: FirmwareMqttTaskSet,
     current_sender: tokio::sync::Mutex<Option<mpsc::Sender<AgentEvent>>>,
     redaction_values: StdMutex<PrinterEndpointSecrets>,
+    moonraker: MoonrakerRuntime,
     config: AgentConfig,
     report_timeout: Duration,
     #[cfg(test)]
@@ -101,6 +103,7 @@ impl RuntimeBambuMachineGateway {
             firmware_mqtt_tasks: FirmwareMqttTaskSet::default(),
             current_sender: tokio::sync::Mutex::new(None),
             redaction_values: StdMutex::new(redaction_values),
+            moonraker: MoonrakerRuntime::new(config.clone(), Vec::new()),
             config,
             report_timeout,
             #[cfg(test)]
@@ -114,6 +117,11 @@ impl RuntimeBambuMachineGateway {
             #[cfg(test)]
             link_validation_result: tokio::sync::Mutex::new(None),
         }
+    }
+
+    pub fn with_moonraker_printers(mut self, printers: Vec<MoonrakerEndpoint>) -> Self {
+        self.moonraker = MoonrakerRuntime::new(self.config.clone(), printers);
+        self
     }
 
     pub async fn prepare_session(&self, sender: &mpsc::Sender<AgentEvent>) -> anyhow::Result<()> {
@@ -144,6 +152,7 @@ impl RuntimeBambuMachineGateway {
             );
         }
         self.start_initial_report_forwarders(sender).await?;
+        self.moonraker.prepare_session(sender).await?;
         Ok(())
     }
 

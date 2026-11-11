@@ -1,7 +1,7 @@
 use pandar_core::{
     AgentId, BambuDeviceFeatures, BambuNozzleDevice, BambuNozzleHolder, BambuNozzleInfo,
     BambuNozzleSystem, PrinterCoolingFan, PrinterCoolingFanKind, PrinterCoolingMode,
-    PrinterCoolingSystem, StudioFiniteF64, TenantId, valid_physical_nozzle_id,
+    PrinterCoolingSystem, PrinterFamily, StudioFiniteF64, TenantId, valid_physical_nozzle_id,
 };
 use tonic::Status;
 
@@ -46,10 +46,17 @@ pub(super) fn parse_snapshot(snapshot: PrinterSnapshot) -> Result<ParsedPrinterS
         .cooling_system
         .map(proto_cooling_system)
         .transpose()?;
+    let printer_family =
+        match pandar_protocol::agent::v1::PrinterFamily::try_from(snapshot.printer_family) {
+            Ok(pandar_protocol::agent::v1::PrinterFamily::BambuLab) => PrinterFamily::BambuLab,
+            Ok(pandar_protocol::agent::v1::PrinterFamily::Moonraker) => PrinterFamily::Moonraker,
+            Err(_) => return Err(Status::invalid_argument("unknown printer family")),
+        };
     let observed_at = pandar_core::created_at_now();
 
     let upsert = PrinterSnapshotUpsert {
         serial_number,
+        printer_family,
         host: trim_optional(snapshot.host),
         access_code: trim_optional(snapshot.access_code),
         name,

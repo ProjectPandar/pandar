@@ -156,6 +156,20 @@ pub fn compatibility_for_model(model: Option<&str>) -> DiagnosticCompatibility {
                 ..CompatibilityFeatures::unknown()
             },
         ),
+        "KLIPPER" => diagnostic(
+            normalized_model,
+            Capability::Unknown,
+            false,
+            CompatibilityFeatures {
+                chamber_temperature: Capability::Unsupported,
+                drying: Capability::Unsupported,
+                flow_calibration: Capability::Unsupported,
+                vibration_calibration: Capability::Unsupported,
+                nozzle_offset_calibration: Capability::Unsupported,
+                live_controls: Capability::Supported,
+                ..CompatibilityFeatures::unknown()
+            },
+        ),
         "X2D" | "H2C" | "H2D" | "H2D_PRO" => diagnostic(
             normalized_model,
             Capability::Unknown,
@@ -245,16 +259,17 @@ fn print_options_for_model(model: Option<&str>) -> PrintOptionCapabilities {
 fn dual_nozzle_capability(model: Option<&str>) -> Capability {
     match model {
         Some("X2D" | "H2C" | "H2D" | "H2D_PRO") => Capability::Supported,
-        Some("A1" | "A1_MINI" | "A2L" | "X1" | "X1C" | "X1E" | "P1P" | "P1S" | "P2S" | "H2S") => {
-            Capability::Unsupported
-        }
+        Some(
+            "A1" | "A1_MINI" | "A2L" | "X1" | "X1C" | "X1E" | "P1P" | "P1S" | "P2S" | "H2S"
+            | "KLIPPER",
+        ) => Capability::Unsupported,
         _ => Capability::Unknown,
     }
 }
 
 fn chamber_fan_capability(model: Option<&str>) -> Capability {
     match model {
-        Some("A1" | "A1_MINI" | "A2L" | "P1P") => Capability::Unsupported,
+        Some("A1" | "A1_MINI" | "A2L" | "P1P" | "KLIPPER") => Capability::Unsupported,
         Some("X1" | "X1C" | "X1E" | "P1S" | "P2S" | "X2D" | "H2C" | "H2D" | "H2D_PRO" | "H2S") => {
             Capability::Supported
         }

@@ -45,6 +45,7 @@ async fn plugin_print_error_rejects_same_serial_reassignment_between_owner_read_
             fixture.tenant_id,
             replacement_agent.id,
             PrinterSnapshotUpsert {
+                printer_family: pandar_core::PrinterFamily::BambuLab,
                 serial_number: format!("serial-{}", fixture.printer_id),
                 host: Some("192.0.2.20".to_owned()),
                 access_code: None,

@@ -97,6 +97,7 @@ pub(crate) async fn upsert_snapshot(
             printers::Column::TenantId,
             printers::Column::AgentId,
             printers::Column::SerialNumber,
+            printers::Column::PrinterFamily,
             printers::Column::Host,
             printers::Column::AccessCode,
             printers::Column::AccessCodeEncrypted,
@@ -125,6 +126,7 @@ pub(crate) async fn upsert_snapshot(
             Expr::val(tenant_id.to_string()),
             Expr::val(agent_id.to_string()),
             Expr::val(snapshot.serial_number.clone()),
+            Expr::val(snapshot.printer_family.as_str()),
             Expr::val(snapshot.host.clone()),
             Expr::val(Option::<String>::None),
             Expr::val(access_code_encrypted.map(str::to_owned)),
@@ -154,6 +156,10 @@ pub(crate) async fn upsert_snapshot(
                     (
                         printers::Column::AgentId,
                         excluded(printers::Column::AgentId),
+                    ),
+                    (
+                        printers::Column::PrinterFamily,
+                        connection_value(printers::Column::PrinterFamily),
                     ),
                     (
                         printers::Column::Host,

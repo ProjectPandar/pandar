@@ -5,110 +5,110 @@ use serde_json::Number;
 #[derive(Serialize)]
 pub(crate) struct MaterialPatchDocument<'a> {
     #[serde(rename = "type")]
-    pub(super) document_type: &'static str,
-    pub(super) observed_at: &'a str,
+    pub(crate) document_type: &'static str,
+    pub(crate) observed_at: &'a str,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) cfg: Option<String>,
+    pub(crate) cfg: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) aux: Option<String>,
+    pub(crate) aux: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) stat: Option<String>,
+    pub(crate) stat: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) filament_switch_installed: Option<bool>,
+    pub(crate) filament_switch_installed: Option<bool>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub(super) ams_units: Vec<AmsUnitPatch>,
+    pub(crate) ams_units: Vec<AmsUnitPatch>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) external_spools: Option<Vec<ExternalSpoolPatch>>,
+    pub(crate) external_spools: Option<Vec<ExternalSpoolPatch>>,
     #[serde(skip_serializing_if = "std::ops::Not::not")]
-    pub(super) replace_external_spools: bool,
+    pub(crate) replace_external_spools: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) active_tray: Option<ActiveTrayPatch>,
+    pub(crate) active_tray: Option<ActiveTrayPatch>,
 }
 
 #[derive(Serialize)]
-pub(super) struct AmsUnitPatch {
-    pub(super) unit_id: String,
+pub(crate) struct AmsUnitPatch {
+    pub(crate) unit_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) unit_kind: Option<AmsUnitKind>,
+    pub(crate) unit_kind: Option<AmsUnitKind>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) info: Option<String>,
+    pub(crate) info: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) humidity: Option<Number>,
+    pub(crate) humidity: Option<Number>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) humidity_level: Option<Number>,
+    pub(crate) humidity_level: Option<Number>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) temperature_celsius: Option<Number>,
+    pub(crate) temperature_celsius: Option<Number>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) dry_status: Option<Number>,
+    pub(crate) dry_status: Option<Number>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) dry_time_minutes: Option<Number>,
+    pub(crate) dry_time_minutes: Option<Number>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) toolhead: Option<String>,
+    pub(crate) toolhead: Option<String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub(super) trays: Vec<MaterialTrayPatch>,
+    pub(crate) trays: Vec<MaterialTrayPatch>,
     #[serde(skip_serializing_if = "std::ops::Not::not")]
-    pub(super) replace_trays: bool,
+    pub(crate) replace_trays: bool,
 }
 
 #[derive(Serialize)]
 #[serde(untagged)]
-pub(super) enum MaterialTrayPatch {
+pub(crate) enum MaterialTrayPatch {
     Present(MaterialTrayEntryPatch),
     EmptyClear(EmptyTrayClear),
 }
 
 #[derive(Serialize)]
-pub(super) struct MaterialTrayEntryPatch {
-    pub(super) tray_id: String,
-    pub(super) exists: bool,
+pub(crate) struct MaterialTrayEntryPatch {
+    pub(crate) tray_id: String,
+    pub(crate) exists: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) unit_kind: Option<AmsUnitKind>,
+    pub(crate) unit_kind: Option<AmsUnitKind>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) global_tray_id: Option<u64>,
+    pub(crate) global_tray_id: Option<u64>,
     #[serde(flatten)]
-    pub(super) fields: MaterialFieldsPatch,
+    pub(crate) fields: MaterialFieldsPatch,
 }
 
 #[derive(Serialize)]
-pub(super) struct ExternalSpoolPatch {
-    pub(super) external_id: String,
-    pub(super) exists: bool,
-    pub(super) tray_id: String,
+pub(crate) struct ExternalSpoolPatch {
+    pub(crate) external_id: String,
+    pub(crate) exists: bool,
+    pub(crate) tray_id: String,
     #[serde(flatten)]
-    pub(super) fields: MaterialFieldsPatch,
+    pub(crate) fields: MaterialFieldsPatch,
 }
 
 #[derive(Default, Serialize)]
-pub(super) struct MaterialFieldsPatch {
+pub(crate) struct MaterialFieldsPatch {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) state: Option<String>,
+    pub(crate) state: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) filament_id: Option<String>,
+    pub(crate) filament_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) setting_id: Option<String>,
+    pub(crate) setting_id: Option<String>,
     #[serde(rename = "type")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) filament_type: Option<String>,
+    pub(crate) filament_type: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) color: Option<String>,
+    pub(crate) color: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) multi_color: Option<Vec<String>>,
+    pub(crate) multi_color: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) tag_uid: Option<String>,
+    pub(crate) tag_uid: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) tray_uuid: Option<String>,
+    pub(crate) tray_uuid: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) name: Option<String>,
+    pub(crate) name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) remaining_estimate: Option<String>,
+    pub(crate) remaining_estimate: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) k_value: Option<String>,
+    pub(crate) k_value: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) toolhead: Option<String>,
+    pub(crate) toolhead: Option<String>,
 }
 
 #[derive(Serialize)]
-pub(super) struct EmptyTrayClear {
+pub(crate) struct EmptyTrayClear {
     tray_id: String,
     exists: bool,
     unit_kind: AmsUnitKind,
@@ -126,7 +126,7 @@ pub(super) struct EmptyTrayClear {
     remaining_estimate: Option<&'static str>,
 }
 
-pub(super) enum ActiveTrayPatch {
+pub(crate) enum ActiveTrayPatch {
     None,
     External(ExternalActiveTray),
     Ams(AmsActiveTray),
@@ -134,7 +134,7 @@ pub(super) enum ActiveTrayPatch {
 }
 
 #[derive(Serialize)]
-pub(super) struct ExternalActiveTray {
+pub(crate) struct ExternalActiveTray {
     kind: &'static str,
     external_id: &'static str,
     tray_id: &'static str,
@@ -142,7 +142,7 @@ pub(super) struct ExternalActiveTray {
 }
 
 #[derive(Serialize)]
-pub(super) struct AmsActiveTray {
+pub(crate) struct AmsActiveTray {
     kind: &'static str,
     global_tray_id: i64,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -152,14 +152,14 @@ pub(super) struct AmsActiveTray {
 }
 
 #[derive(Serialize)]
-pub(super) struct AmsHtActiveTray {
+pub(crate) struct AmsHtActiveTray {
     kind: &'static str,
     global_tray_id: Option<u64>,
     ams_id: String,
     tray_id: &'static str,
 }
 
-pub(super) fn empty_tray_clear_patch(
+pub(crate) fn empty_tray_clear_patch(
     tray_id: String,
     unit_kind: AmsUnitKind,
     global_tray_id: Option<u64>,
@@ -182,7 +182,7 @@ pub(super) fn empty_tray_clear_patch(
     })
 }
 
-pub(super) fn external_active_tray_patch() -> ActiveTrayPatch {
+pub(crate) fn external_active_tray_patch() -> ActiveTrayPatch {
     ActiveTrayPatch::External(ExternalActiveTray {
         kind: "external",
         external_id: "254",
@@ -191,7 +191,7 @@ pub(super) fn external_active_tray_patch() -> ActiveTrayPatch {
     })
 }
 
-pub(super) fn ams_active_tray_patch(
+pub(crate) fn ams_active_tray_patch(
     tray_now: i64,
     ams_id: String,
     tray_id: String,
@@ -204,7 +204,7 @@ pub(super) fn ams_active_tray_patch(
     })
 }
 
-pub(super) fn mixed_ams_lite_global_active_tray_patch(tray_now: i64) -> ActiveTrayPatch {
+pub(crate) fn mixed_ams_lite_global_active_tray_patch(tray_now: i64) -> ActiveTrayPatch {
     ActiveTrayPatch::Ams(AmsActiveTray {
         kind: "ams",
         global_tray_id: tray_now,
@@ -213,7 +213,7 @@ pub(super) fn mixed_ams_lite_global_active_tray_patch(tray_now: i64) -> ActiveTr
     })
 }
 
-pub(super) fn ams_ht_active_tray_patch(tray_now: i64) -> ActiveTrayPatch {
+pub(crate) fn ams_ht_active_tray_patch(tray_now: i64) -> ActiveTrayPatch {
     ActiveTrayPatch::AmsHt(AmsHtActiveTray {
         kind: "ams_ht",
         global_tray_id: None,

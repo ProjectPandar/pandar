@@ -19,6 +19,8 @@ import { invalidateTenantResources, mutationResources } from './mutation-invalid
 const POLL_INTERVAL_MS = 2000
 const POLL_TIMEOUT_MS = 90_000
 
+type LinkPrinterType = 'BambuLab' | 'Moonraker'
+
 type LinkFailure = {
   code: string | null
   detail: string | null
@@ -49,6 +51,7 @@ export function LinkPrinterMachineForm({
   const queryClient = useQueryClient()
   const [state, formAction, dispatching] = useActionState(linkPrinter, null)
   const [pollOutcome, setPollOutcome] = useState<PollOutcome | null>(null)
+  const [printerType, setPrinterType] = useState<LinkPrinterType>('BambuLab')
   const [accessCode, setAccessCode] = useState('')
   const [accessCodeVisible, setAccessCodeVisible] = useState(false)
   const accessCodeId = useId()
@@ -154,7 +157,6 @@ export function LinkPrinterMachineForm({
   return (
     <form action={formAction} className="grid gap-4">
       <input name="tenant_id" type="hidden" value={selectedTenant.id} />
-      <input name="type" type="hidden" value="BambuLab" />
       {fixedAgentId ? (
         <input name="agent_id" type="hidden" value={fixedAgentId} />
       ) : defaultAgent ? (
@@ -175,11 +177,26 @@ export function LinkPrinterMachineForm({
         </label>
       ) : null}
       <label className="flex flex-col gap-1 text-sm">
-        <span className="text-xs font-medium text-muted-foreground">{t('host')}</span>
+        <span className="text-xs font-medium text-muted-foreground">{t('printerType')}</span>
+        <select
+          className={inputClasses}
+          name="type"
+          onChange={(event) => setPrinterType(event.target.value as LinkPrinterType)}
+          value={printerType}
+        >
+          <option value="BambuLab">{t('printerTypes.BambuLab')}</option>
+          <option value="Moonraker">{t('printerTypes.Moonraker')}</option>
+        </select>
+      </label>
+      <label className="flex flex-col gap-1 text-sm">
+        <span className="text-xs font-medium text-muted-foreground">
+          {t(printerType === 'Moonraker' ? 'moonrakerHost' : 'host')}
+        </span>
         <input
           className={inputClasses}
           defaultValue={defaultHost}
           name="host"
+          placeholder={printerType === 'Moonraker' ? '192.168.1.50:7125' : undefined}
           required
           type="text"
         />
@@ -189,7 +206,7 @@ export function LinkPrinterMachineForm({
           className="text-xs font-medium text-muted-foreground"
           htmlFor={accessCodeId}
         >
-          {t('accessCode')}
+          {t(printerType === 'Moonraker' ? 'moonrakerApiKey' : 'accessCode')}
         </label>
         <div className="relative">
           <input
@@ -198,7 +215,7 @@ export function LinkPrinterMachineForm({
             id={accessCodeId}
             name="access_code"
             onChange={(event) => setAccessCode(event.target.value)}
-            required
+            required={printerType === 'BambuLab'}
             type={accessCodeVisible ? 'text' : 'password'}
             value={accessCode}
           />

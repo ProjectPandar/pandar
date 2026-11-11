@@ -134,6 +134,7 @@ async fn reassign_to_new_agent(
             agent.id,
             &token.persisted_id(),
             PrinterSnapshotUpsert {
+                printer_family: pandar_core::PrinterFamily::BambuLab,
                 serial_number: fixture.serial.clone(),
                 host: None,
                 access_code: None,

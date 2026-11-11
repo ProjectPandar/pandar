@@ -292,6 +292,7 @@ async fn configured_connection_snapshot_does_not_clear_existing_telemetry() {
 fn full_snapshot(serial_number: String, observed_at: &str) -> PrinterSnapshotUpsert {
     let telemetry = StoredTelemetry::baseline();
     PrinterSnapshotUpsert {
+        printer_family: pandar_core::PrinterFamily::BambuLab,
         serial_number,
         host: Some("192.0.2.10".to_owned()),
         access_code: Some("12345678".to_owned()),
@@ -319,6 +320,7 @@ fn partial_snapshot(
     observed_at: &str,
 ) -> PrinterSnapshotUpsert {
     let mut snapshot = PrinterSnapshotUpsert {
+        printer_family: pandar_core::PrinterFamily::BambuLab,
         serial_number,
         host: None,
         access_code: None,

@@ -6,7 +6,9 @@ use tokio::sync::mpsc;
 use crate::{
     AgentConfig,
     machine::{
-        BambuMachineGateway, BambuPrinterEndpoint, discovery::DiscoveredPrinter,
+        BambuMachineGateway, BambuPrinterEndpoint,
+        discovery::DiscoveredPrinter,
+        moonraker::{MoonrakerHttpError, MoonrakerLinkRequest},
         mqtt::is_mqtt_report_idle_timeout,
     },
 };
@@ -38,6 +40,15 @@ where
     let access_code = command.access_code;
     let access_code_for_error = access_code.clone();
     let printer_type = command.printer_type.trim().to_owned();
+    if printer_type == "Moonraker" {
+        let request = MoonrakerLinkRequest {
+            host: command.host.trim().to_owned(),
+            api_key: non_blank_string(access_code),
+            name: non_blank_string(command.name),
+            expected_serial: None,
+        };
+        return emit_moonraker_link_events(config, gateway, sender, command_id, request).await;
+    }
     if printer_type != "BambuLab" {
         sender
             .send(link_failure_event(
@@ -102,6 +113,60 @@ where
     }
 
     Ok(())
+}
+
+async fn emit_moonraker_link_events<G>(
+    config: &AgentConfig,
+    gateway: &G,
+    sender: &mpsc::Sender<AgentEvent>,
+    command_id: &str,
+    request: MoonrakerLinkRequest,
+) -> anyhow::Result<()>
+where
+    G: BambuMachineGateway,
+{
+    let host = request.host.clone();
+    let api_key = request.api_key.clone().unwrap_or_default();
+    let event = match gateway.link_moonraker_printer(request, sender).await {
+        Ok(snapshot) => {
+            let result_json = serde_json::to_string(&PrinterLinkResult {
+                kind: "printer_link",
+                serial_number: &snapshot.serial,
+                host: &host,
+                name: &snapshot.name,
+                model: snapshot.model.as_deref(),
+                status: snapshot.state.as_deref(),
+            })
+            .expect("printer link result is serializable");
+            success_event_with_result(config, command_id, result_json)
+        }
+        Err(err) => {
+            let error = redact_link_error(gateway, &format!("{err:#}"), &api_key);
+            tracing::warn!(host = %host, error = %error, "Moonraker printer link failed");
+            link_failure_event(config, command_id, error, moonraker_link_failure_code(&err))
+        }
+    };
+    sender
+        .send(event)
+        .await
+        .context("queue Moonraker link-printer command result")
+}
+
+fn moonraker_link_failure_code(err: &anyhow::Error) -> &'static str {
+    for cause in err.chain() {
+        if let Some(error) = cause.downcast_ref::<MoonrakerHttpError>() {
+            return match error.status.as_u16() {
+                401 | 403 => LINK_ERROR_INVALID_ACCESS_CODE,
+                _ => LINK_ERROR_FAILED,
+            };
+        }
+        if let Some(error) = cause.downcast_ref::<reqwest::Error>()
+            && (error.is_connect() || error.is_timeout())
+        {
+            return LINK_ERROR_PRINTER_UNREACHABLE;
+        }
+    }
+    LINK_ERROR_FAILED
 }
 
 pub(super) fn link_failure_code(err: &anyhow::Error) -> &'static str {

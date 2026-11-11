@@ -17,6 +17,7 @@ mod postgres_persistence;
 mod print_calibration_migration;
 mod printer_device_features;
 mod printer_event_tickets;
+mod printer_family;
 mod printer_firmware;
 mod printer_live_status;
 mod printer_snapshot_atomic;

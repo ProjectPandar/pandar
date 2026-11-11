@@ -101,6 +101,7 @@ async fn report_forwarding_preparation_failure_leaves_previous_endpoint_active()
             device_features2: None,
             nozzle_system: None,
             telemetry_authoritative: true,
+            printer_family: pandar_core::PrinterFamily::BambuLab,
         }]
     );
 }

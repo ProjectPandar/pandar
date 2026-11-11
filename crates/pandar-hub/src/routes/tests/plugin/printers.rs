@@ -19,6 +19,7 @@ async fn plugin_printer_list_returns_studio_devices_shape() {
             agent.id,
             &session.persisted_id(),
             crate::repositories::PrinterSnapshotUpsert {
+                printer_family: pandar_core::PrinterFamily::BambuLab,
                 serial_number: "studio-printer-1".to_string(),
                 host: Some("192.0.2.10".to_string()),
                 access_code: Some("studio-access-code".to_string()),
@@ -214,6 +215,7 @@ async fn h2c_rack_projection_uses_one_current_session_snapshot_for_all_capabilit
             agent_id,
             &session.persisted_id(),
             crate::repositories::PrinterSnapshotUpsert {
+                printer_family: pandar_core::PrinterFamily::BambuLab,
                 serial_number: "H2C-RACK".to_owned(),
                 host: None,
                 access_code: None,

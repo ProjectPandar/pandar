@@ -1,10 +1,12 @@
 use pandar_core::{
-    BambuDeviceFeatures, BambuNozzleSystem, PrinterCoolingSystem, PrinterNozzleTemperature,
+    BambuDeviceFeatures, BambuNozzleSystem, PrinterCoolingSystem, PrinterFamily,
+    PrinterNozzleTemperature,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PrinterSnapshotUpsert {
     pub serial_number: String,
+    pub printer_family: PrinterFamily,
     pub host: Option<String>,
     pub access_code: Option<String>,
     pub name: String,

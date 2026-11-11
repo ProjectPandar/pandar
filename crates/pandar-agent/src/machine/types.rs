@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use pandar_core::{BambuDeviceFeatures, BambuNozzleSystem, PrinterCoolingSystem};
+use pandar_core::{BambuDeviceFeatures, BambuNozzleSystem, PrinterCoolingSystem, PrinterFamily};
 use pandar_protocol::agent::v1::{NozzleTemperature, PrinterSnapshot};
 use serde::{Deserialize, Serialize};
 use serde_json::{Number, Value};
@@ -34,6 +34,7 @@ pub struct MachineSnapshot {
     pub device_features2: Option<BambuDeviceFeatures>,
     pub nozzle_system: Option<BambuNozzleSystem>,
     pub telemetry_authoritative: bool,
+    pub printer_family: PrinterFamily,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -83,6 +84,10 @@ impl MachineSnapshot {
             ),
             connection_authoritative,
             telemetry_authoritative: self.telemetry_authoritative,
+            printer_family: match self.printer_family {
+                PrinterFamily::BambuLab => pandar_protocol::agent::v1::PrinterFamily::BambuLab,
+                PrinterFamily::Moonraker => pandar_protocol::agent::v1::PrinterFamily::Moonraker,
+            } as i32,
             nozzle_system: self.nozzle_system.map(pandar_protocol::proto_nozzle_system),
             cooling_system: self
                 .cooling_system

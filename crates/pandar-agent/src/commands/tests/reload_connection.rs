@@ -127,6 +127,7 @@ fn saved_printer_body() -> String {
     serde_json::json!({
         "printers": [{
             "serial": "SERIAL123",
+            "printer_family": "bambu_lab",
             "host": "192.0.2.10",
             "access_code": "SECRET-LINK-CODE",
             "name": "Office X1C",

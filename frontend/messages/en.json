@@ -369,6 +369,7 @@
     "editPrinterName": "Name",
     "editPrinterHost": "Printer IPv4 address",
     "editPrinterAccessCode": "Access code",
+    "editPrinterApiKey": "Moonraker API key (leave blank to keep)",
     "editPrinterSubmit": "Save changes",
     "refreshAms": "Refresh AMS",
     "deletePrinter": "Delete printer",
@@ -608,7 +609,7 @@
   },
   "linkPrinter": {
     "title": "Link printer to agent",
-    "subtitleTenant": "Submit Bambu LAN connection details for {name}.",
+    "subtitleTenant": "Submit printer LAN connection details for {name}.",
     "subtitleNone": "No tenant selected.",
     "noTenantTitle": "Select a tenant to link a printer.",
     "noTenantMessage": "Choose a tenant from the sidebar before submitting printer connection details.",
@@ -616,6 +617,13 @@
     "noAgentsMessage": "Pair an agent before linking a printer.",
     "agent": "Agent",
     "agentOption": "{name} ({status})",
+    "printerType": "Printer type",
+    "printerTypes": {
+      "BambuLab": "Bambu Lab (LAN mode)",
+      "Moonraker": "Klipper / Moonraker"
+    },
+    "moonrakerHost": "Moonraker address (IPv4, optional port)",
+    "moonrakerApiKey": "Moonraker API key (optional)",
     "host": "Printer IPv4 address",
     "accessCode": "Access code",
     "showAccessCode": "Show access code",

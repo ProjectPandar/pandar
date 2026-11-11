@@ -80,6 +80,7 @@ async fn successful_link_printer_installs_endpoint_for_later_refresh() {
             device_features2: None,
             nozzle_system: None,
             telemetry_authoritative: true,
+            printer_family: pandar_core::PrinterFamily::BambuLab,
         }]
     );
 }
@@ -144,6 +145,7 @@ async fn same_serial_replacement_after_validation_success_leaves_one_report_task
             device_features2: None,
             nozzle_system: None,
             telemetry_authoritative: true,
+            printer_family: pandar_core::PrinterFamily::BambuLab,
         }]
     );
 }
@@ -212,6 +214,7 @@ async fn same_serial_replacement_after_validation_failure_leaves_previous_endpoi
             device_features2: None,
             nozzle_system: None,
             telemetry_authoritative: true,
+            printer_family: pandar_core::PrinterFamily::BambuLab,
         }]
     );
 }

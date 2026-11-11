@@ -15,7 +15,7 @@ async fn startup_printers_loads_saved_hub_connections() {
     let server = TestHubPrinterServer::start(
         "agent-id",
         "pandar_ac_test",
-        r#"{"printers":[{"serial":"SERIAL123","host":"192.0.2.10","access_code":"12345678","name":"Office X1C","model":"X1 Carbon"}]}"#,
+        r#"{"printers":[{"serial":"SERIAL123","host":"192.0.2.10","printer_family":"bambu_lab","access_code":"12345678","name":"Office X1C","model":"X1 Carbon"}]}"#,
     )
     .await;
     let config = AgentConfig {
@@ -25,8 +25,9 @@ async fn startup_printers_loads_saved_hub_connections() {
 
     let printers = startup_printers(&config).await.unwrap();
 
+    assert!(printers.moonraker.is_empty());
     assert_eq!(
-        printers,
+        printers.bambu,
         vec![BambuPrinterEndpoint {
             host: "192.0.2.10".to_owned(),
             serial: "SERIAL123".to_owned(),
@@ -48,7 +49,7 @@ async fn startup_printers_prefers_saved_hub_connection_for_same_serial() {
     let server = TestHubPrinterServer::start(
         "agent-id",
         "pandar_ac_test",
-        r#"{"printers":[{"serial":"SERIAL123","host":"10.1.61.124","access_code":"new-code","name":"Office X1C","model":"X1 Carbon"}]}"#,
+        r#"{"printers":[{"serial":"SERIAL123","host":"10.1.61.124","printer_family":"bambu_lab","access_code":"new-code","name":"Office X1C","model":"X1 Carbon"}]}"#,
     )
     .await;
     let config = AgentConfig {
@@ -59,8 +60,9 @@ async fn startup_printers_prefers_saved_hub_connection_for_same_serial() {
 
     let printers = startup_printers(&config).await.unwrap();
 
+    assert!(printers.moonraker.is_empty());
     assert_eq!(
-        printers,
+        printers.bambu,
         vec![BambuPrinterEndpoint {
             host: "10.1.61.124".to_owned(),
             serial: "SERIAL123".to_owned(),

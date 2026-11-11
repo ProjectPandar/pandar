@@ -171,7 +171,7 @@ impl PrinterRepository {
         printer_id: &str,
         name: String,
         host: String,
-        access_code: String,
+        access_code: Option<String>,
         actor: AuditActor,
     ) -> RepositoryResult<Printer> {
         let connection = self.database.sea_orm_connection();
@@ -197,11 +197,15 @@ impl PrinterRepository {
                 name: Set(name),
                 host: Set(Some(host)),
                 access_code: Set(None),
-                access_code_encrypted: Set(Some(self.access_code_cipher.encrypt(
-                    &tenant_id.to_string(),
-                    &model.serial_number,
-                    &access_code,
-                )?)),
+                access_code_encrypted: Set(access_code
+                    .map(|access_code| {
+                        self.access_code_cipher.encrypt(
+                            &tenant_id.to_string(),
+                            &model.serial_number,
+                            &access_code,
+                        )
+                    })
+                    .transpose()?),
                 ..Default::default()
             })
             .col_expr(

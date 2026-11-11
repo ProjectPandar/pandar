@@ -33,6 +33,7 @@ const printer: Printer = {
   tenant_id: "tenant-1",
   agent_id: "agent-1",
   serial_number: "20P123",
+  printer_family: "bambu_lab",
   name: "Office A1",
   model: "A1",
   compatibility: printerCompatibility("a1"),

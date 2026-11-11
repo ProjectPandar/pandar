@@ -6,6 +6,10 @@ use external::{has_dual_external_slots, normalize_external_spools};
 use identifiers::*;
 use pandar_core::AmsUnitKind;
 use patch::*;
+pub(crate) use patch::{
+    AmsUnitPatch, MaterialFieldsPatch, MaterialPatchDocument, MaterialTrayEntryPatch,
+    MaterialTrayPatch, ams_active_tray_patch, empty_tray_clear_patch,
+};
 use serde_json::Number;
 
 struct NormalizedTrayPatch {

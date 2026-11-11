@@ -6,9 +6,10 @@ use crate::{
     AgentConfig,
     commands::authoritative_printer_snapshot_event,
     machine::{
-        BambuMachineGateway, BambuPrinterEndpoint, FirmwareReportContext, MachineSnapshot,
-        MaterialRefreshResult, PrintProjectDispatchResult, PrinterOperation,
+        BambuMachineGateway, BambuPrinterEndpoint, CameraSource, FirmwareReportContext,
+        MachineSnapshot, MaterialRefreshResult, PrintProjectDispatchResult, PrinterOperation,
         PrinterOperationDispatchResult, PrinterRefreshResult, firmware_modules_event,
+        moonraker::MoonrakerLinkRequest,
         mqtt::{
             RumqttcBambuMqttTransport, dispatch_sequence_zero_recovery, feature_event,
             refresh_printer_with_firmware, resolve_bambu_mqtt_serial,
@@ -26,7 +27,8 @@ use super::{
 #[async_trait]
 impl BambuMachineGateway for RuntimeBambuMachineGateway {
     fn redact_error(&self, message: &str) -> String {
-        self.redaction_values.lock().unwrap().redact(message)
+        self.moonraker
+            .redact(&self.redaction_values.lock().unwrap().redact(message))
     }
 
     async fn discover_printers(
@@ -58,14 +60,16 @@ impl BambuMachineGateway for RuntimeBambuMachineGateway {
             .await
             .clone()
             .map(|sender| (self.config.clone(), sender));
-        refresh_runtime_printers_with_firmware(
+        let mut results = refresh_runtime_printers_with_firmware(
             std::sync::Arc::clone(&self.inner),
             self.firmware.clone(),
             self.device_features.clone(),
             event_context,
             self.report_timeout,
         )
-        .await
+        .await?;
+        results.extend(self.moonraker.refresh().await);
+        Ok(results)
     }
 
     async fn refresh_printer_materials(
@@ -73,6 +77,12 @@ impl BambuMachineGateway for RuntimeBambuMachineGateway {
         serial_number: &str,
         printer_id: Option<&str>,
     ) -> anyhow::Result<MaterialRefreshResult> {
+        if self.moonraker.contains(serial_number).await {
+            return self
+                .moonraker
+                .refresh_materials(serial_number, printer_id)
+                .await;
+        }
         self.inner
             .lock()
             .await
@@ -81,6 +91,9 @@ impl BambuMachineGateway for RuntimeBambuMachineGateway {
     }
 
     async fn validate_printer(&self, serial_number: &str) -> anyhow::Result<()> {
+        if self.moonraker.contains(serial_number).await {
+            return self.moonraker.validate(serial_number).await;
+        }
         self.inner
             .lock()
             .await
@@ -109,6 +122,9 @@ impl BambuMachineGateway for RuntimeBambuMachineGateway {
         command: &PrintProjectFile,
         artifact: Vec<u8>,
     ) -> anyhow::Result<PrintProjectDispatchResult> {
+        if self.moonraker.contains(serial_number).await {
+            return self.moonraker.print(serial_number, command, artifact).await;
+        }
         self.inner
             .lock()
             .await
@@ -121,6 +137,9 @@ impl BambuMachineGateway for RuntimeBambuMachineGateway {
         serial_number: &str,
         operation: PrinterOperation,
     ) -> anyhow::Result<PrinterOperationDispatchResult> {
+        if self.moonraker.contains(serial_number).await {
+            return self.moonraker.operate(serial_number, operation).await;
+        }
         if matches!(
             &operation,
             PrinterOperation::HandlePrintError { sequence_id: 0, .. }
@@ -150,6 +169,27 @@ impl BambuMachineGateway for RuntimeBambuMachineGateway {
 
     async fn camera_endpoint(&self, serial_number: &str) -> anyhow::Result<BambuPrinterEndpoint> {
         self.inner.lock().await.camera_endpoint(serial_number).await
+    }
+
+    async fn camera_source(&self, serial_number: &str) -> anyhow::Result<CameraSource> {
+        if self.moonraker.contains(serial_number).await {
+            return self
+                .moonraker
+                .camera(serial_number)
+                .await
+                .map(CameraSource::Moonraker);
+        }
+        self.camera_endpoint(serial_number)
+            .await
+            .map(CameraSource::Bambu)
+    }
+
+    async fn link_moonraker_printer(
+        &self,
+        request: MoonrakerLinkRequest,
+        sender: &mpsc::Sender<AgentEvent>,
+    ) -> anyhow::Result<MachineSnapshot> {
+        self.moonraker.link(request, sender).await
     }
 
     async fn link_printer(

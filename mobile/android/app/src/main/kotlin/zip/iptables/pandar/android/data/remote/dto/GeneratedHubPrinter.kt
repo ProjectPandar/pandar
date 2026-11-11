@@ -342,6 +342,8 @@ data class PrinterDto(
     val agentId: String,
     @SerialName("serial_number")
     val serialNumber: String,
+    @SerialName("printer_family")
+    val printerFamily: String,
     val name: String,
     @Required
     val model: String?,

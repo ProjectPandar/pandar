@@ -25,6 +25,7 @@ async fn plugin_printer_online_requires_full_mqtt_presence_from_the_current_sess
     assert!(!body.devices[0].online);
 
     let mut full = crate::repositories::PrinterSnapshotUpsert {
+        printer_family: pandar_core::PrinterFamily::BambuLab,
         serial_number: serial.to_owned(),
         host: None,
         access_code: None,
@@ -146,6 +147,7 @@ async fn plugin_printer_list_returns_current_external_print_and_hms_snapshot() {
             tenant.id,
             agent.id,
             crate::repositories::PrinterSnapshotUpsert {
+                printer_family: pandar_core::PrinterFamily::BambuLab,
                 serial_number: "studio-live-printer".to_string(),
                 host: None,
                 access_code: None,

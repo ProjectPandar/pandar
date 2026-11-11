@@ -104,7 +104,7 @@ async fn agent_printer_fixture(state: &AppState) -> AgentPrinterFixture {
             &printer_id,
             "Fixture Printer".to_owned(),
             "192.0.2.10".to_owned(),
-            "RESTORED-LINK-CODE".to_owned(),
+            Some("RESTORED-LINK-CODE".to_owned()),
             actor,
         )
         .await

@@ -34,6 +34,7 @@ pub(super) fn snapshot(serial: &str, name: &str, model: &str, state: &str) -> Pr
         chamber_target_temperature_celsius: String::new(),
         chamber_light_on: None,
         cooling_system: None,
+        printer_family: pandar_protocol::agent::v1::PrinterFamily::BambuLab as i32,
         device_features: None,
         connection_authoritative: false,
         telemetry_authoritative: false,

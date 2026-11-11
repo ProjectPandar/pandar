@@ -234,6 +234,7 @@ fn snapshot(serial: &str, name: &str, model: Option<&str>, state: &str) -> Machi
         device_features2: None,
         nozzle_system: None,
         telemetry_authoritative: true,
+        printer_family: pandar_core::PrinterFamily::BambuLab,
     }
 }
 

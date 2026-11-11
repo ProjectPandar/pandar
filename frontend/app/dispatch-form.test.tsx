@@ -38,7 +38,7 @@ describe("DispatchForm", () => {
     const user = userEvent.setup();
     const { container } = renderDispatchForm({
       selectedTenant: { id: "tenant-1" },
-      printers: [{ id: "printer-1", name: "Printer One", serial_number: "SN1", model: "N6", compatibility: printerCompatibility("x2d"), materials: null }],
+      printers: [{ id: "printer-1", name: "Printer One", serial_number: "SN1", printer_family: "bambu_lab", model: "N6", compatibility: printerCompatibility("x2d"), materials: null }],
     });
 
     expect(screen.getByRole("region", { name: "Print options" })).toBeVisible();
@@ -92,6 +92,7 @@ describe("DispatchForm", () => {
           id: "x2d",
           name: "X2D",
           serial_number: "SN-X2D",
+          printer_family: "bambu_lab",
           model: "N6", compatibility: printerCompatibility("x2d"),
           materials: null,
         },
@@ -99,6 +100,7 @@ describe("DispatchForm", () => {
           id: "a1",
           name: "A1",
           serial_number: "SN-A1",
+          printer_family: "bambu_lab",
           model: "A1",
           compatibility: printerCompatibility("a1"),
           materials: null,
@@ -143,6 +145,7 @@ describe("DispatchForm", () => {
           id: "unknown",
           name: "Unknown",
           serial_number: "SN-UNKNOWN",
+          printer_family: "bambu_lab",
           model: null,
           compatibility: printerCompatibility("unknown"),
           materials: null,
@@ -176,7 +179,7 @@ describe("DispatchForm", () => {
 
     const { container } = renderDispatchForm({
       selectedTenant: { id: "tenant-1" },
-      printers: [{ id: "printer-1", name: "Printer One", serial_number: "SN1", model: "N6", compatibility: printerCompatibility("x2d"), materials: null }],
+      printers: [{ id: "printer-1", name: "Printer One", serial_number: "SN1", printer_family: "bambu_lab", model: "N6", compatibility: printerCompatibility("x2d"), materials: null }],
       onRedirect,
     });
     const fileInput = container.querySelector('input[type="file"]');
@@ -247,11 +250,12 @@ describe("DispatchForm", () => {
       onRedirect,
       sourceJob,
       printers: [
-        { id: "printer-1", name: "Printer One", serial_number: "SN1", model: "N6", compatibility: printerCompatibility("x2d"), materials: null },
+        { id: "printer-1", name: "Printer One", serial_number: "SN1", printer_family: "bambu_lab", model: "N6", compatibility: printerCompatibility("x2d"), materials: null },
         {
           id: "printer-2",
           name: "Printer Two",
           serial_number: "SN2",
+          printer_family: "bambu_lab",
           model: "N6", compatibility: printerCompatibility("x2d"),
           materials: {
             filament_switch_installed: true,
@@ -324,7 +328,7 @@ describe("DispatchForm", () => {
 
     const { container, getByText } = renderDispatchForm({
       selectedTenant: { id: "tenant-1" },
-      printers: [{ id: "printer-1", name: "Printer One", serial_number: "SN1", model: "N6", compatibility: printerCompatibility("x2d"), materials: null }],
+      printers: [{ id: "printer-1", name: "Printer One", serial_number: "SN1", printer_family: "bambu_lab", model: "N6", compatibility: printerCompatibility("x2d"), materials: null }],
     });
 
     expect(container.querySelector('[name="plate_id"]')).toBeNull();
@@ -447,6 +451,7 @@ describe("DispatchForm", () => {
             id: "printer-1",
             name: "Printer One",
             serial_number: "SN1",
+            printer_family: "bambu_lab",
             model: "Bambu Lab X2D",
             compatibility: printerCompatibility("x2d"),
             materials: {

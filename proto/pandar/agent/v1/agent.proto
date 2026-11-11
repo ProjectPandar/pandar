@@ -72,6 +72,12 @@ message PrinterSnapshot {
   bool telemetry_authoritative = 16;
   PrinterNozzleSystem nozzle_system = 17;
   PrinterCoolingSystem cooling_system = 18;
+  PrinterFamily printer_family = 19;
+}
+
+enum PrinterFamily {
+  PRINTER_FAMILY_BAMBU_LAB = 0;
+  PRINTER_FAMILY_MOONRAKER = 1;
 }
 
 message PrinterCoolingSystem {

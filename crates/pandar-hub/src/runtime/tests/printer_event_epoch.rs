@@ -298,6 +298,7 @@ fn snapshot_control_event(tenant_id: pandar_core::TenantId, enriched: bool) -> H
                 "tenant_id": tenant_id.to_string(),
                 "agent_id": pandar_core::AgentId::new().to_string(),
                 "serial_number": "SN-1",
+                "printer_family": "bambu_lab",
                 "name": "Printer",
                 "model": null,
                 "compatibility": pandar_core::compatibility::compatibility_for_model(None),

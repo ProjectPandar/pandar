@@ -8,7 +8,7 @@ use tonic::Request;
 use crate::{
     AgentConfig,
     machine::{
-        BambuMachineGateway,
+        BambuMachineGateway, CameraSource,
         camera::{stream_camera_fragmented_mp4, stream_camera_mjpeg},
     },
 };
@@ -119,9 +119,9 @@ where
             stop_camera_task(streams, &command.stream_id).await?;
             let stream_id = command.stream_id.clone();
             let mode = CameraStreamMode::try_from(open.mode).unwrap_or(CameraStreamMode::Mjpeg);
-            let task = match gateway.camera_endpoint(&open.serial_number).await {
-                Ok(endpoint) => {
-                    spawn_reverse_camera_stream(config.clone(), stream_id.clone(), endpoint, mode)
+            let task = match gateway.camera_source(&open.serial_number).await {
+                Ok(source) => {
+                    spawn_reverse_camera_stream(config.clone(), stream_id.clone(), source, mode)
                 }
                 Err(err) => {
                     let error = gateway.redact_error(&format!("{err:#}"));
@@ -161,11 +161,11 @@ async fn stop_camera_task(
 fn spawn_reverse_camera_stream(
     config: AgentConfig,
     stream_id: String,
-    endpoint: crate::machine::BambuPrinterEndpoint,
+    source: CameraSource,
     mode: CameraStreamMode,
 ) -> JoinHandle<()> {
     tokio::spawn(async move {
-        if let Err(err) = reverse_camera_stream(config, stream_id, endpoint, mode).await {
+        if let Err(err) = reverse_camera_stream(config, stream_id, source, mode).await {
             tracing::warn!(error = %format!("{err:#}"), "on-demand camera stream failed");
         }
     })
@@ -174,7 +174,7 @@ fn spawn_reverse_camera_stream(
 async fn reverse_camera_stream(
     config: AgentConfig,
     stream_id: String,
-    endpoint: crate::machine::BambuPrinterEndpoint,
+    source: CameraSource,
     mode: CameraStreamMode,
 ) -> anyhow::Result<()> {
     let mut client = AgentControlClient::connect(config.hub_grpc_url.clone())
@@ -195,14 +195,14 @@ async fn reverse_camera_stream(
         .await
         .context("open reverse agent camera stream")?
         .into_inner();
-    let producer_endpoint = endpoint.clone();
+    let producer_source = source.clone();
     forward_reverse_camera_session(
         &config,
         &stream_id,
-        &endpoint,
+        &source,
         sender,
         response,
-        move |frame_sender| stream_camera(producer_endpoint, mode, frame_sender),
+        move |frame_sender| stream_camera(producer_source, mode, frame_sender),
     )
     .await
 }
@@ -210,7 +210,7 @@ async fn reverse_camera_stream(
 async fn forward_reverse_camera_session<S, P, F>(
     config: &AgentConfig,
     stream_id: &str,
-    endpoint: &crate::machine::BambuPrinterEndpoint,
+    source: &CameraSource,
     sender: mpsc::Sender<AgentCameraEvent>,
     mut response: S,
     producer: P,
@@ -223,7 +223,7 @@ where
     let (frame_sender, frame_receiver) = mpsc::channel(4);
     let worker = producer(frame_sender);
     let forwarding =
-        forward_camera_frames(config, stream_id, endpoint, sender, frame_receiver, worker);
+        forward_camera_frames(config, stream_id, source, sender, frame_receiver, worker);
     tokio::pin!(forwarding);
 
     loop {
@@ -249,7 +249,7 @@ where
 async fn forward_camera_frames<F>(
     config: &AgentConfig,
     stream_id: &str,
-    endpoint: &crate::machine::BambuPrinterEndpoint,
+    source: &CameraSource,
     sender: mpsc::Sender<AgentCameraEvent>,
     mut frame_receiver: mpsc::Receiver<Vec<u8>>,
     worker: F,
@@ -289,10 +289,7 @@ async fn forward_camera_frames<F>(
                             stream_id: stream_id.to_owned(),
                             success: false,
                             error: {
-                                let error = crate::machine::diagnostics::redact_access_code(
-                                    &format!("{err:#}"),
-                                    &endpoint.access_code,
-                                );
+                                let error = source.redact(&format!("{err:#}"));
                                 tracing::warn!(error = %error, "camera stream failed");
                                 error
                             },
@@ -312,16 +309,24 @@ async fn forward_camera_frames<F>(
 }
 
 async fn stream_camera(
-    endpoint: crate::machine::BambuPrinterEndpoint,
+    source: CameraSource,
     mode: CameraStreamMode,
     frame_sender: mpsc::Sender<Vec<u8>>,
 ) -> anyhow::Result<()> {
-    match mode {
-        CameraStreamMode::Unspecified | CameraStreamMode::Mjpeg => {
-            stream_camera_mjpeg(endpoint, frame_sender).await
-        }
-        CameraStreamMode::FragmentedMp4 => {
+    match (source, mode) {
+        (
+            CameraSource::Bambu(endpoint),
+            CameraStreamMode::Unspecified | CameraStreamMode::Mjpeg,
+        ) => stream_camera_mjpeg(endpoint, frame_sender).await,
+        (CameraSource::Bambu(endpoint), CameraStreamMode::FragmentedMp4) => {
             stream_camera_fragmented_mp4(endpoint, frame_sender).await
+        }
+        (
+            CameraSource::Moonraker(source),
+            CameraStreamMode::Unspecified | CameraStreamMode::Mjpeg,
+        ) => source.stream_mjpeg(frame_sender).await,
+        (CameraSource::Moonraker(source), CameraStreamMode::FragmentedMp4) => {
+            source.stream_fragmented_mp4(frame_sender).await
         }
     }
 }

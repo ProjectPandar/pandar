@@ -18,6 +18,7 @@ async fn postgres_printer_repository_upsert_list_when_configured() {
             tenant.id,
             agent.id,
             PrinterSnapshotUpsert {
+                printer_family: pandar_core::PrinterFamily::BambuLab,
                 serial_number: "SN-001".to_string(),
                 host: Some("192.0.2.10".to_string()),
                 access_code: Some("12345678".to_string()),
@@ -46,7 +47,7 @@ async fn postgres_printer_repository_upsert_list_when_configured() {
             &created.id,
             "Garage A1".to_owned(),
             "192.0.2.11".to_owned(),
-            "edited-access-code".to_owned(),
+            Some("edited-access-code".to_owned()),
             AuditActor::no_auth(),
         )
         .await
@@ -56,6 +57,7 @@ async fn postgres_printer_repository_upsert_list_when_configured() {
             tenant.id,
             agent.id,
             PrinterSnapshotUpsert {
+                printer_family: pandar_core::PrinterFamily::BambuLab,
                 serial_number: "SN-001".to_string(),
                 host: Some("192.0.2.10".to_owned()),
                 access_code: Some("12345678".to_owned()),
@@ -107,6 +109,7 @@ async fn postgres_printer_repository_upsert_list_when_configured() {
             tenant.id,
             agent.id,
             PrinterSnapshotUpsert {
+                printer_family: pandar_core::PrinterFamily::BambuLab,
                 serial_number: "SN-001".to_string(),
                 host: Some("192.0.2.12".to_owned()),
                 access_code: Some("reloaded-access-code".to_owned()),
@@ -139,6 +142,7 @@ async fn postgres_printer_repository_upsert_list_when_configured() {
             tenant.id,
             agent.id,
             PrinterSnapshotUpsert {
+                printer_family: pandar_core::PrinterFamily::BambuLab,
                 serial_number: "SN-001".to_string(),
                 host: None,
                 access_code: None,

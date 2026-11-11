@@ -27,7 +27,7 @@ type DispatchTenant = { id: string }
 
 type DispatchPrinter = Pick<
   Printer,
-  'id' | 'name' | 'serial_number' | 'model' | 'compatibility' | 'materials'
+  'id' | 'name' | 'serial_number' | 'printer_family' | 'model' | 'compatibility' | 'materials'
 >
 
 export function DispatchForm({
@@ -97,11 +97,14 @@ export function DispatchForm({
     ? preferredPrinterId
     : (printers[0]?.id ?? '')
   const selectedPrinter = printers.find((printer) => printer.id === selectedPrinterId) ?? null
+  // Moonraker printers run plain G-code and have no Bambu AMS mapping.
+  const moonraker = selectedPrinter?.printer_family === 'moonraker'
+  const amsEnabled = useAms && !moonraker
   const materialMapping = useDispatchMaterialMapping(
     metadataPreview.state === 'ready' ? metadataPreview.metadata : null,
     plateId,
     selectedPrinter,
-    useAms,
+    amsEnabled,
   )
 
 
@@ -186,13 +189,14 @@ export function DispatchForm({
         <DispatchArtifactField
           artifact={artifact}
           fileStatusId={fileStatusId}
+          gcodeOnly={moonraker}
           metadataPreview={metadataPreview}
           onSelectArtifact={selectArtifact}
           plateId={plateId}
           selectedFilename={selectedFilename}
           sourceArtifact={Boolean(sourceJob)}
         />
-        <input name="use_ams" type="hidden" value={String(useAms)} />
+        <input name="use_ams" type="hidden" value={String(amsEnabled)} />
       {plateId !== null && metadataPreview.state !== 'idle' && metadataPreview.state !== 'loading' ? (
         <div className="flex flex-col gap-1 text-sm lg:col-span-2" data-motion="dispatch-unlocked">
           <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
@@ -236,19 +240,21 @@ export function DispatchForm({
       {materialMapping.fields ? (
         <DispatchMaterialMappingFields {...materialMapping.fields} />
       ) : null}
-      <div className="flex flex-wrap gap-4 text-sm text-muted-foreground lg:col-span-2">
-        <span className="flex items-center gap-1.5">
-          <label className="flex items-center gap-2">
-            <input
-              checked={useAms}
-              onChange={(event) => setUseAms(event.currentTarget.checked)}
-              type="checkbox"
-            />
-            {t('useAms')}
-          </label>
-          <HelpTip label={t('useAms')}>{t('useAmsHelp')}</HelpTip>
-        </span>
-      </div>
+      {moonraker ? null : (
+        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground lg:col-span-2">
+          <span className="flex items-center gap-1.5">
+            <label className="flex items-center gap-2">
+              <input
+                checked={useAms}
+                onChange={(event) => setUseAms(event.currentTarget.checked)}
+                type="checkbox"
+              />
+              {t('useAms')}
+            </label>
+            <HelpTip label={t('useAms')}>{t('useAmsHelp')}</HelpTip>
+          </span>
+        </div>
+      )}
       <DispatchPrintOptions
         key={selectedPrinter
           ? selectedPrinter.id + ':' + (selectedPrinter.compatibility.normalized_model ?? 'unknown')

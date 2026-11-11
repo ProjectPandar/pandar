@@ -206,7 +206,7 @@ fn ffmpeg_fragmented_mp4_command() -> Command {
     command
 }
 
-fn ffmpeg_executable() -> String {
+pub(crate) fn ffmpeg_executable() -> String {
     ffmpeg_executable_from_env(std::env::var(FFMPEG_PATH_VAR).ok())
 }
 
@@ -281,7 +281,7 @@ fn take_jpeg_frame(buffer: &mut Vec<u8>) -> Option<Vec<u8>> {
     Some(frame)
 }
 
-fn mjpeg_part(frame: &[u8]) -> Vec<u8> {
+pub(crate) fn mjpeg_part(frame: &[u8]) -> Vec<u8> {
     let mut part = Vec::with_capacity(frame.len() + 80);
     part.extend_from_slice(CAMERA_BOUNDARY);
     part.extend_from_slice(b"Content-Type: image/jpeg\r\nContent-Length: ");

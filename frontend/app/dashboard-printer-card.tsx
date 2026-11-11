@@ -293,7 +293,7 @@ function PrinterActions({ printer }: { printer: Printer }) {
               />
             </label>
             <label className="flex flex-col gap-1 text-sm">
-              <span className="text-xs font-medium text-muted-foreground">{t('editPrinterAccessCode')}</span>
+              <span className="text-xs font-medium text-muted-foreground">{t(printer.printer_family === 'moonraker' ? 'editPrinterApiKey' : 'editPrinterAccessCode')}</span>
               <input
                 autoComplete="off"
                 className={inputClasses}

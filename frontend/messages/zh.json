@@ -369,6 +369,7 @@
     "editPrinterName": "名称",
     "editPrinterHost": "打印机 IPv4 地址",
     "editPrinterAccessCode": "访问码",
+    "editPrinterApiKey": "Moonraker API 密钥（留空保持不变）",
     "editPrinterSubmit": "保存修改",
     "refreshAms": "刷新 AMS",
     "deletePrinter": "删除打印机",
@@ -608,7 +609,7 @@
   },
   "linkPrinter": {
     "title": "将打印机连接到 Agent",
-    "subtitleTenant": "提交 {name} 的 Bambu 局域网连接信息。",
+    "subtitleTenant": "提交 {name} 的打印机局域网连接信息。",
     "subtitleNone": "未选择租户。",
     "noTenantTitle": "选择租户后连接打印机。",
     "noTenantMessage": "提交打印机连接信息前，请先从侧边栏选择租户。",
@@ -616,6 +617,13 @@
     "noAgentsMessage": "连接打印机前请先配对 Agent。",
     "agent": "Agent",
     "agentOption": "{name}（{status}）",
+    "printerType": "打印机类型",
+    "printerTypes": {
+      "BambuLab": "Bambu Lab（局域网模式）",
+      "Moonraker": "Klipper / Moonraker"
+    },
+    "moonrakerHost": "Moonraker 地址（IPv4，可带端口）",
+    "moonrakerApiKey": "Moonraker API 密钥（可选）",
     "host": "打印机 IPv4 地址",
     "accessCode": "访问码",
     "showAccessCode": "显示访问码",

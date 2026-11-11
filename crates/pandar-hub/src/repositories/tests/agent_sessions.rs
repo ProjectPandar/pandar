@@ -130,6 +130,7 @@ async fn assert_postgres_agent_then_printer_lock_order(
                     agent_id,
                     &session_id,
                     PrinterSnapshotUpsert {
+                        printer_family: pandar_core::PrinterFamily::BambuLab,
                         serial_number,
                         host: None,
                         access_code: None,

@@ -2,7 +2,8 @@ use std::collections::HashMap;
 
 use pandar_core::compatibility::{normalize_model, studio_local_camera_supported};
 use pandar_core::{
-    AgentId, BambuNozzleSystem, PrinterFirmwareState, PrinterNozzleTemperature, TenantId,
+    AgentId, BambuNozzleSystem, PrinterFamily, PrinterFirmwareState, PrinterNozzleTemperature,
+    TenantId,
 };
 use serde::Serialize;
 
@@ -83,6 +84,7 @@ pub(in crate::routes) async fn plugin_printer_devices(
     let sessions = current_agent_projection_snapshots(state, tenant_id).await?;
     Ok(printers
         .into_iter()
+        .filter(|entry| entry.printer.printer_family == PrinterFamily::BambuLab)
         .map(|entry| {
             let materials = materials_by_printer_id.get(&entry.printer.id).cloned();
             let session = sessions.get(&entry.printer.agent_id);
@@ -136,6 +138,7 @@ pub(in crate::routes) async fn studio_projection_record(
         .printers()
         .get_with_live_status_for_tenant(tenant_id, &change.printer_id)
         .await?
+        .filter(|entry| entry.printer.printer_family == PrinterFamily::BambuLab)
     else {
         return Ok(StudioProjectionRecord::Removed {
             dev_id: change.serial_number.clone(),

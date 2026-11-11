@@ -64,6 +64,7 @@ pub(super) async fn exercise_exact_session_guards(database: Database, mutation_d
             agent.id,
             &session_a,
             PrinterSnapshotUpsert {
+                printer_family: pandar_core::PrinterFamily::BambuLab,
                 serial_number: format!("serial-{printer_id}"),
                 host: None,
                 access_code: None,

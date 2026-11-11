@@ -88,6 +88,7 @@ async fn seed_web_recovery_state(
 
 fn reassigned_snapshot(serial_number: String) -> PrinterSnapshotUpsert {
     PrinterSnapshotUpsert {
+        printer_family: pandar_core::PrinterFamily::BambuLab,
         serial_number,
         host: Some("192.0.2.20".to_owned()),
         access_code: None,

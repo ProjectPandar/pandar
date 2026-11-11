@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    AgentId, BambuDeviceFeatures, BambuNozzleSystem, CoreError, PrinterCoolingSystem, TenantId,
-    required,
+    AgentId, BambuDeviceFeatures, BambuNozzleSystem, CoreError, PrinterCoolingSystem,
+    PrinterFamily, TenantId, required,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -11,6 +11,7 @@ pub struct Printer {
     pub tenant_id: TenantId,
     pub agent_id: AgentId,
     pub serial_number: String,
+    pub printer_family: PrinterFamily,
     pub host: Option<String>,
     #[serde(skip_serializing)]
     pub access_code: Option<String>,
@@ -49,6 +50,7 @@ pub struct PrinterParts {
     pub tenant_id: TenantId,
     pub agent_id: AgentId,
     pub serial_number: String,
+    pub printer_family: PrinterFamily,
     pub host: Option<String>,
     pub access_code: Option<String>,
     pub name: String,
@@ -98,6 +100,7 @@ impl Printer {
             tenant_id: parts.tenant_id,
             agent_id: parts.agent_id,
             serial_number: parts.serial_number,
+            printer_family: parts.printer_family,
             host: parts.host.filter(|value| !value.trim().is_empty()),
             access_code: parts.access_code.filter(|value| !value.trim().is_empty()),
             name: parts.name,

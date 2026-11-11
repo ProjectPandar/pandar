@@ -6,6 +6,7 @@ fn printer_serialization_omits_access_code() {
         id: "printer-1".to_owned(),
         tenant_id: TenantId::new(),
         agent_id: AgentId::new(),
+        printer_family: pandar_core::PrinterFamily::BambuLab,
         serial_number: "SERIAL".to_owned(),
         host: Some("192.168.1.2".to_owned()),
         access_code: Some("printer-secret".to_owned()),
