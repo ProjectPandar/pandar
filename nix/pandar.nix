@@ -772,8 +772,11 @@
             inherit cargoArtifacts;
             pname = "pandar-nextest";
             nativeBuildInputs = nativeBuildInputs ++ [ pkgs.postgresql_17 ];
-            # These contract gates require an external pinned BambuStudio Git checkout.
-            cargoNextestExtraArgs = "--workspace -E 'not (binary(studio_print_contract_red) | binary(studio_projection_contract) | binary(personal_presets))'";
+            # The Studio contract gates require an external pinned BambuStudio Git
+            # checkout. The Studio ABI probe binaries hold the whole machine
+            # (see .config/nextest.toml) and run serially, so CI shards them with
+            # the contract gates, which already compile pandar-network-plugin.
+            cargoNextestExtraArgs = "--workspace -E 'not (binary(studio_print_contract_red) | binary(studio_projection_contract) | binary(personal_presets) | binary(studio_abi_probe) | binary(task_token_refresh) | binary(logout_revoke) | binary(logout_revoke_upgrade) | binary(no_auth_credential_hygiene))'";
             # Run the PostgreSQL parity tests against a throwaway server in the same
             # nextest invocation instead of recompiling the workspace outside Nix.
             PANDAR_REQUIRE_POSTGRES_TESTS = "true";

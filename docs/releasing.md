@@ -55,11 +55,10 @@ git tag -a v0.2.2 -m "Pandar 0.2.2"
 git push origin v0.2.2
 ```
 
-Pushing the tag starts:
+Pushing the tag starts the following workflows. Both validate tag/version consistency and gate publication on the release commit's successful `main` Checks run; Checks itself does not run again for the tag.
 
-- `Checks`, which repeats the quality gates and validates tag/version consistency;
-- `Release`, which builds and target-architecture smoke-tests the Linux amd64, macOS amd64/arm64, and Windows amd64 three-file archives, and builds the Windows Studio hook bundle, before creating the GitHub Release; both macOS rows use Apple Silicon, with the amd64 checks running under Rosetta 2;
-- `Docker`, which publishes `hub:v0.2.2`, `web:v0.2.2`, and Helm chart `0.2.2` after Checks succeeds.
+- `Release`, which builds and target-architecture smoke-tests the Linux amd64, macOS amd64/arm64, and Windows amd64 three-file archives, and builds the Windows Studio hook bundle, before creating the GitHub Release; both macOS targets use Apple Silicon, with the amd64 checks running under Rosetta 2, and each macOS job builds a group of ABI series in sequence to stay within the macOS runner concurrency limit;
+- `Docker`, which builds `hub:v0.2.2` and `web:v0.2.2` while waiting for Checks, then publishes them and Helm chart `0.2.2` after Checks succeeds.
 
 Do not create the GitHub Release manually while these workflows are running.
 

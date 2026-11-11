@@ -141,7 +141,7 @@ jobs:
         run: scripts/check-deployment-security.sh
 
   studio-contract-checks:
-    name: Pinned Bambu Studio contracts (${{ matrix.partition }}/3)
+    name: Studio contracts and ABI probes (${{ matrix.partition }}/3)
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
@@ -157,21 +157,18 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Checkout pinned Bambu Studio source
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          repository: bambulab/BambuStudio
-          ref: 42d319c6692fa8e64790fddf0cdaafd2a4254bcc
-          path: reference/BambuStudio
-          persist-credentials: false
-
-      - name: Fetch every catalogued Studio commit
+      # One shallow fetch of every catalogued commit lets the pack share deltas
+      # between Studio versions; a full clone or one fetch per commit is slower.
+      - name: Fetch pinned Bambu Studio commits
         shell: bash
         run: |
           set -euo pipefail
-          jq -r '.abi_series[].studio_commit' studio-abi-profiles.json | sort -u | while read -r commit; do
-            git -C reference/BambuStudio fetch --no-tags --depth=1 origin "$commit"
-          done
+          pinned=42d319c6692fa8e64790fddf0cdaafd2a4254bcc
+          mapfile -t commits < <({ jq -r '.abi_series[].studio_commit' studio-abi-profiles.json; echo "$pinned"; } | sort -u)
+          git init --quiet reference/BambuStudio
+          git -C reference/BambuStudio fetch --no-tags --depth=1 \
+            https://github.com/bambulab/BambuStudio.git "${commits[@]}"
+          git -C reference/BambuStudio checkout --quiet --detach "$pinned"
 
       - name: Install Nix
         uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3 # v31.10.6
@@ -186,11 +183,15 @@ jobs:
           upstream-cache-filter: true
           no-closure: true
 
-      - name: Run pinned Studio contract binaries
+      # Also runs the machine-exclusive Studio ABI probe binaries that the
+      # pandar-nextest check leaves out, so their serial runtime is sharded.
+      - name: Run Studio contract and ABI probe binaries
         run: >-
           nix develop --command cargo nextest run
           -p pandar-network-plugin
-          -E 'binary(studio_print_contract_red) | binary(studio_projection_contract) | binary(personal_presets)'
+          -E 'binary(studio_print_contract_red) | binary(studio_projection_contract) | binary(personal_presets)
+          | binary(studio_abi_probe) | binary(task_token_refresh) | binary(logout_revoke)
+          | binary(logout_revoke_upgrade) | binary(no_auth_credential_hygiene)'
           --partition count:${{ matrix.partition }}/3
           --no-tests=fail
 
