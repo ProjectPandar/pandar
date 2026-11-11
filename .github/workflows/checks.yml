@@ -8,6 +8,8 @@ on:
 
 permissions:
   contents: read
+  # Lets a failed pull request job dispatch cancel-run.yml (fail fast).
+  actions: write
 
 # Pull requests only need their newest push checked. Every main commit gets a
 # unique group so it is never cancelled or replaced while pending; Docker and
@@ -97,6 +99,12 @@ jobs:
       - name: Type-check Auth
         run: npm run typecheck:auth
 
+      - name: Cancel the rest of the pull request run
+        if: failure() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run cancel-run.yml --repo "$GITHUB_REPOSITORY" --ref main -f run-id="$GITHUB_RUN_ID"
+
   rust-security:
     name: Rust security audit
     needs: changes
@@ -117,6 +125,12 @@ jobs:
 
       - name: Audit Rust dependencies
         run: cargo audit
+
+      - name: Cancel the rest of the pull request run
+        if: failure() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run cancel-run.yml --repo "$GITHUB_REPOSITORY" --ref main -f run-id="$GITHUB_RUN_ID"
 
   helm-chart:
     name: Helm chart
@@ -139,6 +153,12 @@ jobs:
 
       - name: Verify deployment security defaults
         run: scripts/check-deployment-security.sh
+
+      - name: Cancel the rest of the pull request run
+        if: failure() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run cancel-run.yml --repo "$GITHUB_REPOSITORY" --ref main -f run-id="$GITHUB_RUN_ID"
 
   studio-contract-checks:
     name: Studio contracts and ABI probes (${{ matrix.partition }}/3)
@@ -195,6 +215,12 @@ jobs:
           --partition count:${{ matrix.partition }}/3
           --no-tests=fail
 
+      - name: Cancel the rest of the pull request run
+        if: failure() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run cancel-run.yml --repo "$GITHUB_REPOSITORY" --ref main -f run-id="$GITHUB_RUN_ID"
+
   nix-lint:
     name: Nix lint checks
     needs: changes
@@ -232,6 +258,12 @@ jobs:
             .#checks.x86_64-linux.pandar-module-size \
             .#checks.x86_64-linux.pandar-nixos-options-doc
 
+      - name: Cancel the rest of the pull request run
+        if: failure() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run cancel-run.yml --repo "$GITHUB_REPOSITORY" --ref main -f run-id="$GITHUB_RUN_ID"
+
   nix-test:
     name: Nix Rust tests (SQLite + PostgreSQL)
     needs: changes
@@ -260,6 +292,12 @@ jobs:
 
       - name: Run workspace tests
         run: nix build --print-build-logs .#checks.x86_64-linux.pandar-nextest
+
+      - name: Cancel the rest of the pull request run
+        if: failure() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run cancel-run.yml --repo "$GITHUB_REPOSITORY" --ref main -f run-id="$GITHUB_RUN_ID"
 
   # Packages and the NixOS VM tests that boot them share one job per system so
   # each package is built once and the VMs reuse it from the local store.
@@ -315,6 +353,12 @@ jobs:
             installables+=(".#checks.$SYSTEM.$check")
           done
           nix build --print-build-logs "${installables[@]}"
+
+      - name: Cancel the rest of the pull request run
+        if: failure() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run cancel-run.yml --repo "$GITHUB_REPOSITORY" --ref main -f run-id="$GITHUB_RUN_ID"
 
   # Single required check: skipped jobs (documentation-only changes) count as
   # passing, failures and cancellations do not.

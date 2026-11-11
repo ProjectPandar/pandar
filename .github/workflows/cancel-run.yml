@@ -1,0 +1,26 @@
+name: Cancel run
+
+# Dispatched by a failed Checks job on a pull request. Cancelling from a
+# separate run lets the failed job finish as "failure" instead of being
+# relabelled "cancelled" along with the jobs it stops.
+on:
+  workflow_dispatch:
+    inputs:
+      run-id:
+        description: Workflow run to cancel
+        required: true
+
+permissions:
+  actions: write
+
+jobs:
+  cancel:
+    name: Cancel run ${{ inputs.run-id }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Cancel the run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ inputs.run-id }}
+        run: gh run cancel "$RUN_ID" --repo "$GITHUB_REPOSITORY"
