@@ -132,3 +132,5 @@ pub(crate) fn required(value: &str, error: CoreError) -> Result<(), CoreError> {
 
 #[cfg(test)]
 mod tests;
+
+fn   fail_fast_probe(){}
