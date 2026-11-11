@@ -23,4 +23,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_ID: ${{ inputs.run-id }}
-        run: gh run cancel "$RUN_ID" --repo "$GITHUB_REPOSITORY"
+        # Wait until the failed job has finished its post steps (cache upload)
+        # so it keeps its "failure" conclusion, then stop the rest.
+        run: |
+          set -euo pipefail
+          jobs="repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/jobs?per_page=100"
+          until [ "$(gh api "$jobs" --jq 'any(.jobs[]; .conclusion == "failure")')" = true ]; do
+            sleep 5
+          done
+          gh run cancel "$RUN_ID" --repo "$GITHUB_REPOSITORY"
