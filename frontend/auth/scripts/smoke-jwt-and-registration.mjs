@@ -3,7 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import Database from "better-sqlite3";
+import { getMigrations } from "better-auth/db/migration";
 import { decodeProtectedHeader, decodeJwt } from "jose";
 
 const tempDir = await mkdtemp(join(tmpdir(), "pandar-auth-smoke-"));
@@ -15,30 +15,9 @@ process.env.PANDAR_AUTH_EMAIL_FROM = "Pandar <smoke@example.com>";
 process.env.RESEND_API_KEY = "re_smoke";
 
 try {
-  const db = new Database(process.env.PANDAR_AUTH_DATABASE_FILE);
-  db.exec(`
-    create table jwks (
-      id text primary key,
-      publicKey text not null,
-      privateKey text not null,
-      alg text,
-      crv text,
-      createdAt text not null,
-      expiresAt text
-    );
-
-    create table user (
-      id text primary key,
-      name text not null,
-      email text not null unique,
-      emailVerified integer not null,
-      image text,
-      createdAt text not null,
-      updatedAt text not null
-    );
-  `);
-
   const { auth } = await import("../lib/auth.ts");
+  const { runMigrations } = await getMigrations(auth.options);
+  await runMigrations();
 
   const signed = await auth.api.signJWT({
     body: {
