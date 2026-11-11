@@ -59,7 +59,7 @@ serde_json = { version = "1.0.145", features = ["raw_value"] }
 sha2 = "0.11.0"
 rumqttc = { package = "rumqttc-v4-next", version = "=0.33.3" }
 rust-embed = "8.11.0"
-rustls = "=0.23.45"
+rustls = "=0.23.46"
 openssl = { version = "0.10", features = ["vendored"] }
 tokio-openssl = "0.6"
 sea-orm = { version = "2.0.0-rc.41", default-features = false, features = ["macros", "runtime-tokio-rustls", "sqlx-sqlite", "sqlx-postgres", "with-json", "with-time"] }
@@ -83,4 +83,4 @@ tracing-subscriber = { version = "0.3.22", features = ["env-filter", "fmt"] }
 uuid = { version = "1.19.0", features = ["serde", "v4"] }
 x509-parser = "0.18.1"
 zeroize = "1.8.1"
-zip = { version = "8.6.0", default-features = false, features = ["deflate"] }
+zip = { version = "9.5.1", default-features = false, features = ["deflate"] }

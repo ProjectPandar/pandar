@@ -158,7 +158,10 @@ fn extract_bundle(bundle: Vec<u8>) -> anyhow::Result<StudioHookRelease> {
         let mut entry = archive
             .by_index(index)
             .with_context(|| format!("read Studio hook release ZIP entry {index}"))?;
-        let name = entry.name().to_owned();
+        let name = entry
+            .name()
+            .with_context(|| format!("read Studio hook release ZIP entry {index} name"))?
+            .into_owned();
         if !expected.contains(&name.as_str()) || !entry.is_file() {
             bail!("unexpected Studio hook release ZIP entry {name}");
         }

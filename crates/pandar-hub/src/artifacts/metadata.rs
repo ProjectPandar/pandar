@@ -69,7 +69,9 @@ fn parse_zip_archive<R: Read + Seek>(
         let mut file = archive
             .by_index(index)
             .context("failed to read 3mf zip entry")?;
-        let name = file.name().to_owned();
+        let Ok(name) = file.name().map(std::borrow::Cow::into_owned) else {
+            continue;
+        };
         if !is_allowed_metadata_name(&name) {
             continue;
         }

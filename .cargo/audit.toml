@@ -7,4 +7,11 @@ ignore = [
     # requires rkyv ^0.7.46, so no upgrade path exists. Revisit when sea-orm or
     # rust_decimal move to rkyv 0.8.
     "RUSTSEC-2026-0235",
+    # libsqlite3-sys 0.37 (bundled SQLite < 3.54) enters only through sqlx-sqlite
+    # 0.9.0, the latest sqlx release, which requires libsqlite3-sys >=0.30.1,
+    # <0.38.0, so the patched 0.39 cannot be selected. The CVE needs a process to
+    # open a database plus `-wal` pair written by a less trusted party; the Hub
+    # only opens its own operator-configured database. Revisit when sqlx allows
+    # libsqlite3-sys >= 0.39.
+    "RUSTSEC-2026-0459",
 ]

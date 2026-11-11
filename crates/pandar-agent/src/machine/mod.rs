@@ -1,5 +1,6 @@
 pub mod brtc;
 pub mod camera;
+mod camera_source;
 pub mod compatibility;
 mod device_features;
 pub mod diagnostics;
@@ -23,6 +24,7 @@ use std::{collections::HashMap, time::Duration};
 use crate::AgentConfig;
 use anyhow::bail;
 use async_trait::async_trait;
+pub use camera_source::CameraSource;
 pub use device_features::DeviceFeatureCache;
 pub(crate) use device_features::DeviceFeatureLease;
 #[cfg(test)]
@@ -41,7 +43,7 @@ pub use firmware::{
     FirmwareStatusObservation, FirmwareVersionObservation, firmware_modules_event,
     firmware_status_event,
 };
-use moonraker::{MoonrakerCameraSource, MoonrakerLinkRequest};
+use moonraker::MoonrakerLinkRequest;
 pub(crate) use mqtt::report::FirmwareReportReducer;
 use mqtt::{BambuMqttTransport, refresh_printer, refresh_printer_materials};
 pub use noop::NoopMachineGateway;
@@ -59,27 +61,6 @@ pub use types::{
     PrinterOperationMqttSummary, PrinterRefreshResult,
 };
 pub use unavailable_transfer::UnavailableMachineFileTransfer;
-
-/// Where a printer camera stream is produced from.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum CameraSource {
-    Bambu(BambuPrinterEndpoint),
-    Moonraker(MoonrakerCameraSource),
-}
-
-impl CameraSource {
-    pub fn redact(&self, message: &str) -> String {
-        match self {
-            Self::Bambu(endpoint) => {
-                diagnostics::redact_access_code(message, &endpoint.access_code)
-            }
-            Self::Moonraker(source) => match source.client.api_key() {
-                Some(key) => message.replace(key, "[REDACTED_API_KEY]"),
-                None => message.to_owned(),
-            },
-        }
-    }
-}
 
 #[async_trait]
 pub trait BambuMachineGateway: Send + Sync {
