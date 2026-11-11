@@ -8,8 +8,8 @@ Unsafe blocks are unauditable without justification. A reviewer cannot verify in
 
 There are two distinct levels of documentation:
 
-1. **`# Safety` in a doc comment on an `unsafe fn`** — describes the *caller's* obligations (preconditions that must hold for the call to be sound).
-2. **`// SAFETY:` inline comment above each `unsafe {}` block** — explains why *this specific operation* upholds the required invariants at the call site.
+1. **`# Safety` in a doc comment on an `unsafe fn`** — describes the _caller's_ obligations (preconditions that must hold for the call to be sound).
+2. **`// SAFETY:` inline comment above each `unsafe {}` block** — explains why _this specific operation_ upholds the required invariants at the call site.
 
 Both are required. Omitting either leaves an auditor unable to verify soundness.
 
@@ -57,7 +57,7 @@ fn process(slice: &[u8]) -> Option<u8> {
 
 ## Key Points
 
-- A `# Safety` doc section and a `// SAFETY:` inline comment serve different audiences: the doc section targets *callers*, the inline comment targets *auditors* of the implementation.
+- A `# Safety` doc section and a `// SAFETY:` inline comment serve different audiences: the doc section targets _callers_, the inline comment targets _auditors_ of the implementation.
 - Enable the lint explicitly to catch omissions:
   ```rust
   #![warn(clippy::undocumented_unsafe_blocks)]

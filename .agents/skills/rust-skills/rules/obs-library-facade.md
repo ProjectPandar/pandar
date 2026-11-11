@@ -4,7 +4,7 @@
 
 ## Why It Matters
 
-Installing a global subscriber or logger is a one-time, process-wide operation. If a library calls `tracing_subscriber::fmt::init()` or `env_logger::init()`, it silently conflicts with any other library or the application binary that does the same — the second call panics or is silently ignored, and the caller loses all control over log format, destination, and level filtering. Libraries must only *emit* events and spans; the binary that owns `main` decides how to handle them. This is the same contract as `log` has always enforced and `tracing` carries forward.
+Installing a global subscriber or logger is a one-time, process-wide operation. If a library calls `tracing_subscriber::fmt::init()` or `env_logger::init()`, it silently conflicts with any other library or the application binary that does the same — the second call panics or is silently ignored, and the caller loses all control over log format, destination, and level filtering. Libraries must only _emit_ events and spans; the binary that owns `main` decides how to handle them. This is the same contract as `log` has always enforced and `tracing` carries forward.
 
 ## Bad
 

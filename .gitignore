@@ -30,3 +30,5 @@ target/
 .pi/remote-pi/config.json
 /animation-plans/
 result
+/.claude/worktrees/
+

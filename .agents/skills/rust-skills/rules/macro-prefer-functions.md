@@ -44,15 +44,15 @@ fn main() {
 
 ## When to Reach for a Macro
 
-| Situation | Use a macro? |
-|-----------|-------------|
-| Fixed argument count, any types | No — use generics |
-| Truly variadic argument list (`vec![]`, `println!`) | Yes |
-| Implementing a trait for many unrelated types | Yes — `macro_rules!` impl block |
-| DSL / embedded syntax (SQL, HTML, regex literals) | Yes — proc-macro |
-| Compile-time format string validation | Yes — `format_args!` style |
-| Boilerplate a derive could generate | Yes — `#[derive(...)]` proc-macro |
-| Simple computation or type conversion | No — use a function or trait |
+| Situation                                           | Use a macro?                      |
+| --------------------------------------------------- | --------------------------------- |
+| Fixed argument count, any types                     | No — use generics                 |
+| Truly variadic argument list (`vec![]`, `println!`) | Yes                               |
+| Implementing a trait for many unrelated types       | Yes — `macro_rules!` impl block   |
+| DSL / embedded syntax (SQL, HTML, regex literals)   | Yes — proc-macro                  |
+| Compile-time format string validation               | Yes — `format_args!` style        |
+| Boilerplate a derive could generate                 | Yes — `#[derive(...)]` proc-macro |
+| Simple computation or type conversion               | No — use a function or trait      |
 
 ## See Also
 

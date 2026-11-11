@@ -100,12 +100,12 @@ assert_eq!(size_of::<ecow::EcoString>(), 16);  // Even smaller!
 
 ## Inline Capacity
 
-| Type | Size | Inline Capacity |
-|------|------|-----------------|
-| `String` | 24 | 0 (always heap) |
-| `CompactString` | 24 | 23 bytes [^1] |
-| `SmartString<LazyCompact>` | 24 | 23 bytes |
-| `EcoString` | 16 | 15 bytes |
+| Type                       | Size | Inline Capacity |
+| -------------------------- | ---- | --------------- |
+| `String`                   | 24   | 0 (always heap) |
+| `CompactString`            | 24   | 23 bytes [^1]   |
+| `SmartString<LazyCompact>` | 24   | 23 bytes        |
+| `EcoString`                | 16   | 15 bytes        |
 
 [^1]: CompactString reserves the final byte of its 24-byte representation for a length tag, so the maximum inline string length is 23 bytes.
 

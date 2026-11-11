@@ -91,12 +91,12 @@ trait Repo {
 
 ## When to Use Each Approach
 
-| Scenario | Recommended approach |
-|---|---|
-| Static dispatch only (generics, `impl Trait`) | Native `async fn` in trait |
-| Need `dyn Trait` | `#[async_trait]` or `trait-variant` |
-| Multi-threaded Tokio, spawned tasks | `trait-variant` `Send` variant or explicit `+ Send` |
-| Single-threaded runtime / `LocalSet` | Native `async fn` in trait (no `Send` needed) |
+| Scenario                                      | Recommended approach                                |
+| --------------------------------------------- | --------------------------------------------------- |
+| Static dispatch only (generics, `impl Trait`) | Native `async fn` in trait                          |
+| Need `dyn Trait`                              | `#[async_trait]` or `trait-variant`                 |
+| Multi-threaded Tokio, spawned tasks           | `trait-variant` `Send` variant or explicit `+ Send` |
+| Single-threaded runtime / `LocalSet`          | Native `async fn` in trait (no `Send` needed)       |
 
 ## See Also
 

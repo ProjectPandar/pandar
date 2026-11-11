@@ -7,6 +7,7 @@ semantic versioning for the rule set.
 ## [1.5.1]
 
 ### Changed
+
 - Depth pass: expanded `own-rc-single-thread` (breaking cycles with `Weak`, the
   `Rc::clone` idiom, `strong_count`/`weak_count`, `!Send`/`!Sync`) and
   `own-refcell-interior` (`Cell` for `Copy` types).
@@ -17,6 +18,7 @@ semantic versioning for the rule set.
 ## [1.5.0]
 
 ### Added
+
 - **Const & Compile-Time** category (`const-`, 4 rules): `const fn`, `const` vs
   `static`, const generics, inline `const { }` blocks.
 - **Trait & Generics Design** category (`trait-`, 6 rules): static vs dynamic
@@ -34,6 +36,7 @@ Now 265 rules across 26 categories.
 ## [1.4.0]
 
 ### Added
+
 - **Closures** category (`closure-`, 5 rules): Fn/FnMut/FnOnce bounds, returning
   `impl Fn`, `move` capture, static vs dynamic dispatch, disjoint capture.
 
@@ -42,6 +45,7 @@ Now 251 rules across 23 categories.
 ## [1.3.0]
 
 ### Added
+
 - **Serde** category (`serde-`, 8 rules): rename_all, default, skip, flatten,
   enum representation, deny_unknown_fields, custom (de)serialize, validate-on-
   deserialize.
@@ -53,6 +57,7 @@ Now 246 rules across 22 categories.
 ## [1.2.0]
 
 ### Added
+
 - **Macros** category (`macro-`, 8 rules): declarative-macro hygiene and
   fragment specifiers, and procedural-macro design with `syn`/`quote`.
 - **Observability** category (`obs-`, 7 rules): `tracing`, spans, structured
@@ -63,6 +68,7 @@ Now 233 rules across 20 categories.
 ## [1.1.x]
 
 ### Added
+
 - **Unsafe Code** (`unsafe-`), **Concurrency** (`conc-`), **Conversions**
   (`conv-`), and **Pattern Matching** (`pat-`) categories, plus new rules across
   existing categories — 39 rules in total.
@@ -70,6 +76,7 @@ Now 233 rules across 20 categories.
   validates rule structure, links, the index, and that examples compile.
 
 ### Changed
+
 - Updated throughout for the Rust 2024 edition and current stable (Rust 1.96):
   fixed `&mut T` is not `Copy`, `impl Trait` in traits, `collect_into` status,
   `resolver = "3"`, `env::set_var` now `unsafe`, and more.
@@ -79,6 +86,7 @@ Now 218 rules across 18 categories.
 ## [1.0.0]
 
 ### Added
+
 - Initial release: 179 rules across 14 categories.
 
 [1.5.0]: https://github.com/leonardomso/rust-skills

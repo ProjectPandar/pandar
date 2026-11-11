@@ -43,21 +43,21 @@ fn main() {
 
 ## Fragment Specifier Reference
 
-| Specifier | Matches | Common uses |
-|-----------|---------|-------------|
-| `:expr` | An expression | Values, arithmetic, closures |
-| `:ty` | A type | Generic helpers, type aliases |
-| `:ident` | An identifier | Field names, variable names |
-| `:pat` | A pattern | `match` arm patterns |
-| `:pat_param` | A pattern (no `|` at top level) | Fn param patterns |
-| `:path` | A path (`a::b::c`) | Trait bounds, type paths |
-| `:literal` | A literal (`42`, `"hi"`) | Constant values |
-| `:block` | A `{ ... }` block | Inline code injection |
-| `:stmt` | A statement | Statement-level macros |
-| `:meta` | A meta item | `#[derive(Clone)]` content |
-| `:vis` | A visibility qualifier | `pub`, `pub(crate)` |
-| `:lifetime` | A lifetime (`'a`) | Generic lifetime params |
-| `:tt` | Any single token tree | Last resort; combinators |
+| Specifier    | Matches                  | Common uses                   |
+| ------------ | ------------------------ | ----------------------------- | ----------------- |
+| `:expr`      | An expression            | Values, arithmetic, closures  |
+| `:ty`        | A type                   | Generic helpers, type aliases |
+| `:ident`     | An identifier            | Field names, variable names   |
+| `:pat`       | A pattern                | `match` arm patterns          |
+| `:pat_param` | A pattern (no `          | ` at top level)               | Fn param patterns |
+| `:path`      | A path (`a::b::c`)       | Trait bounds, type paths      |
+| `:literal`   | A literal (`42`, `"hi"`) | Constant values               |
+| `:block`     | A `{ ... }` block        | Inline code injection         |
+| `:stmt`      | A statement              | Statement-level macros        |
+| `:meta`      | A meta item              | `#[derive(Clone)]` content    |
+| `:vis`       | A visibility qualifier   | `pub`, `pub(crate)`           |
+| `:lifetime`  | A lifetime (`'a`)        | Generic lifetime params       |
+| `:tt`        | Any single token tree    | Last resort; combinators      |
 
 ## Trailing-Comma Pattern
 

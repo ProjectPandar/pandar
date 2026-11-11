@@ -80,11 +80,11 @@ async fn example() {
 
 ## The Three Variants
 
-| Bound | Receiver | Use when |
-|---|---|---|
-| `AsyncFn()` | `&self` | callable multiple times, no mutation |
-| `AsyncFnMut()` | `&mut self` | callable multiple times, may mutate captured state |
-| `AsyncFnOnce()` | `self` | callable exactly once, may consume captured state |
+| Bound           | Receiver    | Use when                                           |
+| --------------- | ----------- | -------------------------------------------------- |
+| `AsyncFn()`     | `&self`     | callable multiple times, no mutation               |
+| `AsyncFnMut()`  | `&mut self` | callable multiple times, may mutate captured state |
+| `AsyncFnOnce()` | `self`      | callable exactly once, may consume captured state  |
 
 These mirror `Fn` / `FnMut` / `FnOnce` semantics, so the same rules apply: prefer `AsyncFn` first; fall back to `AsyncFnMut` or `AsyncFnOnce` when needed.
 

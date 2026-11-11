@@ -4,7 +4,7 @@
 
 ## Why It Matters
 
-Before Rust 2024, every function declared inside an `extern "C" { }` block was implicitly unsafe to call — but the block itself carried no `unsafe` keyword. This made it easy to forget that the FFI contract (correct types, valid pointers, no aliasing violations) was entirely the programmer's responsibility. Rust 2024 makes this explicit: the block must be `unsafe extern`, which signals that the *programmer* is asserting the declarations are accurate. Individual items can then be marked `safe` (callable without an `unsafe` block by the caller) or `unsafe` (the default — caller must use `unsafe {}`).
+Before Rust 2024, every function declared inside an `extern "C" { }` block was implicitly unsafe to call — but the block itself carried no `unsafe` keyword. This made it easy to forget that the FFI contract (correct types, valid pointers, no aliasing violations) was entirely the programmer's responsibility. Rust 2024 makes this explicit: the block must be `unsafe extern`, which signals that the _programmer_ is asserting the declarations are accurate. Individual items can then be marked `safe` (callable without an `unsafe` block by the caller) or `unsafe` (the default — caller must use `unsafe {}`).
 
 This change makes FFI boundaries auditable at a glance and lets wrappers expose a safe API while keeping raw declarations accurate.
 
@@ -51,11 +51,11 @@ fn show_version() {
 
 ## Migration from 2021
 
-| 2021 | 2024 |
-|------|------|
-| `extern "C" { fn foo(); }` | `unsafe extern "C" { unsafe fn foo(); }` |
-| `extern "C" { fn bar(); }` (safe to call) | `unsafe extern "C" { safe fn bar(); }` |
-| `extern "C" { static X: i32; }` | `unsafe extern "C" { unsafe static X: i32; }` |
+| 2021                                      | 2024                                          |
+| ----------------------------------------- | --------------------------------------------- |
+| `extern "C" { fn foo(); }`                | `unsafe extern "C" { unsafe fn foo(); }`      |
+| `extern "C" { fn bar(); }` (safe to call) | `unsafe extern "C" { safe fn bar(); }`        |
+| `extern "C" { static X: i32; }`           | `unsafe extern "C" { unsafe static X: i32; }` |
 
 Run `cargo fix --edition` to apply the mechanical part of this migration automatically. Review each item afterward to decide whether `safe` is warranted.
 

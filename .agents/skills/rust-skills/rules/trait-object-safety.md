@@ -91,14 +91,14 @@ fn demo() {
 
 ## Dyn-Compatibility Rules (Quick Reference)
 
-| Feature | Allowed in `dyn Trait`? |
-|---|---|
-| `&self` / `&mut self` methods | Yes |
-| Methods returning `Self` by value | No — use `Box<Self>` or gate with `where Self: Sized` |
-| Generic method parameters (`fn f<T>`) | No — gate with `where Self: Sized` |
-| Associated constants | No |
-| Associated types | Yes (type is erased but fixed per impl) |
-| `where Self: Sized` methods | Excluded from vtable, safe to have |
+| Feature                               | Allowed in `dyn Trait`?                               |
+| ------------------------------------- | ----------------------------------------------------- |
+| `&self` / `&mut self` methods         | Yes                                                   |
+| Methods returning `Self` by value     | No — use `Box<Self>` or gate with `where Self: Sized` |
+| Generic method parameters (`fn f<T>`) | No — gate with `where Self: Sized`                    |
+| Associated constants                  | No                                                    |
+| Associated types                      | Yes (type is erased but fixed per impl)               |
+| `where Self: Sized` methods           | Excluded from vtable, safe to have                    |
 
 See the Rust Reference — "Object Safety" — at doc.rust-lang.org/reference/items/traits.html#object-safety for the full rules.
 

@@ -58,12 +58,12 @@ fn fast_map_example() -> FastMap<u32, u64> {
 
 ## Hasher Selection Guide
 
-| Hasher | Crate | DoS-resistant | Speed | Use when |
-|--------|-------|--------------|-------|----------|
-| `SipHash-1-3` | std (default) | Yes | Baseline | Keys from untrusted external input |
-| `ahash` | `ahash` | Yes (randomized) | ~2× faster | General-purpose replacement; safe default upgrade |
-| `FxHash` | `rustc-hash` | No | Fastest | Trusted integer/pointer keys, compiler internals |
-| `gxhash` | `gxhash` | Optional | Very fast (SIMD) | Throughput-critical, homogeneous key types |
+| Hasher        | Crate         | DoS-resistant    | Speed            | Use when                                          |
+| ------------- | ------------- | ---------------- | ---------------- | ------------------------------------------------- |
+| `SipHash-1-3` | std (default) | Yes              | Baseline         | Keys from untrusted external input                |
+| `ahash`       | `ahash`       | Yes (randomized) | ~2× faster       | General-purpose replacement; safe default upgrade |
+| `FxHash`      | `rustc-hash`  | No               | Fastest          | Trusted integer/pointer keys, compiler internals  |
+| `gxhash`      | `gxhash`      | Optional         | Very fast (SIMD) | Throughput-critical, homogeneous key types        |
 
 ## Key Points
 

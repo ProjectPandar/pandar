@@ -4,7 +4,7 @@
 
 ## Why It Matters
 
-Logging only the top-level `Display` of an error silently drops the underlying cause chain — you see "request failed" but not *why*. The two common fixes are: use `?` format (`error = ?err`) to capture `Debug` output including the chain, or use `{:#}` on an `anyhow::Error` which formats the full cause chain. The second hazard is the log-and-return anti-pattern: logging the error at every propagation layer records the same failure multiple times with different amounts of context, polluting aggregators. Log once, at the boundary that *handles* the error; everywhere else, propagate with `?` and optionally add context.
+Logging only the top-level `Display` of an error silently drops the underlying cause chain — you see "request failed" but not _why_. The two common fixes are: use `?` format (`error = ?err`) to capture `Debug` output including the chain, or use `{:#}` on an `anyhow::Error` which formats the full cause chain. The second hazard is the log-and-return anti-pattern: logging the error at every propagation layer records the same failure multiple times with different amounts of context, polluting aggregators. Log once, at the boundary that _handles_ the error; everywhere else, propagate with `?` and optionally add context.
 
 ## Bad
 
@@ -82,7 +82,7 @@ fn process(_data: Vec<u8>) {}
 - **`error = ?err`**: uses `Debug` — prints the error and its `source()` chain for types that implement it.
 - **`format!("{err:#}")`** or `%format!(...)`: `anyhow::Error`'s alternate Display walks the full chain with `: ` separators.
 - **Propagate, don't log**: use `?` and `.context()` / `.with_context()` at intermediate layers; log at the single handling boundary.
-- If you *must* log at a non-handling layer (e.g., background task that discards the error), use `warn!` not `error!` to signal it was absorbed.
+- If you _must_ log at a non-handling layer (e.g., background task that discards the error), use `warn!` not `error!` to signal it was absorbed.
 - The `tracing-error` crate provides `SpanTrace` to capture the span context at the error site and attach it to the error type.
 
 ## See Also

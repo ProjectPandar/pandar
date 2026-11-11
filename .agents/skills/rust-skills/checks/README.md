@@ -24,7 +24,7 @@ Both run in CI (`.github/workflows/ci.yml`): `validate` (Python only) and
 ## Updating the baseline
 
 `baseline.txt` lists the currently-accepted suspects (fragments/pseudocode the
-heuristics can't auto-classify). The CI gate fails only on signatures *not* in
+heuristics can't auto-classify). The CI gate fails only on signatures _not_ in
 it. After intentionally adding/changing examples, regenerate it on the pinned
 toolchain and review the diff:
 

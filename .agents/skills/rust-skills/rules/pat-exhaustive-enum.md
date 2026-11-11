@@ -61,7 +61,7 @@ fn is_terminal(s: &Status) -> bool {
 
 ## When `_` Is Required: Foreign `#[non_exhaustive]` Enums
 
-External crates may mark enums `#[non_exhaustive]`, which means the compiler *forces* a wildcard. Document the intent:
+External crates may mark enums `#[non_exhaustive]`, which means the compiler _forces_ a wildcard. Document the intent:
 
 ```rust
 // From a hypothetical external crate:

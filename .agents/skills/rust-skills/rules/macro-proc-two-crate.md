@@ -7,6 +7,7 @@
 A crate marked `proc-macro = true` in `Cargo.toml` compiles for the host (the build machine) and can **only** export procedural macros — no regular types, traits, or functions. If your library needs both a derive/attribute macro and ordinary APIs, you must split into two crates: a `mycrate-derive` (or `mycrate-macros`) proc-macro crate and a `mycrate` facade crate that re-exports everything.
 
 The facade approach ensures:
+
 - Users add only `mycrate` as a dependency.
 - Generated code refers to types through `::mycrate::__private::...`, so the impl crate version is invisible.
 - Workspace dependency inheritance keeps both crates locked to the same version without repetition.

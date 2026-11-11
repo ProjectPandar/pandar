@@ -50,16 +50,16 @@ fn handle_request(req: &Request, status: u16) {
 
 ## Field Sigil Reference
 
-| Syntax | Trait used | When to use |
-|---|---|---|
-| `field = value` | native (primitive) | integers, bools, floats |
-| `field = %expr` | `Display` | strings, IDs, URLs, types with clean `Display` |
-| `field = ?expr` | `Debug` | structs, enums, vecs — for diagnostics |
-| `field` (shorthand) | same as `field = field` | when name matches variable |
+| Syntax              | Trait used              | When to use                                    |
+| ------------------- | ----------------------- | ---------------------------------------------- |
+| `field = value`     | native (primitive)      | integers, bools, floats                        |
+| `field = %expr`     | `Display`               | strings, IDs, URLs, types with clean `Display` |
+| `field = ?expr`     | `Debug`                 | structs, enums, vecs — for diagnostics         |
+| `field` (shorthand) | same as `field = field` | when name matches variable                     |
 
 ## Key Points
 
-- Keep the message string short, stable, and human-readable. It should make sense *without* the fields.
+- Keep the message string short, stable, and human-readable. It should make sense _without_ the fields.
 - Prefer `%` over `?` for values that have a clean `Display` (e.g., `%id`, `%path`) — JSON backends quote Debug output inconsistently.
 - Use namespaced field names like `user.id`, `http.status`, `db.query` when aligning to OpenTelemetry semantic conventions.
 - Avoid placing the same data in both the message and a field (redundant and noisy).

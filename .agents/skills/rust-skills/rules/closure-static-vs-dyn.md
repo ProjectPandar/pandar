@@ -67,13 +67,13 @@ fn demo() {
 
 ## Decision Table
 
-| Situation | Use |
-|-----------|-----|
-| Hot inner loop, single call site | `impl Fn` / generic `F: Fn` |
-| Callback stored in a struct field | `Box<dyn Fn>` |
-| Collection of mixed closures | `Vec<Box<dyn Fn(…)>>` |
+| Situation                                | Use                           |
+| ---------------------------------------- | ----------------------------- |
+| Hot inner loop, single call site         | `impl Fn` / generic `F: Fn`   |
+| Callback stored in a struct field        | `Box<dyn Fn>`                 |
+| Collection of mixed closures             | `Vec<Box<dyn Fn(…)>>`         |
 | Pass-through, one level deep, not stored | `&dyn Fn` (avoids allocation) |
-| Called across an `await` point | `Box<dyn Fn + Send>` |
+| Called across an `await` point           | `Box<dyn Fn + Send>`          |
 
 **Note:** `&dyn Fn` is useful to avoid an allocation when you only need to borrow the closure for one call and do not store it. Pass `&closure` (reference to a stack-allocated closure) rather than boxing.
 

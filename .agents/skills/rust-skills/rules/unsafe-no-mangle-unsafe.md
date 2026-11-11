@@ -44,17 +44,17 @@ static INIT: extern "C" fn() = init;
 
 ## Migration
 
-| Rust 2021 | Rust 2024 |
-|-----------|-----------|
-| `#[no_mangle]` | `#[unsafe(no_mangle)]` |
-| `#[export_name = "sym"]` | `#[unsafe(export_name = "sym")]` |
+| Rust 2021                  | Rust 2024                          |
+| -------------------------- | ---------------------------------- |
+| `#[no_mangle]`             | `#[unsafe(no_mangle)]`             |
+| `#[export_name = "sym"]`   | `#[unsafe(export_name = "sym")]`   |
 | `#[link_section = ".sec"]` | `#[unsafe(link_section = ".sec")]` |
 
 Run `cargo fix --edition` when migrating to the 2024 edition — it rewrites bare attribute forms to `#[unsafe(...)]` automatically. Review each one afterward: confirm that the exported symbol name is unique across the binary.
 
 ## Key Points
 
-- The `unsafe(...)` wrapper does **not** require an `unsafe {}` block at the call site; it marks the *attribute itself* as load-bearing for safety. The annotation documents that the programmer accepted responsibility for symbol uniqueness and ABI correctness.
+- The `unsafe(...)` wrapper does **not** require an `unsafe {}` block at the call site; it marks the _attribute itself_ as load-bearing for safety. The annotation documents that the programmer accepted responsibility for symbol uniqueness and ABI correctness.
 - Symbol collisions are especially dangerous in plugin architectures, `cdylib` crates, embedded firmware with custom linker scripts, and any codebase that links multiple Rust crates into a single binary.
 - These attributes interact with `unsafe extern` blocks (see `unsafe-extern-block`): external symbols you import and symbols you export follow the same 2024-edition safety rules.
 - The bare forms (`#[no_mangle]` without `unsafe`) are a hard error in Rust 2024 edition code. They still compile in earlier editions but emit a deprecation warning with `--warn future-incompatible`.

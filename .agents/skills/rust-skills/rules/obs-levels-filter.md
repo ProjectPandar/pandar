@@ -63,13 +63,13 @@ fn main() {
 
 ## Level Guidelines
 
-| Level | Use for | Example |
-|---|---|---|
-| `error!` | Failures that need immediate attention | database connection lost |
-| `warn!` | Recoverable anomalies, degraded state | retrying after timeout |
-| `info!` | High-level lifecycle events | server started, request complete |
-| `debug!` | Diagnostic detail for development | query parameters, cache status |
-| `trace!` | Very verbose, per-iteration detail | loop counters, raw bytes |
+| Level    | Use for                                | Example                          |
+| -------- | -------------------------------------- | -------------------------------- |
+| `error!` | Failures that need immediate attention | database connection lost         |
+| `warn!`  | Recoverable anomalies, degraded state  | retrying after timeout           |
+| `info!`  | High-level lifecycle events            | server started, request complete |
+| `debug!` | Diagnostic detail for development      | query parameters, cache status   |
+| `trace!` | Very verbose, per-iteration detail     | loop counters, raw bytes         |
 
 ## Key Points
 

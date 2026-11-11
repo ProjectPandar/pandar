@@ -88,14 +88,14 @@ fn main() {
 
 ## Decision Guide
 
-| Situation | Verdict |
-|-----------|---------|
-| Arithmetic on a numeric newtype or geometric type | Implement |
-| Set operations (`|` for union, `&` for intersection) | Implement |
-| String concatenation on a custom string type | Implement |
-| `Index`/`IndexMut` on a container that holds items | Implement |
-| `+` or `*` with visible side effects | Never |
-| Operator meaning depends on context not captured by types | Use a named method |
+| Situation                                                 | Verdict                          |
+| --------------------------------------------------------- | -------------------------------- | --------- |
+| Arithmetic on a numeric newtype or geometric type         | Implement                        |
+| Set operations (`                                         | `for union,`&` for intersection) | Implement |
+| String concatenation on a custom string type              | Implement                        |
+| `Index`/`IndexMut` on a container that holds items        | Implement                        |
+| `+` or `*` with visible side effects                      | Never                            |
+| Operator meaning depends on context not captured by types | Use a named method               |
 
 ## Notes
 

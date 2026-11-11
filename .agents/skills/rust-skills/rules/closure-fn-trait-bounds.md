@@ -73,11 +73,11 @@ fn demo() {
 
 ## Key Points
 
-| Trait | Captures | Calls | Accepts |
-|-------|----------|-------|---------|
-| `FnOnce` | may consume | exactly once | all closures |
-| `FnMut` | may mutate | multiple | non-consuming |
-| `Fn` | read-only | multiple / shared | pure closures |
+| Trait    | Captures    | Calls             | Accepts       |
+| -------- | ----------- | ----------------- | ------------- |
+| `FnOnce` | may consume | exactly once      | all closures  |
+| `FnMut`  | may mutate  | multiple          | non-consuming |
+| `Fn`     | read-only   | multiple / shared | pure closures |
 
 - `FnMut` requires `mut f` at the call site (the parameter or binding must be `mut`).
 - `Fn: FnMut: FnOnce` — a `Fn` closure satisfies an `FnOnce` bound, not the other way around.

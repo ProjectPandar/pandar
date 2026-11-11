@@ -82,15 +82,15 @@ fn demo() {
 
 ## Decision Table
 
-| Situation | Prefer |
-|---|---|
-| Single known concrete type | `impl Trait` / generic |
-| Hot path, inlining critical | Generic bound |
-| Heterogeneous collection (`Vec<Box<dyn …>>`) | `dyn Trait` |
-| Storing trait objects across calls | `dyn Trait` |
-| Returning erased type from `fn` | `Box<dyn Trait>` or `impl Trait` (static) |
-| Binary size matters, many monomorphisations | `dyn Trait` |
-| Plug-in / callback registered at runtime | `dyn Trait` |
+| Situation                                    | Prefer                                    |
+| -------------------------------------------- | ----------------------------------------- |
+| Single known concrete type                   | `impl Trait` / generic                    |
+| Hot path, inlining critical                  | Generic bound                             |
+| Heterogeneous collection (`Vec<Box<dyn …>>`) | `dyn Trait`                               |
+| Storing trait objects across calls           | `dyn Trait`                               |
+| Returning erased type from `fn`              | `Box<dyn Trait>` or `impl Trait` (static) |
+| Binary size matters, many monomorphisations  | `dyn Trait`                               |
+| Plug-in / callback registered at runtime     | `dyn Trait`                               |
 
 ## See Also
 

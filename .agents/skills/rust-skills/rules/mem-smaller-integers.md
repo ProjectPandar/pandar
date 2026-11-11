@@ -56,16 +56,16 @@ struct GeoPoint {
 
 ## Integer Size Reference
 
-| Type | Range | Use For |
-|------|-------|---------|
-| `u8` | 0 to 255 | Bytes, small counts, flags |
-| `i8` | -128 to 127 | Small signed values |
-| `u16` | 0 to 65,535 | Port numbers, small indices |
-| `i16` | -32,768 to 32,767 | Audio samples |
-| `u32` | 0 to 4 billion | Array indices, timestamps (seconds) |
-| `i32` | ±2 billion | General integers, file offsets |
-| `u64` | 0 to 18 quintillion | Large counts, nanosecond timestamps |
-| `usize` | Platform-dependent | Array indexing (required by Rust) |
+| Type    | Range               | Use For                             |
+| ------- | ------------------- | ----------------------------------- |
+| `u8`    | 0 to 255            | Bytes, small counts, flags          |
+| `i8`    | -128 to 127         | Small signed values                 |
+| `u16`   | 0 to 65,535         | Port numbers, small indices         |
+| `i16`   | -32,768 to 32,767   | Audio samples                       |
+| `u32`   | 0 to 4 billion      | Array indices, timestamps (seconds) |
+| `i32`   | ±2 billion          | General integers, file offsets      |
+| `u64`   | 0 to 18 quintillion | Large counts, nanosecond timestamps |
+| `usize` | Platform-dependent  | Array indexing (required by Rust)   |
 
 ## Struct Packing
 
@@ -157,5 +157,5 @@ let id: Option<NonZeroU64> = NonZeroU64::new(42);
 - [mem-box-large-variant](./mem-box-large-variant.md) - Optimizing enum sizes
 - [mem-assert-type-size](./mem-assert-type-size.md) - Compile-time size checks
 - [type-newtype-ids](./type-newtype-ids.md) - Type safety for integer IDs
-- [num-nonzero](num-nonzero.md) - NonZero* niche optimization
+- [num-nonzero](num-nonzero.md) - NonZero\* niche optimization
 - [num-cast-try-from](num-cast-try-from.md) - Avoid lossy `as` casts

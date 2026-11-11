@@ -72,12 +72,12 @@ mod tests {
 
 ## Key Points
 
-| Method family | Returns | Use when |
-|---|---|---|
-| `checked_*` | `Option<T>` | overflow is an error your caller must handle |
-| `saturating_*` | `T` | clamping at the type's bounds is correct behavior |
-| `wrapping_*` | `T` | modular arithmetic is intentional (e.g., checksums, ring buffers) |
-| `overflowing_*` | `(T, bool)` | you need the result *and* know whether it overflowed |
+| Method family   | Returns     | Use when                                                          |
+| --------------- | ----------- | ----------------------------------------------------------------- |
+| `checked_*`     | `Option<T>` | overflow is an error your caller must handle                      |
+| `saturating_*`  | `T`         | clamping at the type's bounds is correct behavior                 |
+| `wrapping_*`    | `T`         | modular arithmetic is intentional (e.g., checksums, ring buffers) |
+| `overflowing_*` | `(T, bool)` | you need the result _and_ know whether it overflowed              |
 
 These methods are available on all primitive integer types in the standard library (`u8` through `u128`, `i8` through `i128`, `usize`, `isize`). Equivalent sub/mul/div/shl/shr variants exist for every arithmetic operation.
 

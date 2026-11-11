@@ -61,7 +61,7 @@ fn demo() {
 - **Thread closures** passed to `std::thread::spawn` must be `'static`, which `move` enables when all captured types are `'static + Send`.
 - **Clone selectively:** clone only what the closure needs, not the whole owning struct — see [closure-disjoint-capture](closure-disjoint-capture.md).
 - **Async tasks** follow the same rule: `tokio::spawn(async move { … })` takes ownership; clone shared data before the `async move` block.
-- A `move` closure can still implement `Fn` or `FnMut` — `move` only controls *how* captures are taken, not how many times the closure can be called.
+- A `move` closure can still implement `Fn` or `FnMut` — `move` only controls _how_ captures are taken, not how many times the closure can be called.
 
 ## See Also
 

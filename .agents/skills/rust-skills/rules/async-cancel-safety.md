@@ -68,18 +68,18 @@ async fn good_example(
 
 ## What Is and Is Not Cancel-Safe
 
-| Operation | Cancel-safe? | Notes |
-|---|---|---|
-| `mpsc::Receiver::recv()` | Yes | drops nothing on cancel |
-| `broadcast::Receiver::recv()` | Yes | position tracked in receiver |
-| `watch::Receiver::changed()` | Yes | no data consumed on cancel |
-| `oneshot::Receiver` | Yes | message remains in channel |
-| `tokio::time::sleep` | Yes | timer resets cleanly |
-| `AsyncRead::read()` | Yes | partial reads surfaced to caller |
-| `AsyncRead::read_exact()` | **No** | partially filled buffer is lost |
-| `AsyncRead::read_to_end()` | **No** | accumulation is inside the future |
-| `Mutex::lock()` | Yes | lock not acquired if dropped |
-| collecting into a `Vec` inside a future | **No** | partial state is inside the future |
+| Operation                               | Cancel-safe? | Notes                              |
+| --------------------------------------- | ------------ | ---------------------------------- |
+| `mpsc::Receiver::recv()`                | Yes          | drops nothing on cancel            |
+| `broadcast::Receiver::recv()`           | Yes          | position tracked in receiver       |
+| `watch::Receiver::changed()`            | Yes          | no data consumed on cancel         |
+| `oneshot::Receiver`                     | Yes          | message remains in channel         |
+| `tokio::time::sleep`                    | Yes          | timer resets cleanly               |
+| `AsyncRead::read()`                     | Yes          | partial reads surfaced to caller   |
+| `AsyncRead::read_exact()`               | **No**       | partially filled buffer is lost    |
+| `AsyncRead::read_to_end()`              | **No**       | accumulation is inside the future  |
+| `Mutex::lock()`                         | Yes          | lock not acquired if dropped       |
+| collecting into a `Vec` inside a future | **No**       | partial state is inside the future |
 
 ## Patterns for Non-Cancel-Safe Operations
 

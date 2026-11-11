@@ -119,8 +119,8 @@ macOS CLI startup was not re-executed on this host because it has no Linux or ma
 Release workflow executed each archive's CLI and ABI probe natively on its target OS before
 publication.
 
-| ABI series | Linux amd64 | macOS amd64 | macOS arm64 | Windows amd64 | Windows hook |
-| ---------- | ----------- | ----------- | ----------- | ------------- | ------------ |
+| ABI series | Linux amd64                                                        | macOS amd64                                                        | macOS arm64                                                        | Windows amd64                                                      | Windows hook                                                       |
+| ---------- | ------------------------------------------------------------------ | ------------------------------------------------------------------ | ------------------------------------------------------------------ | ------------------------------------------------------------------ | ------------------------------------------------------------------ |
 | `02.06.00` | `cc73066f7b8523c4577e51525837a54d7f54f3f349f5d8d0cc6f9663441afd63` | `cb6cf239c77a0fb1544661a7137d5fcd69d808f23882fed6d91847b517b14864` | `6ec33c91ae917a1f5db0dbbfcb8cb67baddce4c727698d8477dc85b7c28c828b` | `dd425d844384026f0328c0d6e15ea4105cdf9e6fb727d0638e8265601c09b55b` | `08233dee77d75d8f70aaa437461f391c23c4e229ecdc150cf6708c438d1950dd` |
 | `02.06.01` | `e1e34f52cb6285a3381d6df554c2574434174e98ab662414a0acd0ced93ba387` | `4f7b42ab9c93915ec26217d1fe1c9e81a5f1f24c4fa3ae61f35f7a2a208e23f6` | `cdc80780c181f0f8d75e48fe43c4e57e32f01ce11a180066e9095f5e2a8cf505` | `80cafe303d637a44f13596cb3514c464f193a278f3a0276c60fca9d3b6783c6b` | `d7300a7fd192c83978a56c79f3d24c0d99eb8b178bcc1d2e23c5285dd48d06c0` |
 | `02.07.00` | `e669e8c0839f813a3e3410948af373e024c4aa1cf867b75da469e524666738ce` | `1243ec0ba1af60678606ac3957d7c193a5028871c51577950a9a415d98c845a8` | `0a5e5f0d5e7411e71d69758cd10b25e0d457e4e494c04abe51b85face647e5dc` | `894d9cb083ad7544dbb99c5971a80a5e1e5c73e5907d25266e0504fe16c9655e` | `018ea3231588663384315787adce71e63ee93bc5bb6f26fa14fe64e6a0bf3bad` |
@@ -140,6 +140,7 @@ Both image manifests identify release commit `932cf9e03315edebc54579b4b5a454c6dc
 version `v0.2.2`. Helm chart `0.2.2` has OCI digest
 `sha256:cd9e0a77b9c6e6fd6c7a2b9404a3de91c09576ce615bff14614c41a4efd1075d` and declares
 `appVersion: v0.2.2`.
+
 ## v0.2.1 Tagged Release Evidence
 
 Annotated tag `v0.2.1` resolves to commit `57930101c55191f4fb7c21f94ba6ab22d60d6b86`.

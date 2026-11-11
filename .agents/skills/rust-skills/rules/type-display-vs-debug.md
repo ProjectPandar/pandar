@@ -62,10 +62,10 @@ fn main() {
 
 ## Guidelines
 
-| Trait | Format | Audience | How to implement |
-|-------|--------|----------|-----------------|
-| `Debug` | `{:?}` / `{:#?}` | Developers, logs | `#[derive(Debug)]` (almost always) |
-| `Display` | `{}` | End users, error messages | Hand-write to describe the condition clearly |
+| Trait     | Format           | Audience                  | How to implement                             |
+| --------- | ---------------- | ------------------------- | -------------------------------------------- |
+| `Debug`   | `{:?}` / `{:#?}` | Developers, logs          | `#[derive(Debug)]` (almost always)           |
+| `Display` | `{}`             | End users, error messages | Hand-write to describe the condition clearly |
 
 - Never derive `Display` — it must be intentionally written.
 - `#[derive(Debug)]` on every public type (API Guidelines C-DEBUG).

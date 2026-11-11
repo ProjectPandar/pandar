@@ -46,13 +46,13 @@ fn sort_large(data: &mut [f64]) {
 
 ## Key Points
 
-| Concern | Guidance |
-|---------|----------|
-| Import | `use rayon::prelude::*;` enables `.par_iter()` on slices and most collections |
-| IO-bound work | Use async (`tokio`, `async-std`), not rayon — rayon threads block |
-| Small collections | Sequential is often faster due to thread-spawn overhead; profile first |
-| Minimum chunk size | Rayon's `with_min_len()` / `with_max_len()` tune granularity |
-| Shared state | Use `Mutex` or atomic operations; rayon does not prevent data races |
+| Concern            | Guidance                                                                      |
+| ------------------ | ----------------------------------------------------------------------------- |
+| Import             | `use rayon::prelude::*;` enables `.par_iter()` on slices and most collections |
+| IO-bound work      | Use async (`tokio`, `async-std`), not rayon — rayon threads block             |
+| Small collections  | Sequential is often faster due to thread-spawn overhead; profile first        |
+| Minimum chunk size | Rayon's `with_min_len()` / `with_max_len()` tune granularity                  |
+| Shared state       | Use `Mutex` or atomic operations; rayon does not prevent data races           |
 
 ## When to Use
 

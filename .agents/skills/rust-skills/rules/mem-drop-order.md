@@ -8,13 +8,13 @@ Drop order is observable. RAII guards (mutex locks, file handles, database trans
 
 ## The Rules
 
-| Construct | Drop order |
-|---|---|
-| Struct fields | Declaration order: first field declared, first dropped |
-| Tuple / array elements | In order: index 0, 1, 2, … |
-| Local variables | Reverse declaration order: last declared, first dropped |
-| Temporaries in a statement | End of the statement (with some exceptions) |
-| Function arguments | Reverse order of the parameter list |
+| Construct                  | Drop order                                              |
+| -------------------------- | ------------------------------------------------------- |
+| Struct fields              | Declaration order: first field declared, first dropped  |
+| Tuple / array elements     | In order: index 0, 1, 2, …                              |
+| Local variables            | Reverse declaration order: last declared, first dropped |
+| Temporaries in a statement | End of the statement (with some exceptions)             |
+| Function arguments         | Reverse order of the parameter list                     |
 
 ## Bad
 

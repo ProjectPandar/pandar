@@ -93,12 +93,12 @@ fn main() {
 
 ## Max-heap vs Min-heap at a glance
 
-| Want | How |
-|---|---|
-| Largest item first (max-heap) | `BinaryHeap<T>` directly |
-| Smallest item first (min-heap) | `BinaryHeap<Reverse<T>>` |
-| Peek without removing | `.peek()` — O(1) |
-| Drain in sorted order | `.into_sorted_vec()` — O(n log n) |
+| Want                           | How                               |
+| ------------------------------ | --------------------------------- |
+| Largest item first (max-heap)  | `BinaryHeap<T>` directly          |
+| Smallest item first (min-heap) | `BinaryHeap<Reverse<T>>`          |
+| Peek without removing          | `.peek()` — O(1)                  |
+| Drain in sorted order          | `.into_sorted_vec()` — O(n log n) |
 
 **Note:** `BinaryHeap` does not support efficient arbitrary removal or priority updates. If you need those, consider a third-party crate like `keyed_priority_queue` or restructure with lazy deletion.
 

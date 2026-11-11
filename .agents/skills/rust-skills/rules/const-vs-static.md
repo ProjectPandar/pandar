@@ -62,15 +62,15 @@ fn set_greeting(name: &str) {
 
 ## When to Prefer Which
 
-| Situation | Use |
-|-----------|-----|
-| Small constant (number, bool, tiny array) | `const` |
-| String literal | `const` or `static` (both work; prefer `const`) |
-| Large lookup table | `static` |
-| Need `&'static T` | `static` |
-| Mutable counter / flag | `static AtomicXxx` |
-| Lazily initialized value | `static LazyLock<T>` |
-| Single-writer initialization | `static OnceLock<T>` |
+| Situation                                 | Use                                             |
+| ----------------------------------------- | ----------------------------------------------- |
+| Small constant (number, bool, tiny array) | `const`                                         |
+| String literal                            | `const` or `static` (both work; prefer `const`) |
+| Large lookup table                        | `static`                                        |
+| Need `&'static T`                         | `static`                                        |
+| Mutable counter / flag                    | `static AtomicXxx`                              |
+| Lazily initialized value                  | `static LazyLock<T>`                            |
+| Single-writer initialization              | `static OnceLock<T>`                            |
 
 ## See Also
 

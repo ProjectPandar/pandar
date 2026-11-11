@@ -65,12 +65,12 @@ enum Value {
 
 ## Comparison Table
 
-| Strategy | Attribute | Wire form (Circle) | Tuple variant |
-|---|---|---|---|
-| Externally tagged | (default) | `{"Circle":{"radius":5}}` | yes |
-| Internally tagged | `#[serde(tag = "type")]` | `{"type":"Circle","radius":5}` | no |
-| Adjacently tagged | `#[serde(tag="t", content="c")]` | `{"t":"Circle","c":{"radius":5}}` | yes |
-| Untagged | `#[serde(untagged)]` | `{"radius":5}` | yes |
+| Strategy          | Attribute                        | Wire form (Circle)                | Tuple variant |
+| ----------------- | -------------------------------- | --------------------------------- | ------------- |
+| Externally tagged | (default)                        | `{"Circle":{"radius":5}}`         | yes           |
+| Internally tagged | `#[serde(tag = "type")]`         | `{"type":"Circle","radius":5}`    | no            |
+| Adjacently tagged | `#[serde(tag="t", content="c")]` | `{"t":"Circle","c":{"radius":5}}` | yes           |
+| Untagged          | `#[serde(untagged)]`             | `{"radius":5}`                    | yes           |
 
 ## Caveats
 

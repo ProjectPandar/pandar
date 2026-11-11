@@ -72,12 +72,12 @@ fn main() {
 
 ## Which to Use
 
-| Requirement | Choose |
-|---|---|
-| Fast membership test, no ordering needed | `HashSet<T>` |
-| Membership test + sorted iteration | `BTreeSet<T>` |
-| Tiny set (≤ 8 items) | `Vec<T>` with `.contains` may be fine |
-| Keep duplicates or care about insertion order | `Vec<T>` |
+| Requirement                                   | Choose                                |
+| --------------------------------------------- | ------------------------------------- |
+| Fast membership test, no ordering needed      | `HashSet<T>`                          |
+| Membership test + sorted iteration            | `BTreeSet<T>`                         |
+| Tiny set (≤ 8 items)                          | `Vec<T>` with `.contains` may be fine |
+| Keep duplicates or care about insertion order | `Vec<T>`                              |
 
 **Tip:** when building a `HashSet` that will be queried many times, call `HashSet::with_capacity(n)` upfront to avoid rehashing. See `mem-with-capacity`.
 

@@ -16,7 +16,7 @@ fn build_tree() -> Arc<Node> {
     let root = Arc::new(Node::new("root"));
     let child1 = Arc::new(Node::new("child1"));
     let child2 = Arc::new(Node::new("child2"));
-    
+
     // All in same thread, but paying atomic overhead
     root.add_child(child1.clone());
     root.add_child(child2.clone());
@@ -36,7 +36,7 @@ fn build_tree() -> Rc<Node> {
     let root = Rc::new(Node::new("root"));
     let child1 = Rc::new(Node::new("child1"));
     let child2 = Rc::new(Node::new("child2"));
-    
+
     root.add_child(child1.clone());
     root.add_child(child2.clone());
     root
@@ -48,12 +48,12 @@ fn build_tree() -> Rc<Node> {
 
 ## Decision Guide
 
-| Scenario | Use |
-|----------|-----|
-| Single-threaded, shared ownership | `Rc<T>` |
-| Multi-threaded, shared ownership | `Arc<T>` |
+| Scenario                                | Use                                |
+| --------------------------------------- | ---------------------------------- |
+| Single-threaded, shared ownership       | `Rc<T>`                            |
+| Multi-threaded, shared ownership        | `Arc<T>`                           |
 | Single owner, might need multiple later | Start with `Rc`, upgrade if needed |
-| Library code, unknown threading model | `Arc<T>` (safer default) |
+| Library code, unknown threading model   | `Arc<T>` (safer default)           |
 
 ## Breaking Cycles with Weak
 
@@ -85,7 +85,7 @@ let _maybe_parent: Option<Rc<Node>> = child.parent.borrow().upgrade();
 ## Key Points
 
 - Prefer `Rc::clone(&x)` to `x.clone()`: it makes the cheap refcount bump explicit and visually distinct from a deep clone.
-- `Rc<T>` gives shared *immutable* access; pair it with `RefCell<T>` (`Rc<RefCell<T>>`) for shared mutability in single-threaded code.
+- `Rc<T>` gives shared _immutable_ access; pair it with `RefCell<T>` (`Rc<RefCell<T>>`) for shared mutability in single-threaded code.
 - `Rc::strong_count(&x)` / `Rc::weak_count(&x)` inspect the counts — handy in tests.
 - `Rc` is `!Send` and `!Sync`, so the compiler rejects sending it across threads; switch to `Arc` (with `Mutex`/`RwLock`) at a thread boundary.
 

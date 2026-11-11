@@ -93,12 +93,12 @@ fn main() {
 
 ## Which to Use
 
-| Requirement | Choose |
-|---|---|
-| Fast lookup, order irrelevant | `HashMap` |
-| Sorted iteration or range queries | `BTreeMap` |
+| Requirement                             | Choose                      |
+| --------------------------------------- | --------------------------- |
+| Fast lookup, order irrelevant           | `HashMap`                   |
+| Sorted iteration or range queries       | `BTreeMap`                  |
 | Insertion-order iteration + fast lookup | `IndexMap` (indexmap crate) |
-| Tiny map (≤ 8 entries), no heap | consider an array of tuples |
+| Tiny map (≤ 8 entries), no heap         | consider an array of tuples |
 
 **Note on hashing:** The default `HashMap` uses SipHash-1-3, which is DOS-resistant but not the fastest. For non-adversarial hot paths, see `perf-ahash` for a faster hasher that drops in as a type parameter.
 

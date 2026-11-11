@@ -27,10 +27,10 @@ Static analysis can surface leads, but it cannot prove a deletion safe by itself
 
 ## How it works
 
-| | `Focused` scope | `Broad` scope |
-| --- | --- | --- |
-| **`Survey` · read only** | Investigate one subsystem, state machine, or suspected duplication | Partition the repository and report candidates, counter-evidence, and blind spots |
-| **`Change` · authorized edits** | Prove and complete one explicit simplification boundary | Work in independently validated ownership batches |
+|                                 | `Focused` scope                                                    | `Broad` scope                                                                     |
+| ------------------------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| **`Survey` · read only**        | Investigate one subsystem, state machine, or suspected duplication | Partition the repository and report candidates, counter-evidence, and blind spots |
+| **`Change` · authorized edits** | Prove and complete one explicit simplification boundary            | Work in independently validated ownership batches                                 |
 
 Every serious candidate receives a proof record covering:
 

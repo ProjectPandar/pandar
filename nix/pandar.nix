@@ -161,12 +161,14 @@
 
       pandar-hub = buildRustPackage "pandar-hub" "-p pandar-hub --bin pandar-hub";
       pandar-agent-unwrapped = buildRustPackage "pandar-agent-unwrapped" "-p pandar-agent --bin pandar-agent";
-      pandar-agent = pkgs.runCommand "pandar-agent-${version}" { nativeBuildInputs = [ pkgs.makeWrapper ]; } ''
-        mkdir -p "$out/bin"
-        makeWrapper ${pandar-agent-unwrapped}/bin/pandar-agent "$out/bin/pandar-agent" \
-          --set-default PANDAR_FFMPEG_PATH ${lib.getExe pkgs.ffmpeg} \
-          --prefix PATH : ${lib.makeBinPath [ pkgs.ffmpeg ]}
-      '';
+      pandar-agent =
+        pkgs.runCommand "pandar-agent-${version}" { nativeBuildInputs = [ pkgs.makeWrapper ]; }
+          ''
+            mkdir -p "$out/bin"
+            makeWrapper ${pandar-agent-unwrapped}/bin/pandar-agent "$out/bin/pandar-agent" \
+              --set-default PANDAR_FFMPEG_PATH ${lib.getExe pkgs.ffmpeg} \
+              --prefix PATH : ${lib.makeBinPath [ pkgs.ffmpeg ]}
+          '';
       pandar-cli = buildRustPackage "pandar-cli" "-p pandar-app --bin pandar";
       pandar-quality = buildRustPackage "pandar-quality" "-p pandar-quality --bin pandar-quality";
       pandar-network-plugin = craneLib.buildPackage (

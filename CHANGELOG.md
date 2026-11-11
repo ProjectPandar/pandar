@@ -31,7 +31,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Native firmware and recovery ownership still requires one active Hub; the firmware package catalog is intentionally empty.
 - The Android client is built separately and is not attached to the GitHub Release.
 
-
 ## [0.2.1] - 2026-09-03
 
 ### Changed

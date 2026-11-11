@@ -26,6 +26,7 @@ Comprehensive guide for writing high-quality, idiomatic, and highly optimized Ru
 ## When to Apply
 
 Reference these guidelines when:
+
 - Writing new Rust functions, structs, or modules
 - Implementing error handling or async code
 - Writing concurrent, parallel, or `unsafe` code
@@ -37,34 +38,34 @@ Reference these guidelines when:
 
 ## Rule Categories by Priority
 
-| Priority | Category | Impact | Prefix | Rules |
-|----------|----------|--------|--------|-------|
-| 1 | Ownership & Borrowing | CRITICAL | `own-` | 12 |
-| 2 | Error Handling | CRITICAL | `err-` | 12 |
-| 3 | Memory Optimization | CRITICAL | `mem-` | 17 |
-| 4 | Unsafe Code | CRITICAL | `unsafe-` | 7 |
-| 5 | API Design | HIGH | `api-` | 17 |
-| 6 | Async/Await | HIGH | `async-` | 18 |
-| 7 | Concurrency | HIGH | `conc-` | 4 |
-| 8 | Compiler Optimization | HIGH | `opt-` | 12 |
-| 9 | Numeric & Arithmetic Safety | HIGH | `num-` | 5 |
-| 10 | Type Safety | MEDIUM | `type-` | 13 |
-| 11 | Trait & Generics Design | MEDIUM | `trait-` | 6 |
-| 12 | Conversions | MEDIUM | `conv-` | 3 |
-| 13 | Const & Compile-Time | MEDIUM | `const-` | 4 |
-| 14 | Serde | MEDIUM | `serde-` | 8 |
-| 15 | Pattern Matching | MEDIUM | `pat-` | 5 |
-| 16 | Macros | MEDIUM | `macro-` | 8 |
-| 17 | Closures | MEDIUM | `closure-` | 5 |
-| 18 | Collections | MEDIUM | `coll-` | 4 |
-| 19 | Naming Conventions | MEDIUM | `name-` | 16 |
-| 20 | Testing | MEDIUM | `test-` | 15 |
-| 21 | Documentation | MEDIUM | `doc-` | 12 |
-| 22 | Observability | MEDIUM | `obs-` | 7 |
-| 23 | Performance Patterns | MEDIUM | `perf-` | 13 |
-| 24 | Project Structure | LOW | `proj-` | 14 |
-| 25 | Clippy & Linting | LOW | `lint-` | 13 |
-| 26 | Anti-patterns | REFERENCE | `anti-` | 15 |
+| Priority | Category                    | Impact    | Prefix     | Rules |
+| -------- | --------------------------- | --------- | ---------- | ----- |
+| 1        | Ownership & Borrowing       | CRITICAL  | `own-`     | 12    |
+| 2        | Error Handling              | CRITICAL  | `err-`     | 12    |
+| 3        | Memory Optimization         | CRITICAL  | `mem-`     | 17    |
+| 4        | Unsafe Code                 | CRITICAL  | `unsafe-`  | 7     |
+| 5        | API Design                  | HIGH      | `api-`     | 17    |
+| 6        | Async/Await                 | HIGH      | `async-`   | 18    |
+| 7        | Concurrency                 | HIGH      | `conc-`    | 4     |
+| 8        | Compiler Optimization       | HIGH      | `opt-`     | 12    |
+| 9        | Numeric & Arithmetic Safety | HIGH      | `num-`     | 5     |
+| 10       | Type Safety                 | MEDIUM    | `type-`    | 13    |
+| 11       | Trait & Generics Design     | MEDIUM    | `trait-`   | 6     |
+| 12       | Conversions                 | MEDIUM    | `conv-`    | 3     |
+| 13       | Const & Compile-Time        | MEDIUM    | `const-`   | 4     |
+| 14       | Serde                       | MEDIUM    | `serde-`   | 8     |
+| 15       | Pattern Matching            | MEDIUM    | `pat-`     | 5     |
+| 16       | Macros                      | MEDIUM    | `macro-`   | 8     |
+| 17       | Closures                    | MEDIUM    | `closure-` | 5     |
+| 18       | Collections                 | MEDIUM    | `coll-`    | 4     |
+| 19       | Naming Conventions          | MEDIUM    | `name-`    | 16    |
+| 20       | Testing                     | MEDIUM    | `test-`    | 15    |
+| 21       | Documentation               | MEDIUM    | `doc-`     | 12    |
+| 22       | Observability               | MEDIUM    | `obs-`     | 7     |
+| 23       | Performance Patterns        | MEDIUM    | `perf-`    | 13    |
+| 24       | Project Structure           | LOW       | `proj-`    | 14    |
+| 25       | Clippy & Linting            | LOW       | `lint-`    | 13    |
+| 26       | Anti-patterns               | REFERENCE | `anti-`    | 15    |
 
 ---
 
@@ -295,7 +296,7 @@ Reference these guidelines when:
 - [`name-as-free`](rules/name-as-free.md) - `as_` prefix: free reference conversion
 - [`name-to-expensive`](rules/name-to-expensive.md) - Use `to_` prefix for expensive conversions that allocate or compute
 - [`name-into-ownership`](rules/name-into-ownership.md) - Use `into_` prefix for ownership-consuming conversions
-- [`name-no-get-prefix`](rules/name-no-get-prefix.md) - Omit get_ prefix for simple getters
+- [`name-no-get-prefix`](rules/name-no-get-prefix.md) - Omit get\_ prefix for simple getters
 - [`name-is-has-bool`](rules/name-is-has-bool.md) - Use `is_`, `has_`, `can_`, `should_` prefixes for boolean-returning methods
 - [`name-iter-convention`](rules/name-iter-convention.md) - Use iter/iter_mut/into_iter for iterator methods
 - [`name-iter-method`](rules/name-iter-method.md) - Name iterator methods `iter()`, `iter_mut()`, and `into_iter()` consistently
@@ -451,23 +452,23 @@ This skill provides rule identifiers for quick reference. When generating or rev
 
 ### Rule Application by Task
 
-| Task | Primary Categories |
-|------|-------------------|
-| New function | `own-`, `err-`, `name-`, `pat-` |
-| New struct/API | `api-`, `type-`, `conv-`, `doc-` |
-| Async code | `async-`, `own-` |
-| Concurrency / parallelism | `conc-`, `async-`, `own-` |
-| Unsafe code | `unsafe-`, `type-`, `test-` |
-| Error handling | `err-`, `api-`, `pat-` |
-| Type conversions | `conv-`, `api-` |
-| Serialization (serde) | `serde-`, `type-`, `api-` |
-| Numeric / arithmetic | `num-`, `type-` |
-| Macros / code generation | `macro-`, `anti-` |
-| Closures / callbacks | `closure-`, `type-` |
-| Logging / observability | `obs-`, `err-` |
-| Memory optimization | `mem-`, `own-`, `perf-` |
-| Performance tuning | `opt-`, `mem-`, `perf-` |
-| Code review | `anti-`, `lint-` |
+| Task                      | Primary Categories               |
+| ------------------------- | -------------------------------- |
+| New function              | `own-`, `err-`, `name-`, `pat-`  |
+| New struct/API            | `api-`, `type-`, `conv-`, `doc-` |
+| Async code                | `async-`, `own-`                 |
+| Concurrency / parallelism | `conc-`, `async-`, `own-`        |
+| Unsafe code               | `unsafe-`, `type-`, `test-`      |
+| Error handling            | `err-`, `api-`, `pat-`           |
+| Type conversions          | `conv-`, `api-`                  |
+| Serialization (serde)     | `serde-`, `type-`, `api-`        |
+| Numeric / arithmetic      | `num-`, `type-`                  |
+| Macros / code generation  | `macro-`, `anti-`                |
+| Closures / callbacks      | `closure-`, `type-`              |
+| Logging / observability   | `obs-`, `err-`                   |
+| Memory optimization       | `mem-`, `own-`, `perf-`          |
+| Performance tuning        | `opt-`, `mem-`, `perf-`          |
+| Code review               | `anti-`, `lint-`                 |
 
 ---
 
@@ -476,6 +477,7 @@ This skill provides rule identifiers for quick reference. When generating or rev
 This skill is an independent synthesis of official Rust guidance, well-known books, and patterns from widely-used crates. It is not affiliated with or endorsed by the Rust project or any crate author; the text and code examples are original.
 
 **Official Rust documentation**
+
 - [The Rust Reference](https://doc.rust-lang.org/reference/)
 - [Rust API Guidelines](https://rust-lang.github.io/api-guidelines/)
 - [The Rustonomicon](https://doc.rust-lang.org/nomicon/) (unsafe code)
@@ -484,16 +486,19 @@ This skill is an independent synthesis of official Rust guidance, well-known boo
 - [Standard library docs](https://doc.rust-lang.org/std/) and [release notes](https://doc.rust-lang.org/releases.html)
 
 **Books & guides**
+
 - [The Rust Performance Book](https://nnethercote.github.io/perf-book/) — Nicholas Nethercote
 - [Rust Design Patterns](https://rust-unofficial.github.io/patterns/) — rust-unofficial
 - [Rust Atomics and Locks](https://marabos.nl/atomics/) — Mara Bos
 - [Effective Rust](https://effective-rust.com/) — David Drysdale
 
 **Tooling**
+
 - [Clippy lint documentation](https://rust-lang.github.io/rust-clippy/)
 - [Miri](https://github.com/rust-lang/miri)
 
 **Real-world codebases studied for idioms**
+
 - ripgrep, tokio, serde, clap, polars, axum, cargo, hyper, bevy, rayon, and dtolnay's crates (thiserror, anyhow, syn)
 
 This project is MIT-licensed. Referenced upstream materials remain under their own licenses (the official Rust docs and API Guidelines are dual MIT / Apache-2.0).

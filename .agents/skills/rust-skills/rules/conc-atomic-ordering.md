@@ -74,13 +74,13 @@ fn consumer() -> Option<u64> {
 
 ## Ordering Quick Reference
 
-| Ordering | Use when |
-|----------|----------|
+| Ordering  | Use when                                                                             |
+| --------- | ------------------------------------------------------------------------------------ |
 | `Relaxed` | Operation is atomic but needs no ordering relative to other memory (counters, stats) |
-| `Acquire` | Load that must see all stores preceding a matching `Release` on another thread |
-| `Release` | Store that must be visible before a matching `Acquire` load on another thread |
-| `AcqRel` | Read-modify-write (e.g. `compare_exchange`) acting as both Acquire and Release |
-| `SeqCst` | Need a single global order observed by all threads across multiple atomic variables |
+| `Acquire` | Load that must see all stores preceding a matching `Release` on another thread       |
+| `Release` | Store that must be visible before a matching `Acquire` load on another thread        |
+| `AcqRel`  | Read-modify-write (e.g. `compare_exchange`) acting as both Acquire and Release       |
+| `SeqCst`  | Need a single global order observed by all threads across multiple atomic variables  |
 
 ## Verification with loom
 
