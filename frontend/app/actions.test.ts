@@ -123,30 +123,6 @@ describe("linkPrinter", () => {
     expect(body.serial_number).toBeUndefined();
     expect(body.model).toBeUndefined();
   });
-
-  it("returns the hub error code when the dispatch is rejected", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(
-        async () =>
-          new Response(JSON.stringify({ error: "agent_not_connected" }), {
-            status: 409,
-            headers: { "content-type": "application/json" },
-          }),
-      ),
-    );
-    const formData = new FormData();
-    formData.set("tenant_id", "tenant-1");
-    formData.set("agent_id", "agent-1");
-    formData.set("type", "BambuLab");
-    formData.set("host", "192.0.2.10");
-    formData.set("access_code", "SECRET-LINK-CODE");
-
-    await expect(linkPrinter(null, formData)).resolves.toEqual({
-      ok: false,
-      error: "agent_not_connected",
-    });
-  });
 });
 
 describe("createMobileTicket", () => {

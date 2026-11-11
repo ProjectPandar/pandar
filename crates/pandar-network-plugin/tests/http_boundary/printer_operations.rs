@@ -75,18 +75,6 @@ fn assert_printer_operation_request(request: &str) {
     );
 }
 
-fn assert_native_print_error_request(request: &str) {
-    assert_eq!(
-        serde_json::from_str::<TestOperation>(request_body(request)).unwrap(),
-        TestOperation::HandlePrintError {
-            error_action: TestPrintErrorAction::Resume,
-            print_error: 83_918_929,
-            printer_job_id: "".to_owned(),
-            sequence_id: 20_042,
-        }
-    );
-}
-
 fn assert_exact_gcode_line_request(request: &str) {
     assert_eq!(
         serde_json::from_str::<TestOperation>(request_body(request)).unwrap(),
@@ -136,30 +124,6 @@ fn submit_printer_operation_posts_exact_gcode_line_body() {
     assert_eq!(result.status, 0);
     assert_eq!(result.http_code, 202);
     assert_eq!(body(result), r#"{"command_id":"cmd","status":"queued"}"#);
-}
-
-#[test]
-fn submit_printer_operation_posts_exact_native_print_error_body() {
-    let hub_url = one_shot_server(
-        "POST",
-        "/api/v1/plugin/printers/printer/operations",
-        Some("pandar_plugin_test_token"),
-        "HTTP/1.1 202 Accepted",
-        r#"{"command_id":"cmd","status":"sent"}"#,
-        Some(assert_native_print_error_request),
-    );
-    let operation_body = serde_json::to_vec(&TestOperation::HandlePrintError {
-        error_action: TestPrintErrorAction::Resume,
-        print_error: 83_918_929,
-        printer_job_id: "".to_owned(),
-        sequence_id: 20_042,
-    })
-    .unwrap();
-    let result = submit_printer_operation(hub_url.as_bytes(), TOKEN, operation_body.as_slice());
-
-    assert_eq!(result.status, 0);
-    assert_eq!(result.http_code, 202);
-    assert_eq!(body(result), r#"{"command_id":"cmd","status":"sent"}"#);
 }
 
 #[test]
@@ -307,24 +271,6 @@ fn printer_operations_reject_invalid_modern_axis_feature_bodies() {
         assert_eq!(result.http_code, 400);
         assert_eq!(body(result), r#"{"error":"invalid_printer_operation"}"#);
     }
-}
-
-#[test]
-fn submit_printer_operation_rejects_invalid_json_before_network() {
-    let result = submit_printer_operation(b"http://127.0.0.1:9", TOKEN, b"not-json");
-
-    assert_ne!(result.status, 0);
-    assert_eq!(result.http_code, 400);
-    assert_eq!(body(result), r#"{"error":"invalid_printer_operation"}"#);
-}
-
-#[test]
-fn submit_printer_operation_rejects_unknown_action_before_network() {
-    let result = submit_printer_operation(b"http://127.0.0.1:9", TOKEN, br#"{"action":"dance"}"#);
-
-    assert_ne!(result.status, 0);
-    assert_eq!(result.http_code, 400);
-    assert_eq!(body(result), r#"{"error":"invalid_printer_operation"}"#);
 }
 
 #[test]

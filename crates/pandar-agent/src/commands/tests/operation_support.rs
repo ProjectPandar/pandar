@@ -78,24 +78,6 @@ pub(super) fn home_operation_command(
     )
 }
 
-pub(super) fn move_axes_operation_command(command_id: String, serial_number: &str) -> HubCommand {
-    move_axes_operation_command_with_movements(
-        command_id,
-        serial_number,
-        vec![
-            AxisMovement {
-                axis: Axis::X as i32,
-                delta_mm: 10.0,
-            },
-            AxisMovement {
-                axis: Axis::Z as i32,
-                delta_mm: -0.5,
-            },
-        ],
-        3000,
-    )
-}
-
 pub(super) fn move_axes_operation_command_with_movements(
     command_id: String,
     serial_number: &str,
@@ -142,24 +124,6 @@ pub(super) fn hotend_operation_command_with_extruder(
                 temperature_celsius,
                 wait,
                 extruder_id,
-            },
-        )),
-    )
-}
-
-pub(super) fn bed_temperature_operation_command(
-    command_id: String,
-    serial_number: &str,
-    temperature_celsius: u32,
-    wait: bool,
-) -> HubCommand {
-    printer_operation_command(
-        command_id,
-        serial_number,
-        Some(printer_operation::Operation::SetBedTemperature(
-            SetBedTemperatureOperation {
-                temperature_celsius,
-                wait,
             },
         )),
     )

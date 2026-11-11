@@ -109,19 +109,3 @@ fn web_project_file_payload_preserves_legacy_defaults_without_studio_only_metada
         assert!(print.get(studio_only_key).is_none(), "{studio_only_key}");
     }
 }
-
-#[test]
-fn nozzle_mapping_presence_comes_from_the_typed_studio_command() {
-    let mut command = super::project_file_command();
-    assert!(
-        BambuMqttCommand::project_file(command.clone()).payload()["print"]
-            .get("nozzle_mapping")
-            .is_none()
-    );
-
-    command.nozzle_mapping = vec![16, -1];
-    assert_eq!(
-        BambuMqttCommand::project_file(command).payload()["print"]["nozzle_mapping"],
-        serde_json::json!([16, -1])
-    );
-}

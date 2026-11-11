@@ -1,4 +1,3 @@
-use super::runtime::canonical_hub_identity;
 use super::{
     persistence,
     types::{PersistedLogin, Profile, ProfileInput, SessionKind},
@@ -6,14 +5,6 @@ use super::{
 
 #[cfg(unix)]
 use super::types::PendingRevocation;
-
-#[test]
-fn hub_identity_ignores_trailing_slashes() {
-    assert_eq!(
-        canonical_hub_identity("  http://hub.example///  "),
-        "http://hub.example"
-    );
-}
 
 #[test]
 fn profile_aliases_normalize_to_canonical_typed_shape() {
@@ -27,38 +18,6 @@ fn profile_aliases_normalize_to_canonical_typed_shape() {
     let encoded = serde_json::to_string(&profile).unwrap();
     let decoded: Profile = serde_json::from_str(&encoded).unwrap();
     assert_eq!(decoded, profile);
-}
-
-#[test]
-fn minimal_profile_uses_user_id_as_the_studio_display_name() {
-    let input: ProfileInput =
-        serde_json::from_str(r#"{"token":"next","user_id":"replacement-user"}"#)
-            .expect("minimal profile");
-    let profile = input.normalize().expect("minimal profile");
-
-    assert_eq!(profile.user_id, "replacement-user");
-    assert_eq!(profile.user_name, "replacement-user");
-}
-
-#[test]
-fn persisted_login_round_trip_replaces_existing_file_atomically() {
-    let directory = tempfile::tempdir().unwrap();
-    let first = login("first-token", "First User");
-    let second = login("second-token", "Second User");
-    persistence::store(directory.path().to_str().unwrap(), &first).unwrap();
-    persistence::store(directory.path().to_str().unwrap(), &second).unwrap();
-    assert_eq!(
-        persistence::load(directory.path().to_str().unwrap()).unwrap(),
-        Some(second)
-    );
-    assert!(directory.path().join("pandar-plugin-login.json").is_file());
-    for entry in std::fs::read_dir(directory.path()).unwrap() {
-        let name = entry.unwrap().file_name().to_string_lossy().into_owned();
-        assert!(
-            !name.ends_with(".tmp"),
-            "atomic write left a temporary account file: {name}"
-        );
-    }
 }
 
 #[cfg(unix)]
@@ -151,20 +110,6 @@ fn persistence_io_diagnostic_preserves_cause_without_sensitive_path() {
     assert!(diagnostic.contains(&io_cause.to_string()));
     assert!(!diagnostic.contains(marker));
     assert!(!diagnostic.contains(&config_dir.display().to_string()));
-}
-
-#[test]
-fn malformed_persisted_login_preserves_decode_cause() {
-    let directory = tempfile::tempdir().unwrap();
-    std::fs::write(
-        directory.path().join("pandar-plugin-login.json"),
-        "not-json",
-    )
-    .unwrap();
-    let error = persistence::load(directory.path().to_str().unwrap()).unwrap_err();
-    let diagnostic = format!("{error:#}");
-    assert!(diagnostic.contains("decode persisted Studio login"));
-    assert!(diagnostic.contains("expected ident"));
 }
 
 fn login(token: &str, user_name: &str) -> PersistedLogin {

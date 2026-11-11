@@ -50,17 +50,6 @@ struct ExpectedPrint<'a> {
 }
 
 #[derive(Serialize)]
-struct RawPrintPayload<'a> {
-    print: RawPrint<'a>,
-}
-
-#[derive(Serialize)]
-struct RawPrint<'a> {
-    command: &'a str,
-    sequence_id: &'a str,
-}
-
-#[derive(Serialize)]
 struct PrintStateReport<'a> {
     print: PrintState<'a>,
 }
@@ -101,19 +90,6 @@ struct PrintHmsDiagnostic<'a> {
 }
 
 #[derive(Serialize)]
-struct PrintOutOfRangeProgressReport<'a> {
-    print: PrintOutOfRangeProgress<'a>,
-}
-
-#[derive(Serialize)]
-struct PrintOutOfRangeProgress<'a> {
-    mc_percent: &'a str,
-    mc_remaining_time: u32,
-    layer_num: &'a str,
-    total_layer_num: i32,
-}
-
-#[derive(Serialize)]
 struct PrintJobProgressReport<'a> {
     print: PrintJobProgress<'a>,
 }
@@ -124,30 +100,6 @@ struct PrintJobProgress<'a> {
     subtask_id: &'a str,
     gcode_state: &'a str,
     mc_percent: u32,
-}
-
-#[derive(Serialize)]
-struct PrintTemperatureReport<'a> {
-    print: PrintTemperature<'a>,
-}
-
-#[derive(Serialize)]
-struct PrintTemperature<'a> {
-    gcode_state: &'a str,
-    nozzle_temper: u32,
-    nozzle_target_temper: u32,
-    bed_temper: u32,
-    chamber_temper: u32,
-}
-
-#[derive(Serialize)]
-struct ChamberTargetReport {
-    print: ChamberTarget,
-}
-
-#[derive(Serialize)]
-struct ChamberTarget {
-    ctt: u32,
 }
 
 #[derive(Serialize)]
@@ -288,17 +240,6 @@ pub(super) fn detailed_progress_report() -> Value {
     })
 }
 
-pub(super) fn out_of_range_progress_report() -> Value {
-    value(PrintOutOfRangeProgressReport {
-        print: PrintOutOfRangeProgress {
-            mc_percent: "101",
-            mc_remaining_time: 4321,
-            layer_num: "100001",
-            total_layer_num: -1,
-        },
-    })
-}
-
 pub(super) fn print_job_progress_report(
     task_id: &str,
     subtask_id: &str,
@@ -312,30 +253,6 @@ pub(super) fn print_job_progress_report(
             gcode_state,
             mc_percent,
         },
-    })
-}
-
-pub(super) fn print_temperature_report(
-    gcode_state: &str,
-    nozzle_temper: u32,
-    nozzle_target_temper: u32,
-    bed_temper: u32,
-    chamber_temper: u32,
-) -> Value {
-    value(PrintTemperatureReport {
-        print: PrintTemperature {
-            gcode_state,
-            nozzle_temper,
-            nozzle_target_temper,
-            bed_temper,
-            chamber_temper,
-        },
-    })
-}
-
-pub(super) fn chamber_target_report(ctt: u32) -> Value {
-    value(ChamberTargetReport {
-        print: ChamberTarget { ctt },
     })
 }
 
@@ -392,15 +309,6 @@ pub(super) fn expected_print_command_payload(
             param: Some(param),
             sequence_id,
             extruder_index: None,
-        },
-    })
-}
-
-pub(super) fn raw_print_payload(command: &str, sequence_id: &str) -> Value {
-    value(RawPrintPayload {
-        print: RawPrint {
-            command,
-            sequence_id,
         },
     })
 }

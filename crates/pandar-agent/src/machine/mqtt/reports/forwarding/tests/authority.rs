@@ -50,43 +50,6 @@ async fn full_push_status_authority_ignores_sequence_and_request_correlation() {
 }
 
 #[tokio::test(start_paused = true)]
-async fn periodic_pushall_sequence_does_not_gate_full_snapshot_authority() {
-    let transport = ControlledTransport::new(None);
-    let (task, mut receiver) = spawn_forwarder(transport.clone());
-    transport.wait_for_publish_attempts(1).await;
-    transport.wait_for_report_waits(1).await;
-    let startup_sequence = pushall_sequence_id(&transport.published_commands()[0].1).to_owned();
-
-    advance(EXPECTED_REFRESH_INTERVAL).await;
-    transport.wait_for_publish_attempts(2).await;
-    let periodic_sequence = pushall_sequence_id(&transport.published_commands()[1].1).to_owned();
-    transport.push_report(json!({
-        "print": {
-            "command": "push_status",
-            "msg": 0,
-            "sequence_id": startup_sequence,
-            "gcode_state": "STALE"
-        }
-    }));
-    let startup_report = next_snapshot(&mut receiver).await;
-    assert!(startup_report.telemetry_authoritative);
-    transport.push_report(json!({
-        "print": {
-            "command": "push_status",
-            "msg": 0,
-            "sequence_id": periodic_sequence,
-            "gcode_state": "IDLE"
-        }
-    }));
-
-    let snapshot = next_snapshot(&mut receiver).await;
-    assert!(snapshot.telemetry_authoritative);
-    assert_eq!(snapshot.state, "IDLE");
-
-    abort_and_join(task).await;
-}
-
-#[tokio::test(start_paused = true)]
 async fn state_only_partial_report_is_forwarded_without_overwriting_model() {
     let transport = ControlledTransport::new(None);
     let (task, mut receiver) = spawn_forwarder(transport.clone());

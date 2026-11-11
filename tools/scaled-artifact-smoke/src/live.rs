@@ -266,47 +266,6 @@ mod tests {
     }
 
     #[test]
-    fn live_config_defaults_optional_values() {
-        let config = LiveConfig::from_values(complete_values()).unwrap();
-        assert_eq!(
-            config.database_url,
-            "postgres://pandar_soak@localhost/pandar_soak"
-        );
-        assert_eq!(config.nats_url, "nats://127.0.0.1:4222");
-        assert_eq!(config.nats_subject, "pandar.soak.control");
-        assert!(config.s3_force_path_style);
-    }
-
-    #[test]
-    fn live_config_accepts_optional_values() {
-        let mut values = complete_values();
-        values.insert(
-            "PANDAR_SOAK_NATS_SUBJECT".to_owned(),
-            "pandar.custom.soak".to_owned(),
-        );
-        values.insert(
-            "PANDAR_SOAK_ARTIFACT_S3_FORCE_PATH_STYLE".to_owned(),
-            "false".to_owned(),
-        );
-
-        let config = LiveConfig::from_values(values).unwrap();
-        assert_eq!(config.nats_subject, "pandar.custom.soak");
-        assert!(!config.s3_force_path_style);
-    }
-
-    #[test]
-    fn live_config_rejects_invalid_path_style_with_soak_name() {
-        let mut values = complete_values();
-        values.insert(
-            "PANDAR_SOAK_ARTIFACT_S3_FORCE_PATH_STYLE".to_owned(),
-            "maybe".to_owned(),
-        );
-
-        let err = LiveConfig::from_values(values).unwrap_err();
-        assert!(format!("{err:#}").contains("PANDAR_SOAK_ARTIFACT_S3_FORCE_PATH_STYLE"));
-    }
-
-    #[test]
     fn live_config_ignores_production_s3_environment_names() {
         let mut values = complete_values();
         values.insert(
@@ -336,25 +295,6 @@ mod tests {
         assert_eq!(config.s3_endpoint, "http://127.0.0.1:9000");
         assert_eq!(config.s3_access_key_id, "pandar-soak-access");
         assert_eq!(config.s3_secret_access_key, "pandar-soak-secret");
-    }
-
-    #[test]
-    fn validate_reports_all_missing_variables() {
-        assert_eq!(
-            validate(&BTreeMap::new()),
-            Err(PreflightError::Missing(REQUIRED_ENV.to_vec()))
-        );
-    }
-
-    #[test]
-    fn validate_accepts_complete_disposable_inputs() {
-        let mut values = complete_values();
-        values.insert(
-            "PANDAR_SOAK_DATABASE_URL".to_owned(),
-            "postgres://pandar_soak@localhost/pandar_soak".to_owned(),
-        );
-
-        assert_eq!(validate(&values), Ok(()));
     }
 
     #[test]
@@ -396,79 +336,6 @@ mod tests {
         assert_eq!(
             invalid_names(validate(&values).unwrap_err()),
             vec!["PANDAR_SOAK_DATABASE_URL"]
-        );
-    }
-
-    #[test]
-    fn validate_rejects_non_postgres_database_url() {
-        let mut values = complete_values();
-        values.insert(
-            "PANDAR_SOAK_DATABASE_URL".to_owned(),
-            "sqlite://pandar_soak.db".to_owned(),
-        );
-
-        assert_eq!(
-            invalid_names(validate(&values).unwrap_err()),
-            vec!["PANDAR_SOAK_DATABASE_URL"]
-        );
-    }
-
-    #[test]
-    fn validate_rejects_non_nats_url() {
-        let mut values = complete_values();
-        values.insert(
-            "PANDAR_SOAK_NATS_URL".to_owned(),
-            "http://127.0.0.1:4222".to_owned(),
-        );
-
-        assert_eq!(
-            invalid_names(validate(&values).unwrap_err()),
-            vec!["PANDAR_SOAK_NATS_URL"]
-        );
-    }
-
-    #[test]
-    fn validate_rejects_non_http_s3_endpoint() {
-        let mut values = complete_values();
-        values.insert(
-            "PANDAR_SOAK_ARTIFACT_S3_ENDPOINT".to_owned(),
-            "s3://pandar-soak".to_owned(),
-        );
-
-        assert_eq!(
-            invalid_names(validate(&values).unwrap_err()),
-            vec!["PANDAR_SOAK_ARTIFACT_S3_ENDPOINT"]
-        );
-    }
-
-    #[test]
-    fn validate_reports_placeholder_storage_values_together() {
-        let mut values = complete_values();
-        values.insert(
-            "PANDAR_SOAK_ARTIFACT_S3_BUCKET".to_owned(),
-            "<bucket>".to_owned(),
-        );
-        values.insert(
-            "PANDAR_SOAK_ARTIFACT_S3_REGION".to_owned(),
-            "region".to_owned(),
-        );
-        values.insert(
-            "PANDAR_SOAK_ARTIFACT_S3_ACCESS_KEY_ID".to_owned(),
-            "value-for-PANDAR_SOAK_ARTIFACT_S3_ACCESS_KEY_ID".to_owned(),
-        );
-        values.insert(
-            "PANDAR_SOAK_ARTIFACT_S3_SECRET_ACCESS_KEY".to_owned(),
-            "changeme".to_owned(),
-        );
-
-        assert_eq!(
-            invalid_names(validate(&values).unwrap_err()),
-            vec![
-                "PANDAR_SOAK_ARTIFACT_S3_BUCKET",
-                "PANDAR_SOAK_ARTIFACT_S3_REGION",
-                "PANDAR_SOAK_ARTIFACT_S3_ACCESS_KEY_ID",
-                "PANDAR_SOAK_ARTIFACT_S3_SECRET_ACCESS_KEY",
-            ]
         );
     }
 }

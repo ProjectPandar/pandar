@@ -13,25 +13,18 @@ use super::*;
 use crate::{
     grpc::commands::{handle_result_and_job, hub_command_from_record},
     repositories::{
-        CreatePrintJob, DiagnosePrinterPayload, DiscoverPrintersPayload, LinkPrinterPayload,
-        PrintProjectFilePayload, PrinterAxis, PrinterOperationKind, PrinterOperationPayload,
-        RefreshPrinterMaterialsPayload, ReloadPrinterConnectionPayload,
+        CreatePrintJob, DiagnosePrinterPayload, LinkPrinterPayload, PrinterOperationKind,
     },
 };
-use pandar_protocol::agent::v1::{
-    Axis, CommandAck, CommandResult, DeviceFeature, HubCommand, LinkPrinter, printer_operation,
-};
+use pandar_protocol::agent::v1::{CommandAck, CommandResult, HubCommand, LinkPrinter};
 
 mod acknowledgements;
 mod cancel_race;
-mod command_conversion;
 mod device_features;
 mod gcode_line;
 mod link_redaction_primary;
 mod link_redaction_stream;
 mod print_error;
-mod printer_commands;
-mod printer_operations;
 mod results;
 
 fn command_result_payload(

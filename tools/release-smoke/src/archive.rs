@@ -22,13 +22,6 @@ pub(crate) struct StagedArchive {
     pub source: PathBuf,
 }
 
-impl StagedArchive {
-    #[cfg(test)]
-    fn root(&self) -> &Path {
-        self._temp.path()
-    }
-}
-
 pub(crate) fn validate_checksum(archive: &Path, checksum: &Path) -> Result<String, String> {
     let content = fs::read_to_string(checksum)
         .map_err(|error| format!("read checksum sidecar {}: {error}", checksum.display()))?;

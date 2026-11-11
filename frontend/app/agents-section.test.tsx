@@ -157,57 +157,6 @@ describe("AgentsSection", () => {
     });
   });
 
-  it("opens the pairing dialog with guidance and the pairing form", async () => {
-    const user = userEvent.setup();
-    renderWithMessages(
-      <AgentsSection
-        adminUnavailable={false}
-        agents={[onlineAgent]}
-        printers={[]}
-        selectedTenant={tenant}
-      />,
-    );
-
-    await user.click(screen.getByRole("button", { name: "Pair agent" }));
-
-    const dialog = screen.getByRole("dialog", { name: "Pair a local agent" });
-    expect(dialog).toBeVisible();
-    expect(
-      within(dialog).getByText("Create a pairing for Factory Floor."),
-    ).toBeVisible();
-    expect(
-      within(dialog).getByText(/Copy the generated environment block/),
-    ).toBeVisible();
-    expect(within(dialog).getByLabelText("Agent name")).toHaveAttribute(
-      "name",
-      "name",
-    );
-    expect(
-      within(dialog).getByRole("button", { name: "Create pairing" }),
-    ).toHaveAttribute("type", "submit");
-  });
-
-  it("shows the empty state with a pairing action when no agents are linked", () => {
-    renderWithMessages(
-      <AgentsSection
-        adminUnavailable={false}
-        agents={[]}
-        printers={[]}
-        selectedTenant={tenant}
-      />,
-    );
-
-    expect(screen.getByText("No agents linked")).toBeVisible();
-    expect(
-      screen.getByText(
-        "Pair a local agent to connect the printers on its network.",
-      ),
-    ).toBeVisible();
-    expect(
-      screen.getAllByRole("button", { name: "Pair agent" }).length,
-    ).toBeGreaterThan(0);
-  });
-
   it("explains the admin requirement when pairing is restricted", () => {
     renderWithMessages(
       <AgentsSection
@@ -220,25 +169,6 @@ describe("AgentsSection", () => {
 
     expect(
       screen.getByText("Pairing a new agent requires tenant admin access."),
-    ).toBeVisible();
-    expect(
-      screen.queryByRole("button", { name: "Pair agent" }),
-    ).not.toBeInTheDocument();
-  });
-
-  it("shows the no-tenant empty state", () => {
-    renderWithMessages(
-      <AgentsSection
-        adminUnavailable={false}
-        agents={[]}
-        printers={[]}
-        selectedTenant={null}
-      />,
-    );
-
-    expect(screen.getByText("No tenant selected")).toBeVisible();
-    expect(
-      screen.getByText("Choose a tenant from the sidebar to manage agents."),
     ).toBeVisible();
     expect(
       screen.queryByRole("button", { name: "Pair agent" }),

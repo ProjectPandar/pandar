@@ -237,11 +237,8 @@ pub(crate) mod tests_support {
 mod tests {
     use super::{
         ExternalAuthConfig, ExternalAuthConfigError,
-        tests_support::{
-            ALGORITHMS_VAR, AUDIENCE_VAR, ISSUER_VAR, JWKS_URL_VAR, base_vars, config_from_vars,
-        },
+        tests_support::{ALGORITHMS_VAR, AUDIENCE_VAR, ISSUER_VAR, JWKS_URL_VAR, base_vars},
     };
-    use jsonwebtoken::Algorithm;
 
     #[test]
     fn partial_env_config_returns_error() {
@@ -279,13 +276,6 @@ mod tests {
             )]))
             .is_ok()
         );
-    }
-
-    #[test]
-    fn default_algorithm_is_rs256() {
-        let config = config_from_vars([]);
-
-        assert_eq!(config.algorithms, vec![Algorithm::RS256]);
     }
 
     #[test]

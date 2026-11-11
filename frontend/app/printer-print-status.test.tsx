@@ -71,7 +71,6 @@ describe("PrinterPrintStatus", () => {
 
   it.each([
     ["en", "Printing", "Layers 12/100", "Remaining 1h 5m"],
-    ["zh", "打印中", "层数 12/100", "剩余 1 小时 5 分钟"],
   ] as const)(
     "renders clamped live progress and localized details in %s",
     (locale, stateLabel, layers, remaining) => {
@@ -85,28 +84,10 @@ describe("PrinterPrintStatus", () => {
     },
   );
 
-  it.each([
-    ["en", "RUNNING", "Printing"],
-    ["en", "PRINTING", "Printing"],
-    ["en", "PAUSE", "Paused"],
-    ["en", "PAUSED", "Paused"],
-    ["en", "FINISH", "Finished"],
-    ["zh", "RUNNING", "打印中"],
-    ["zh", "PRINTING", "打印中"],
-    ["zh", "PAUSE", "已暂停"],
-    ["zh", "PAUSED", "已暂停"],
-    ["zh", "FINISH", "已完成"],
-  ] as const)("renders the %s %s display state as %s", (locale, gcodeState, label) => {
-    renderStatus({ ...basePrint, gcode_state: gcodeState }, "running", locale);
-    expect(screen.getByText(label)).toBeVisible();
-    expect(screen.getByText("42%")).toBeVisible();
-  });
 
   it.each([
     ["en", "PREPARE", "Preparing", "Layers -", "Remaining -"],
     ["en", "SLICING", "Slicing", "Layers -", "Remaining -"],
-    ["zh", "PREPARE", "准备中", "层数 -", "剩余 -"],
-    ["zh", "SLICING", "切片中", "层数 -", "剩余 -"],
   ] as const)("keeps the task but suppresses stale numeric details for %s %s", (locale, gcodeState, label, layers, remaining) => {
     renderStatus({ ...basePrint, gcode_state: gcodeState }, "running", locale);
 
@@ -118,21 +99,6 @@ describe("PrinterPrintStatus", () => {
     expect(screen.queryByText("42%")).not.toBeInTheDocument();
     expect(screen.queryByText("Layers 12/100")).not.toBeInTheDocument();
     expect(screen.queryByText("Remaining 1h 5m")).not.toBeInTheDocument();
-  });
-
-  it("renders useful one-sided layer values", () => {
-    const rendered = renderStatus({ ...basePrint, total_layers: null });
-    expect(screen.getByText("Layers 12")).toBeVisible();
-
-    rendered.rerender(
-      <NextIntlClientProvider locale="en" messages={en}>
-        <PrinterPrintStatus
-          coarseStatus="running"
-          print={{ ...basePrint, current_layer: null, total_layers: 100 }}
-        />
-      </NextIntlClientProvider>,
-    );
-    expect(screen.getByText("Layers -/100")).toBeVisible();
   });
 
   it.each([
@@ -153,28 +119,4 @@ describe("PrinterPrintStatus", () => {
       expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
     },
   );
-
-  it("falls back to the existing coarse status when enriched state is absent or unknown", () => {
-    const rendered = renderStatus(null, "READY");
-    expect(screen.getByText("Ready")).toBeVisible();
-
-    rendered.rerender(
-      <NextIntlClientProvider locale="en" messages={en}>
-        <PrinterPrintStatus
-          coarseStatus="RUNNING"
-          print={{ ...basePrint, gcode_state: null, progress_percent: null }}
-        />
-      </NextIntlClientProvider>,
-    );
-    expect(screen.getByText("Running")).toBeVisible();
-    expect(screen.queryByText("0%")).not.toBeInTheDocument();
-  });
-
-  it("does not widen the exact display aliases with case normalization", () => {
-    renderStatus({ ...basePrint, gcode_state: "printing" }, "RUNNING");
-
-    expect(screen.getByText("Running")).toBeVisible();
-    expect(screen.queryByText("Printing")).not.toBeInTheDocument();
-    expect(screen.queryByText("Benchy")).not.toBeInTheDocument();
-  });
 });

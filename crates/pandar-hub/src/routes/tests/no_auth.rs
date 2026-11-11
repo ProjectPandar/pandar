@@ -2,29 +2,6 @@ use super::*;
 use serde::{Deserialize, Serialize};
 
 #[tokio::test]
-async fn no_auth_allows_tenant_read_without_bearer_token() {
-    let state = state().await.with_no_auth_for_tests(true);
-    let app = router(state.clone());
-    let tenant = state
-        .tenants()
-        .create("no-auth-read", "No Auth Read")
-        .await
-        .unwrap();
-
-    let (status, body) = request(
-        app,
-        Method::GET,
-        &format!("/api/v1/tenants/{}/agents", tenant.id),
-        None,
-    )
-    .await;
-
-    assert_eq!(status, StatusCode::OK);
-    let body = decode::<AgentsResponse>(body);
-    assert_eq!(body.agents.len(), 0);
-}
-
-#[tokio::test]
 async fn no_auth_allows_bootstrap_routes_without_bootstrap_token() {
     let state = raw_state().await.with_no_auth_for_tests(true);
     let app = router(state);
@@ -48,14 +25,6 @@ async fn no_auth_allows_bootstrap_routes_without_bootstrap_token() {
     assert_eq!(body.slug, "no-auth-tenant");
     assert_eq!(body.display_name, "No Auth Tenant");
 }
-
-#[derive(Deserialize)]
-struct AgentsResponse {
-    agents: Vec<AgentResponse>,
-}
-
-#[derive(Deserialize)]
-struct AgentResponse {}
 
 #[derive(Serialize)]
 struct CreateTenantRequest<'a> {

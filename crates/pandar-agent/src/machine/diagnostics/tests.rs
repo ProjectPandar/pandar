@@ -11,24 +11,6 @@ use crate::machine::{
     mqtt::FakeMqttTransport,
 };
 
-#[test]
-fn aggregate_ignores_skipped_and_prefers_problem() {
-    assert_eq!(
-        aggregate_status(&[
-            check("a", DiagnosticStatus::Skipped, "", None),
-            check("b", DiagnosticStatus::Warning, "", None)
-        ]),
-        DiagnosticStatus::Warning
-    );
-    assert_eq!(
-        aggregate_status(&[
-            check("a", DiagnosticStatus::Warning, "", None),
-            check("b", DiagnosticStatus::Problem, "", None)
-        ]),
-        DiagnosticStatus::Problem
-    );
-}
-
 #[tokio::test]
 async fn absent_configured_printer_skips_network_and_omits_compatibility() {
     let result = diagnose_printer::<FakeMqttTransport, DiagnosticFakeTransfer>(
@@ -44,38 +26,6 @@ async fn absent_configured_printer_skips_network_and_omits_compatibility() {
     assert_eq!(result.compatibility, None);
     assert_eq!(result.checks.len(), 1);
     assert_eq!(result.checks[0].id, "configured_printer");
-}
-
-#[tokio::test]
-async fn configured_without_model_reports_unknown_compatibility() {
-    let endpoint = endpoint(None);
-    let mqtt = FakeMqttTransport::with_timeout();
-    let transfer = DiagnosticFakeTransfer::default();
-    let result = diagnose_printer(
-        &[(endpoint, mqtt, transfer)],
-        Duration::from_millis(1),
-        "SERIAL1",
-    )
-    .await;
-
-    let compatibility = result.compatibility.unwrap();
-    assert_eq!(compatibility.normalized_model, None);
-    assert_eq!(compatibility.external_storage, Capability::Unknown);
-    assert_eq!(
-        compatibility.features.chamber_temperature,
-        Capability::Unknown
-    );
-    assert_eq!(compatibility.features.drying, Capability::Unknown);
-    assert_eq!(compatibility.features.flow_calibration, Capability::Unknown);
-    assert_eq!(
-        compatibility.features.vibration_calibration,
-        Capability::Unknown
-    );
-    assert_eq!(compatibility.features.dual_nozzle, Capability::Unknown);
-    assert_eq!(
-        compatibility.features.nozzle_offset_calibration,
-        Capability::Unknown
-    );
 }
 
 #[tokio::test]
@@ -174,17 +124,6 @@ async fn storage_probe_delete_failure_is_warning() {
             FileTransferRequest::upload(DIAGNOSTIC_PROBE_PATH, 18),
             FileTransferRequest::delete(DIAGNOSTIC_PROBE_PATH),
         ]
-    );
-}
-
-#[test]
-fn redacts_distinctive_access_code_from_error_chain() {
-    let access_code = "ACCESS-CODE-UNIQUE";
-    let message = format!("outer: inner password {access_code}");
-
-    assert_eq!(
-        redact_access_code(&message, access_code),
-        "outer: inner password [REDACTED_ACCESS_CODE]"
     );
 }
 

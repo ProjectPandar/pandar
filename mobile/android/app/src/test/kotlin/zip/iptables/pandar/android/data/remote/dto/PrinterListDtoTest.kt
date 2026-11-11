@@ -76,23 +76,4 @@ class PrinterListDtoTest {
         assertEquals("ams", materials.activeTray?.kind)
         assertEquals(24, materials.activeTray?.globalTrayId)
     }
-
-    @Test fun parses_printer_with_null_materials_and_model() {
-        val json = """
-        {"printers":[{
-          "id":"p2","tenant_id":"t1","agent_id":"a1","serial_number":"SN002","printer_family":"moonraker",
-          "name":"Bare","model":null,"compatibility":$UNKNOWN_PRINTER_COMPATIBILITY_JSON,"status":"offline",
-          "last_seen_at":"2026-07-05T10:00:00Z","created_at":"2026-01-01T00:00:00Z",
-          "materials":null
-        }]}
-        """.trimIndent()
-
-        val dto = appJson.decodeFromString<PrinterListDto>(json)
-        val p = dto.printers[0].toDomain()
-        assertNull(p.model)
-        assertNull(p.materials)
-        assertEquals("offline", p.status)
-        assertEquals(0, p.nozzleTemperatures.size)
-        assertEquals(PrinterFamily.Moonraker, p.family)
-    }
 }

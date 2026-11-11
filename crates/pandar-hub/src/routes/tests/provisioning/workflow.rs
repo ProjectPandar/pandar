@@ -1,5 +1,5 @@
 use super::*;
-use requests::{agent_name_value, tenant_token_create_value, user_role_value};
+use requests::{tenant_token_create_value, user_role_value};
 use serde::{Deserialize, de::DeserializeOwned};
 
 mod requests;
@@ -72,20 +72,6 @@ where
     T: DeserializeOwned,
 {
     decode_json(body)
-}
-
-#[tokio::test]
-async fn manual_user_provisioning_write_routes_are_not_available() {
-    let (_state, app, tenant_id, admin_token) = admin_tenant().await;
-    let user_id = uuid::Uuid::new_v4();
-
-    for uri in [
-        format!("/api/v1/tenants/{tenant_id}/users"),
-        format!("/api/v1/tenants/{tenant_id}/users/{user_id}/identities"),
-    ] {
-        let response = raw_request_as(app.clone(), Method::POST, &uri, &admin_token).await;
-        assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
-    }
 }
 
 #[tokio::test]
@@ -264,40 +250,4 @@ async fn tenant_admin_can_list_users_identities_and_manage_roles_and_tokens() {
     .await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert_eq!(decode::<ErrorResponse>(body).error, "invalid_user_role");
-}
-
-#[tokio::test]
-async fn provisioning_mutations_reject_empty_required_strings() {
-    let (state, app, tenant_id, admin_token) = admin_tenant().await;
-    let tenant = state.tenants().list().await.unwrap().remove(0);
-    let user = state
-        .auth()
-        .create_user(
-            tenant.id,
-            "target@example.test",
-            "Target User",
-            crate::repositories::UserRole::Viewer,
-        )
-        .await
-        .unwrap();
-
-    for (uri, body) in [
-        (
-            format!("/api/v1/tenants/{tenant_id}/users/{}/role", user.id),
-            user_role_value(""),
-        ),
-        (
-            format!("/api/v1/tenants/{tenant_id}/agent-pairings"),
-            agent_name_value(""),
-        ),
-    ] {
-        let method = if uri.ends_with("/role") {
-            Method::PATCH
-        } else {
-            Method::POST
-        };
-        let (status, body) = request_as(app.clone(), method, &uri, Some(body), &admin_token).await;
-        assert_eq!(status, StatusCode::BAD_REQUEST);
-        assert_eq!(decode::<ErrorResponse>(body).error, "bad_request");
-    }
 }

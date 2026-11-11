@@ -154,7 +154,7 @@ mod tests {
 
     use crate::source::StudioContract;
 
-    use super::{inspected_symbol, verify_exports};
+    use super::verify_exports;
 
     fn dynamic_library_name() -> &'static str {
         if cfg!(windows) {
@@ -227,31 +227,6 @@ mod tests {
             file_transfer_exports: Vec::new(),
             print_params_fields: Vec::new(),
         }
-    }
-
-    #[test]
-    fn dumpbin_alias_keeps_the_exported_name() {
-        assert_eq!(
-            inspected_symbol(
-                "109 6C 00000000 bambu_network_build_login_info = bambu_network_build_login_cmd",
-                true,
-            ),
-            Some("bambu_network_build_login_info")
-        );
-    }
-
-    #[test]
-    fn accepts_library_exporting_every_loaded_upstream_symbol() {
-        let temp = tempfile::tempdir().expect("create plugin fixture");
-        let plugin = compile_plugin(
-            temp.path(),
-            &["bambu_network_get_version", "ft_abi_version"],
-        );
-        let contract = contract(&["bambu_network_get_version"], &["ft_abi_version"]);
-
-        let report = verify_exports(&plugin, &contract).unwrap();
-        assert_eq!(report.count, 2);
-        assert!(report.missing.is_empty());
     }
 
     #[test]

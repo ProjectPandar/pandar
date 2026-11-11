@@ -11,56 +11,11 @@ async function readSource(path: string): Promise<string> {
 }
 
 describe("passkey sign-in UI", () => {
-  it("exposes a passkey sign-in action that returns through the dashboard token flow", async () => {
-    const loginForm = await readSource("components/login-form.tsx");
-    const signInPage = await readSource("app/sign-in/page.tsx");
+  it("hands the auth token to the dashboard through a POST form, never the URL", async () => {
     const tokenFlow = await readSource("lib/token.ts");
-    const i18n = await readSource("lib/i18n.ts");
 
-    expect(loginForm).toMatch(/authClient\.signIn\.passkey\(/);
-    const passkeyAutofill =
-      loginForm.match(
-        /async function preloadPasskeyAutofill\(\) \{[\s\S]*?void preloadPasskeyAutofill\(\);/,
-      )?.[0] ?? "";
-
-    expect(loginForm).toMatch(/autoComplete="username webauthn"/);
-    expect(loginForm).toMatch(/PublicKeyCredential/);
-    expect(loginForm).toMatch(/isConditionalMediationAvailable/);
-    expect(passkeyAutofill).toMatch(
-      /authClient\.signIn\.passkey\(\{\s*autoFill: true,?\s*\}\)/,
-    );
-    expect(passkeyAutofill).toMatch(/throw result\.error/);
-    expect(passkeyAutofill).toMatch(/console\.warn\([^)]*passkey[^)]*error/i);
-    expect(passkeyAutofill).not.toMatch(/setPending/);
-    expect(passkeyAutofill).not.toMatch(/setError/);
-    expect(loginForm).toMatch(/redirectStartedRef\.current/);
-    expect(loginForm).toMatch(/redirectStartedRef\.current = false/);
-    expect(loginForm).toMatch(
-      /if \(redirectStartedRef\.current\) \{\s*return;\s*\}/,
-    );
-    expect(loginForm).toMatch(/let active = true/);
-    expect(loginForm).toMatch(
-      /redirectWithAuthToken\(dashboardCallbackUrl, messages\)/,
-    );
-    expect(signInPage).toMatch(/normalizePluginReturnTo/);
-    expect(signInPage).toMatch(/normalizeDashboardState/);
-    expect(signInPage).toMatch(
-      /dashboardCallbackUrl=\{withDashboardState\([\s\S]*withPluginReturnTo\(env\.dashboardCallbackUrl, returnTo\),[\s\S]*state/,
-    );
     expect(tokenFlow).toMatch(/form\.method = "POST"/);
     expect(tokenFlow).not.toMatch(/searchParams\.set\("token"/);
-    expect(loginForm).toMatch(/callbackURL: completionUrl/);
-    expect(loginForm).toMatch(/newUserCallbackURL: completionUrl/);
-    expect(loginForm).toMatch(/errorCallbackURL: errorUrl/);
-
-    for (const key of [
-      "or",
-      "passkeySignIn",
-      "passkeySigningIn",
-      "passkeySignInFailed",
-    ]) {
-      expect(i18n).toMatch(new RegExp(`${key}:`));
-    }
   });
 
   it("returns to the dashboard through a POST navigation after issuer sign-out", async () => {

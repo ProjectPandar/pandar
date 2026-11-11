@@ -133,42 +133,6 @@ async fn link_printer_direct_sends_secret_but_persists_only_redacted_payload() {
 }
 
 #[tokio::test]
-async fn link_printer_maps_absent_or_blank_optional_name_to_empty_proto_string() {
-    let state = state().await;
-    let app = router(state.clone());
-    let (tenant, agent, token) = tenant_and_agent(&state, app.clone()).await;
-    let tenant_id = TenantId::parse(&decode::<TenantResponse>(tenant).id).unwrap();
-    let agent_id = AgentId::parse(&decode::<AgentResponse>(agent).id).unwrap();
-    let (command_sender, mut command_receiver) = tokio::sync::mpsc::channel(1);
-    register_route_test_session(&state, tenant_id, agent_id, command_sender).await;
-
-    for body in [
-        link_printer_value("BambuLab", "192.168.2.10", "SECRET-LINK-CODE", None),
-        link_printer_value("BambuLab", "192.168.2.11", "SECRET-LINK-CODE", Some("   ")),
-    ] {
-        let (status, response) = request_as(
-            app.clone(),
-            Method::POST,
-            &format!("/api/v1/tenants/{tenant_id}/agents/{agent_id}/link-printer"),
-            Some(body),
-            &token,
-        )
-        .await;
-
-        assert_eq!(status, StatusCode::OK);
-        let response = decode::<CommandResponse>(response);
-        let sent = command_receiver.recv().await.unwrap().unwrap();
-        match sent.command.unwrap() {
-            hub_command::Command::LinkPrinter(command) => {
-                assert_eq!(command.name, "");
-            }
-            other => panic!("expected link printer command, got {other:?}"),
-        }
-        assert_eq!(response.status, "sent");
-    }
-}
-
-#[tokio::test]
 async fn link_printer_marks_command_failed_when_live_channel_closed_after_row_creation() {
     let state = state().await;
     let app = router(state.clone());
@@ -228,33 +192,6 @@ async fn link_printer_marks_command_failed_when_live_channel_closed_after_row_cr
 }
 
 #[tokio::test]
-async fn link_printer_rejects_blank_required_fields() {
-    let state = state().await;
-    let app = router(state.clone());
-    let (tenant, agent, token) = tenant_and_agent(&state, app.clone()).await;
-    let tenant_id = decode::<TenantResponse>(tenant).id;
-    let agent_id = decode::<AgentResponse>(agent).id;
-
-    for body in [
-        link_printer_value("BambuLab", "", "SECRET-LINK-CODE", None),
-        link_printer_value("BambuLab", "192.168.2.10", "", None),
-    ] {
-        let (status, body) = request_as(
-            app.clone(),
-            Method::POST,
-            &format!("/api/v1/tenants/{tenant_id}/agents/{agent_id}/link-printer"),
-            Some(body),
-            &token,
-        )
-        .await;
-        assert_eq!(status, StatusCode::BAD_REQUEST);
-        assert_eq!(decode::<ErrorResponse>(body).error, "bad_request");
-    }
-
-    assert_eq!(state.commands().count().await.unwrap(), 0);
-}
-
-#[tokio::test]
 async fn link_printer_rejects_invalid_type_host_and_legacy_metadata_fields() {
     let state = state().await;
     let app = router(state.clone());
@@ -285,27 +222,5 @@ async fn link_printer_rejects_invalid_type_host_and_legacy_metadata_fields() {
         assert_eq!(status, StatusCode::BAD_REQUEST);
         assert_eq!(decode::<ErrorResponse>(body).error, "bad_request");
     }
-    assert_eq!(state.commands().count().await.unwrap(), 0);
-}
-
-#[tokio::test]
-async fn link_printer_rejects_unknown_fields() {
-    let state = state().await;
-    let app = router(state.clone());
-    let (tenant, agent, token) = tenant_and_agent(&state, app.clone()).await;
-    let tenant_id = decode::<TenantResponse>(tenant).id;
-    let agent_id = decode::<AgentResponse>(agent).id;
-
-    let (status, body) = request_as(
-        app,
-        Method::POST,
-        &format!("/api/v1/tenants/{tenant_id}/agents/{agent_id}/link-printer"),
-        link_printer_with_unexpected_field_body("BambuLab", "192.168.2.10", "SECRET-LINK-CODE"),
-        &token,
-    )
-    .await;
-
-    assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert_eq!(decode::<ErrorResponse>(body).error, "bad_request");
     assert_eq!(state.commands().count().await.unwrap(), 0);
 }

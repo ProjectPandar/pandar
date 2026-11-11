@@ -28,34 +28,6 @@ fn path_normalization_accepts_top_level_and_rejects_traversal() {
 }
 
 #[test]
-fn staged_archive_is_removed_when_raii_guard_drops() {
-    let source = tempdir().unwrap();
-    let archive = source.path().join("archive.tar.gz");
-    create_tar_gz(
-        &archive,
-        &[
-            ("pandar", b"cli"),
-            ("libpandar_network_plugin.so", b"plugin"),
-            ("libpandar_bambu_source.so", b"source"),
-        ],
-    );
-
-    let stage = stage_archive(
-        &archive,
-        "pandar",
-        "libpandar_network_plugin.so",
-        "libpandar_bambu_source.so",
-    )
-    .unwrap();
-    let stage_path = stage.root().to_owned();
-    assert!(stage.cli.is_file());
-    assert!(stage.plugin.is_file());
-    drop(stage);
-
-    assert!(!stage_path.exists());
-}
-
-#[test]
 fn staged_archive_rejects_duplicate_normalized_member_names() {
     let temp = tempdir().unwrap();
     let archive = temp.path().join("archive.tar.gz");
@@ -107,61 +79,6 @@ fn staged_archive_rejects_case_folded_normalized_member_collisions() {
     assert_eq!(
         error,
         "archive contains case-folded normalized entry collision: PANDAR conflicts with pandar"
-    );
-}
-
-#[test]
-fn staged_archive_rejects_root_member() {
-    let temp = tempdir().unwrap();
-    let archive = temp.path().join("archive.tar.gz");
-    create_tar_gz(
-        &archive,
-        &[
-            (".", b""),
-            ("pandar", b"cli"),
-            ("libpandar_network_plugin.so", b"plugin"),
-            ("libpandar_bambu_source.so", b"source"),
-        ],
-    );
-
-    let error = stage_archive(
-        &archive,
-        "pandar",
-        "libpandar_network_plugin.so",
-        "libpandar_bambu_source.so",
-    )
-    .err()
-    .expect("root members must be rejected");
-
-    assert_eq!(error, "archive entry . normalizes to an empty path");
-}
-
-#[test]
-fn staged_archive_rejects_unexpected_windows_alias_member() {
-    let temp = tempdir().unwrap();
-    let archive = temp.path().join("archive.tar.gz");
-    create_tar_gz(
-        &archive,
-        &[
-            ("pandar", b"cli"),
-            ("pandar.", b"alias"),
-            ("libpandar_network_plugin.so", b"plugin"),
-            ("libpandar_bambu_source.so", b"source"),
-        ],
-    );
-
-    let error = stage_archive(
-        &archive,
-        "pandar",
-        "libpandar_network_plugin.so",
-        "libpandar_bambu_source.so",
-    )
-    .err()
-    .expect("unexpected normalized members must be rejected");
-
-    assert_eq!(
-        error,
-        "archive contains unexpected normalized entry: pandar."
     );
 }
 

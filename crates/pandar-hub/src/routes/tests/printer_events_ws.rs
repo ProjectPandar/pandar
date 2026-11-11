@@ -72,19 +72,6 @@ struct EventPrint {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(tag = "type")]
-enum OldShapePrinterEvent {
-    #[serde(rename = "printer_snapshot")]
-    PrinterSnapshot { printer: OldShapePrinter },
-}
-
-#[derive(Debug, Deserialize)]
-struct OldShapePrinter {
-    id: String,
-    status: String,
-}
-
-#[derive(Debug, Deserialize)]
 struct EventJob {
     id: String,
     status: String,
@@ -117,7 +104,6 @@ where
 mod epoch;
 mod grpc_events;
 mod replication;
-mod shape;
 mod studio;
 mod tickets;
 

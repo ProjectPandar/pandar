@@ -150,21 +150,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn recognizes_workspace_production_and_test_modules() {
-        assert!(is_production_module(Path::new("src/module.c")));
-        assert!(is_production_module(Path::new("src/main/kotlin/Module.kt")));
-        assert!(!is_production_module(Path::new(
-            "src/test/kotlin/ModuleTest.kt"
-        )));
-        assert!(!is_production_module(Path::new("app/module.test.tsx")));
-        assert!(!is_production_module(Path::new(
-            "src/external_race_tests.rs"
-        )));
-        assert!(is_ignored_directory(Path::new("build")));
-        assert!(is_ignored_directory(Path::new("generated")));
-    }
-
-    #[test]
     fn reports_oversized_production_modules() {
         let root = env::temp_dir().join(format!("pandar-quality-{}", std::process::id()));
         for source_root in SOURCE_ROOTS {

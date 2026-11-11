@@ -28,51 +28,6 @@ fn session() -> *mut std::ffi::c_void {
 }
 
 #[test]
-fn no_auth_retry_active_only_while_waiting_or_in_flight() {
-    let session = session();
-    assert!(!session.is_null());
-    assert!(!unsafe { pandar_plugin_no_auth_retry_active(session) });
-
-    assert_eq!(
-        unsafe { pandar_plugin_no_auth_retry_arm(session, 1_000) },
-        0
-    );
-    assert!(unsafe { pandar_plugin_no_auth_retry_active(session) });
-    assert_eq!(
-        unsafe { pandar_plugin_no_auth_retry_begin(session, 1_000) },
-        1
-    );
-    assert!(unsafe { pandar_plugin_no_auth_retry_active(session) });
-    assert_eq!(
-        unsafe { pandar_plugin_no_auth_retry_complete(session, 0, 1_000) },
-        0
-    );
-    assert!(!unsafe { pandar_plugin_no_auth_retry_active(session) });
-
-    unsafe { pandar_plugin_printer_refresh_session_destroy(session) };
-}
-
-#[test]
-fn connect_failure_leaves_no_auth_retry_active_while_waiting() {
-    let session = session();
-    assert_eq!(
-        unsafe { pandar_plugin_no_auth_retry_arm(session, 1_000) },
-        0
-    );
-    assert_eq!(
-        unsafe { pandar_plugin_no_auth_retry_begin(session, 1_000) },
-        1
-    );
-    assert_eq!(
-        unsafe { pandar_plugin_no_auth_retry_complete(session, 2, 1_000) },
-        0
-    );
-    assert!(unsafe { pandar_plugin_no_auth_retry_active(session) });
-
-    unsafe { pandar_plugin_printer_refresh_session_destroy(session) };
-}
-
-#[test]
 fn no_auth_retry_claims_one_attempt_and_only_rearms_after_connect_failure_delay() {
     let session = session();
     assert!(!session.is_null());

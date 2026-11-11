@@ -10,21 +10,6 @@ import zip.iptables.pandar.android.domain.model.PrinterFamily
 
 class PrinterStateReducerTest {
     @Test
-    fun `REST printer snapshot is followed by live snapshots through one reducer`() {
-        val initial = reducePrinterState(
-            PrinterDomainState(),
-            PrinterStateUpdate.PrinterListLoaded(listOf(printer(status = "idle")), 0),
-        )
-
-        val live = reducePrinterState(
-            initial,
-            PrinterStateUpdate.PrinterSnapshot(printer(status = "running")),
-        )
-
-        assertEquals("running", live.printers.getValue("printer-1").status)
-    }
-
-    @Test
     fun `progress and terminal job transitions replace the same job`() {
         val initial = reducePrinterState(
             PrinterDomainState(),

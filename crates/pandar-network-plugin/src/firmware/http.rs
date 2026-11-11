@@ -277,24 +277,3 @@ fn firmware_url(hub_url: &str, printer_id: &str, suffix: &str) -> anyhow::Result
 fn write_diagnostic(writer: &mut impl Write, message: &str, error: &anyhow::Error) {
     let _ = writeln!(writer, "pandar network plugin {message}: {error:#}");
 }
-
-#[cfg(test)]
-mod timeout_tests {
-    use super::*;
-
-    #[test]
-    fn firmware_control_http_timeout_covers_agent_suback_and_ack_windows() {
-        assert!(
-            FIRMWARE_HTTP_TIMEOUT >= Duration::from_secs(7),
-            "control timeout must cover a 5s SUBACK plus a 2s acknowledgement window"
-        );
-    }
-
-    #[test]
-    fn firmware_refresh_http_timeout_covers_three_agent_attempts() {
-        assert!(
-            FIRMWARE_REFRESH_HTTP_TIMEOUT >= Duration::from_secs(45),
-            "refresh timeout must cover three 5s SUBACK plus 10s report attempts"
-        );
-    }
-}

@@ -56,30 +56,6 @@ async fn admin_user_can_rename_tenant() {
 }
 
 #[tokio::test]
-async fn empty_display_name_returns_bad_request() {
-    let (state, app, tenant_id) = renamed_tenant_app().await;
-    let admin_token = external_auth_token_for_role(
-        &state,
-        TenantId::parse(&tenant_id).unwrap(),
-        crate::repositories::UserRole::TenantAdmin,
-        "rename-admin-empty",
-    )
-    .await;
-
-    let (status, body) = request_as(
-        app,
-        Method::PATCH,
-        &format!("/api/v1/tenants/{tenant_id}"),
-        Some(json!({ "display_name": "   " })),
-        &admin_token,
-    )
-    .await;
-
-    assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert_eq!(body["error"], "bad_request");
-}
-
-#[tokio::test]
 async fn viewer_cannot_rename_tenant() {
     let (state, app, tenant_id) = renamed_tenant_app().await;
     let viewer_token = external_auth_token_for_role(

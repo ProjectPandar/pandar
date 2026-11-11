@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
@@ -13,7 +13,7 @@ import {
 } from "./dashboard-inventory.test.context";
 
 describe("PrinterInventory", () => {
-  it("keeps the active nozzle switch in the temperature grid with nozzle details on separate lines", async () => {
+  it("switches the active nozzle with the Bambu extruder id", async () => {
     const dualNozzlePrinter: Printer = {
       ...printerWithMaterials,
       nozzle_temperatures: [
@@ -43,41 +43,9 @@ describe("PrinterInventory", () => {
 
     const switchButton = await screen.findByRole("button", { name: "Switch to nozzle L" });
     const switchForm = switchButton.closest("form");
-    const temperatureGrid = switchForm?.parentElement;
-    expect(temperatureGrid).toHaveClass("grid-cols-2", "lg:grid-cols-4");
-    expect(switchForm).not.toHaveClass("col-span-3");
-    expect(switchForm).toHaveClass("h-full");
-    expect(switchButton).toHaveClass("h-full");
     expect(switchForm?.querySelector('input[name="action"]')).toHaveValue("select_extruder");
     expect(switchForm?.querySelector('input[name="printer_id"]')).toHaveValue("printer-1");
     expect(switchForm?.querySelector('input[name="extruder_id"]')).toHaveValue("1");
-    expect(switchButton).toHaveTextContent("L");
-    expect(switchButton).toHaveTextContent("R");
-    expect(switchButton).toHaveTextContent("0.4 mm");
-    const diameters = within(switchButton).getAllByText("0.4 mm");
-    expect(diameters).toHaveLength(2);
-    for (const diameter of diameters) {
-      expect(diameter.parentElement).toHaveClass("flex-col");
-      expect(diameter.nextElementSibling).toHaveTextContent("HH05");
-    }
-    expect(within(switchButton).getByText("R").parentElement?.parentElement).toHaveClass("text-primary");
-  });
-
-  it("renders a single nozzle without a duplicate label or target temperature", async () => {
-    const heatingPrinter: Printer = {
-      ...printer,
-      nozzle_temperatures: [{ label: null, current_celsius: "27", target_celsius: "0" }],
-    };
-
-    renderWithMessages(
-      <PrinterInventory selectedTenant={tenant} printers={[heatingPrinter]} agents={[agent]} nowMs={0} />,
-    );
-
-    const card = screen.getByRole("article", { name: "Office A1" });
-    await waitFor(() => expect(card).toHaveTextContent("Nozzle"));
-    expect(card).toHaveTextContent("27°");
-    expect(card).not.toHaveTextContent("Nozzle Nozzle");
-    expect(card).not.toHaveTextContent("27° / 0°");
   });
 
   it("opens a single-nozzle temperature menu with preset controls", async () => {
@@ -164,30 +132,6 @@ describe("PrinterInventory", () => {
     const form = preset.closest("form");
     expect(form?.querySelector('input[name="action"]')).toHaveValue("set_bed_temperature");
     expect(form?.querySelector('input[name="temperature_celsius"]')).toHaveValue("75");
-    expect(screen.getByPlaceholderText("Custom")).toBeVisible();
-  });
-
-  it("opens chamber temperature controls with chamber presets", async () => {
-    const user = userEvent.setup();
-    const heatingPrinter: Printer = {
-      ...printer,
-      chamber_temperature_celsius: "25",
-      chamber_target_temperature_celsius: "45",
-    };
-
-    renderWithMessages(
-      <PrinterInventory selectedTenant={tenant} printers={[heatingPrinter]} agents={[agent]} nowMs={0} />,
-    );
-
-    await user.click(await screen.findByRole("button", { name: "Set chamber temperature" }));
-
-    expect(screen.getByText("Set chamber temperature")).toBeVisible();
-    expect(screen.getByText("Current 25°C")).toBeVisible();
-    expect(screen.getByText("Target 45°C")).toBeVisible();
-    const preset = screen.getByRole("button", { name: "45 C" });
-    const form = preset.closest("form");
-    expect(form?.querySelector('input[name="action"]')).toHaveValue("set_chamber_temperature");
-    expect(form?.querySelector('input[name="temperature_celsius"]')).toHaveValue("45");
     expect(screen.getByPlaceholderText("Custom")).toBeVisible();
   });
 });

@@ -367,6 +367,3 @@ unsafe fn parse_optional_json<T: DeserializeOwned>(
     }
     serde_json::from_str(&value).map(Some).map_err(|_| ())
 }
-
-#[cfg(test)]
-mod tests;

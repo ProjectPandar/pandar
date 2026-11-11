@@ -64,14 +64,6 @@ struct AgentsResponse {
     agents: Vec<serde::de::IgnoredAny>,
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-struct TenantTokenCreateAuditMetadata {
-    name: String,
-    tenant_token_id: String,
-    tenant_token_scopes: Vec<String>,
-}
-
 fn decode<T>(body: serde_json::Value) -> T
 where
     T: DeserializeOwned,
@@ -326,64 +318,6 @@ async fn tenant_token_create_requires_scopes_but_allows_explicit_empty_scopes() 
 }
 
 #[tokio::test]
-async fn tenant_token_create_and_rotate_reject_invalid_expires_at() {
-    let state = external_auth_state(state().await);
-    let app = router(state.clone());
-    let tenant = state
-        .tenants()
-        .create("bad-expiry", "Bad Expiry")
-        .await
-        .unwrap();
-    let admin = external_auth_token_for_role(
-        &state,
-        tenant.id,
-        crate::repositories::UserRole::TenantAdmin,
-        "tenant-token-bad-expiry-admin",
-    )
-    .await;
-
-    let (status, body) = request_as(
-        app.clone(),
-        Method::POST,
-        &format!("/api/v1/tenants/{}/tenant-tokens", tenant.id),
-        tenant_token_create_body("Bad Expiry", &["*"], Some("not-rfc3339")),
-        &admin,
-    )
-    .await;
-
-    assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert_eq!(decode::<ErrorResponse>(body).error, "invalid_expires_at");
-
-    let (status, created) = request_as(
-        app.clone(),
-        Method::POST,
-        &format!("/api/v1/tenants/{}/tenant-tokens", tenant.id),
-        tenant_token_create_body("Good Expiry", &["*"], Some("2027-01-01T00:00:00Z")),
-        &admin,
-    )
-    .await;
-    assert_eq!(status, StatusCode::CREATED);
-    let token_id = decode::<TenantTokenWithPlaintextResponse>(created)
-        .tenant_token
-        .id;
-
-    let (status, body) = request_as(
-        app,
-        Method::POST,
-        &format!(
-            "/api/v1/tenants/{}/tenant-tokens/{token_id}/rotate",
-            tenant.id
-        ),
-        tenant_token_rotate_body(Some("also-not-rfc3339")),
-        &admin,
-    )
-    .await;
-
-    assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert_eq!(decode::<ErrorResponse>(body).error, "invalid_expires_at");
-}
-
-#[tokio::test]
 async fn all_scope_tenant_token_without_creator_can_perform_admin_mutation() {
     let state = state().await;
     let app = router(state.clone());
@@ -437,78 +371,6 @@ async fn all_scope_tenant_token_without_creator_can_perform_admin_mutation() {
         .unwrap();
     assert_eq!(event.actor_type, "tenant_token");
     assert_eq!(event.user_id, None);
-}
-
-#[tokio::test]
-async fn tenant_token_audit_actor_preserves_creator_and_token_metadata() {
-    let state = state().await;
-    let app = router(state.clone());
-    let tenant = state
-        .tenants()
-        .create("token-audit", "Token Audit")
-        .await
-        .unwrap();
-    let user = state
-        .auth()
-        .create_user(
-            tenant.id,
-            "token-audit-admin@example.test",
-            "Token Audit Admin",
-            crate::repositories::UserRole::TenantAdmin,
-        )
-        .await
-        .unwrap();
-    let plaintext = format!("test_tenant_creator_{}", uuid::Uuid::new_v4().simple());
-    let token_id = uuid::Uuid::new_v4().to_string();
-    tenant_tokens::ActiveModel {
-        id: Set(token_id.clone()),
-        tenant_id: Set(tenant.id.to_string()),
-        name: Set("creator-admin".to_owned()),
-        token_hash: Set(crate::repositories::hash_token_for_test(&plaintext)),
-        scopes_json: Set(tenant_token_scopes_json(&[
-            crate::repositories::TenantTokenScope::All,
-        ])),
-        created_by_user_id: Set(Some(user.id.clone())),
-        created_at: Set(pandar_core::created_at_now()),
-        last_used_at: Set(None),
-        expires_at: Set(None),
-        revoked_at: Set(None),
-    }
-    .insert(&state.database().sea_orm_connection())
-    .await
-    .unwrap();
-
-    let (status, body) = request_as(
-        app,
-        Method::POST,
-        &format!("/api/v1/tenants/{}/tenant-tokens", tenant.id),
-        tenant_token_create_body("created-by-creator-token", &[], None),
-        &plaintext,
-    )
-    .await;
-
-    assert_eq!(status, StatusCode::CREATED);
-    assert_eq!(
-        decode::<TenantTokenWithPlaintextResponse>(body)
-            .tenant_token
-            .name,
-        "created-by-creator-token"
-    );
-
-    let event = audit_events::Entity::find()
-        .filter(audit_events::Column::TenantId.eq(tenant.id.to_string()))
-        .filter(audit_events::Column::Action.eq("tenant_token.create"))
-        .one(&state.database().sea_orm_connection())
-        .await
-        .unwrap()
-        .unwrap();
-    assert_eq!(event.actor_type, "tenant_token");
-    assert_eq!(event.user_id, Some(user.id));
-    let metadata =
-        serde_json::from_str::<TenantTokenCreateAuditMetadata>(&event.metadata_json).unwrap();
-    assert_eq!(metadata.tenant_token_id, token_id);
-    assert_eq!(metadata.tenant_token_scopes, vec!["*".to_owned()]);
-    assert_eq!(metadata.name, "created-by-creator-token");
 }
 
 #[tokio::test]

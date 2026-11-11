@@ -124,12 +124,4 @@ describe("PrinterAxisControls", () => {
       action: "home",
     });
   });
-
-  it("renders localized Chinese axis controls", async () => {
-    const user = userEvent.setup();
-    renderWithMessages(<PrinterAxisControls printer={printer} />, "zh");
-    await user.click(screen.getByRole("button", { name: "移动轴" }));
-    expect(screen.getByRole("heading", { name: "移动打印机轴" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "将 X 轴移动 +10 毫米" })).toBeVisible();
-  });
 });

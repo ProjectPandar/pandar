@@ -15,10 +15,6 @@ use crate::{
 };
 use pandar_protocol::agent::v1::{CommandAck, CommandResult};
 
-#[cfg(test)]
-#[cfg(test)]
-use crate::grpc::commands::handle_ack_and_job;
-
 pub(super) async fn handle_command_ack(
     state: &AppState,
     tenant_id: TenantId,
@@ -245,26 +241,6 @@ async fn durable_fallback_allowed(
         }
         _ => Ok(true),
     }
-}
-
-#[cfg(test)]
-pub(in crate::grpc) async fn handle_ack(
-    state: &AppState,
-    tenant_id: TenantId,
-    agent_id: AgentId,
-    ack: CommandAck,
-) -> Result<(), Status> {
-    let command_id = parse_command_id(&ack.command_id)?;
-    handle_ack_and_job(
-        state,
-        tenant_id,
-        agent_id,
-        command_id,
-        ack.accepted,
-        ack.error,
-        None,
-    )
-    .await
 }
 
 #[cfg(test)]

@@ -7,9 +7,8 @@ use super::*;
 use pandar_core::{AgentId, DiagnosticCompatibility, TenantId};
 use requests::{
     link_printer_body, link_printer_value, link_printer_with_model_value,
-    link_printer_with_serial_number_value, link_printer_with_unexpected_field_body,
-    printer_ams_load_body, printer_ams_start_drying_body, printer_ams_stop_drying_body,
-    printer_select_extruder_body, update_printer_body,
+    link_printer_with_serial_number_value, printer_ams_load_body, printer_ams_start_drying_body,
+    printer_ams_stop_drying_body, update_printer_body,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -119,14 +118,14 @@ struct PrinterOperationPayload {
 #[serde(tag = "type")]
 enum PrinterOperation {
     #[serde(rename = "ams_load_filament")]
-    AmsLoadFilament {
+    LoadFilament {
         ams_id: u32,
         slot_id: u32,
         global_tray_id: u32,
         extruder_id: u32,
     },
     #[serde(rename = "ams_start_drying")]
-    AmsStartDrying {
+    StartDrying {
         ams_id: u32,
         temperature_celsius: u16,
         duration_hours: u16,
@@ -134,9 +133,7 @@ enum PrinterOperation {
         rotate_tray: bool,
     },
     #[serde(rename = "ams_stop_drying")]
-    AmsStopDrying { ams_id: u32 },
-    #[serde(rename = "select_extruder")]
-    SelectExtruder { extruder_id: u32 },
+    StopDrying { ams_id: u32 },
 }
 
 #[derive(Debug, Deserialize)]

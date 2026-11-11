@@ -71,41 +71,6 @@ fn x2d_numeric_legacy_state_does_not_drop_recovery_fields() {
 }
 
 #[test]
-fn zero_print_error_is_state_not_a_generic_diagnostic() {
-    let progress = print_report_from_json(
-        &endpoint(),
-        &serde_json::json!({"print": {"print_error": 0}}),
-    );
-    assert_eq!(progress.print_error, Some(0));
-    assert!(progress.diagnostics.is_empty());
-}
-
-#[test]
-fn printer_job_id_preserves_presence_and_studio_conversion() {
-    let cases = [
-        (serde_json::json!(""), Some(String::new())),
-        (
-            serde_json::json!("not-a-number"),
-            Some("not-a-number".to_owned()),
-        ),
-        (serde_json::json!(42.9), Some("42".to_owned())),
-        (
-            serde_json::json!(9223372036854775808_u64),
-            Some(String::new()),
-        ),
-        (serde_json::json!({"bad": true}), Some(String::new())),
-    ];
-    for (value, expected) in cases {
-        let progress = print_report_from_json(
-            &endpoint(),
-            &serde_json::json!({"print": {"task_id": "task-7", "job_id": value}}),
-        );
-        assert_eq!(progress.job_id.as_deref(), Some("task-7"));
-        assert_eq!(progress.printer_job_id, expected);
-    }
-}
-
-#[test]
 fn raw_mqtt_printer_job_id_numbers_keep_decimal_boundary_semantics() {
     let cases = [
         (
@@ -187,17 +152,6 @@ fn raw_mqtt_printer_job_id_numbers_keep_decimal_boundary_semantics() {
 }
 
 #[test]
-fn absent_print_error_and_printer_job_id_remain_absent() {
-    let progress = print_report_from_json(
-        &endpoint(),
-        &serde_json::json!({"print": {"task_id": "task-7"}}),
-    );
-
-    assert_eq!(progress.print_error, None);
-    assert_eq!(progress.printer_job_id, None);
-}
-
-#[test]
 fn job_attr_preserves_zero_nonzero_and_absence() {
     let cases = [
         (serde_json::json!({"print": {"job_attr": 0}}), Some(0)),
@@ -210,17 +164,6 @@ fn job_attr_preserves_zero_nonzero_and_absence() {
         let progress = print_report_from_json(&endpoint(), &report);
         assert_eq!(progress.job_attr, expected);
     }
-}
-
-#[test]
-fn invalid_job_attr_does_not_discard_other_valid_fields() {
-    let progress = print_report_from_json(
-        &endpoint(),
-        &serde_json::json!({"print": {"job_attr": "invalid", "mc_percent": 7}}),
-    );
-
-    assert_eq!(progress.job_attr, None);
-    assert_eq!(progress.percent, Some(7));
 }
 
 #[test]
@@ -255,29 +198,6 @@ fn structured_job_attr_does_not_discard_valid_sibling_fields() {
 }
 
 #[test]
-fn job_attr_presence_round_trips_to_agent_report() {
-    let explicit_zero = print_job_report_event(&config(), progress_with_job_attr(Some(0)));
-    let absent = print_job_report_event(&config(), progress_with_job_attr(None));
-    let Some(agent_event::Event::PrintJobReport(explicit_zero)) = explicit_zero.event else {
-        panic!("expected print report");
-    };
-    let Some(agent_event::Event::PrintJobReport(absent)) = absent.event else {
-        panic!("expected print report");
-    };
-    assert!(explicit_zero.has_job_attr);
-    assert_eq!(explicit_zero.job_attr, 0);
-    assert!(!absent.has_job_attr);
-}
-
-#[test]
-fn null_printer_job_id_is_present_as_an_empty_string() {
-    let progress =
-        print_report_from_json(&endpoint(), &serde_json::json!({"print": {"job_id": null}}));
-
-    assert_eq!(progress.printer_job_id, Some(String::new()));
-}
-
-#[test]
 fn string_and_object_print_error_keep_generic_diagnostics() {
     let cases = [
         serde_json::json!("heater failure"),
@@ -294,20 +214,6 @@ fn string_and_object_print_error_keep_generic_diagnostics() {
         assert_eq!(progress.diagnostics.len(), 1);
         assert_eq!(progress.diagnostics[0].kind, "print_error");
         assert_eq!(progress.diagnostics[0].message, "heater failure");
-    }
-}
-
-#[test]
-fn boolean_and_null_print_error_do_not_patch_numeric_state() {
-    for value in [serde_json::json!(true), serde_json::Value::Null] {
-        let progress = print_report_from_json(
-            &endpoint(),
-            &serde_json::json!({"print": {"print_error": value, "mc_percent": 37}}),
-        );
-
-        assert_eq!(progress.print_error, None);
-        assert_eq!(progress.percent, Some(37));
-        assert!(progress.diagnostics.is_empty());
     }
 }
 

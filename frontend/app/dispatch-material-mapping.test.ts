@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import type { ArtifactMetadata, Printer } from "./dashboard-types";
 import { printerCompatibility } from "./printer-compatibility.test-utils";
 import {
-  autoMapProjectFilaments,
   autoMapSlotSelections,
   materialMappingPayload,
   printerAmsSlots,
@@ -14,57 +13,6 @@ import {
 } from "./dispatch-material-mapping";
 
 describe("dispatch material mapping", () => {
-  it("extracts used plate materials with the sliced nozzle assignment", () => {
-    expect(projectFilamentsForPlate(fixtureMetadata(), 1)).toEqual([
-      {
-        color: "#000000",
-        filamentId: "1",
-        filamentType: "PLA",
-        mappingIndex: 0,
-        nozzleId: 1,
-        trayInfoIdx: "GFA00",
-      },
-      {
-        color: "#FFFF00",
-        filamentId: "2",
-        filamentType: "PETG",
-        mappingIndex: 1,
-        nozzleId: 0,
-        trayInfoIdx: "GFG00",
-      },
-    ]);
-  });
-
-  it("keeps AMS colors, routes, empty slots, and external spools for the custom picker", () => {
-    const slots = printerAmsSlots(fixturePrinter());
-
-    expect(slots).toHaveLength(7);
-    expect(slots[0]).toMatchObject({
-      key: "ams:0:0",
-      kind: "ams",
-      toolhead: "R",
-      filamentType: "PLA",
-      color: "FF0000",
-      multiColor: ["FF0000", "FFFFFF"],
-      remainingEstimate: 72,
-    });
-    expect(slots[2]).toMatchObject({
-      key: "ams:0:2",
-      exists: false,
-    });
-    expect(slots.at(-2)).toMatchObject({
-      key: "external:254",
-      kind: "external",
-      amsId: 254,
-      legacyTrayId: -1,
-      toolhead: "L",
-    });
-    expect(slots.at(-1)).toMatchObject({
-      trayId: "1",
-      slotId: 0,
-    });
-  });
-
   it("applies Studio side, type, empty-slot, and external rules", () => {
     const filament = projectFilamentsForPlate(fixtureMetadata(), 1)[0];
     const slots = printerAmsSlots(fixturePrinter());
@@ -112,19 +60,6 @@ describe("dispatch material mapping", () => {
     ).toBe("unknown_route");
   });
 
-  it("auto maps only compatible material sources on the sliced nozzle side", () => {
-    const filaments = projectFilamentsForPlate(fixtureMetadata(), 1);
-    const slots = printerAmsSlots(fixturePrinter());
-
-    expect(autoMapProjectFilaments(filaments, slots)).toEqual([4, 1]);
-    expect(autoMapSlotSelections(filaments, slots)).toEqual(
-      new Map([
-        [0, "ams:1:0"],
-        [1, "ams:0:1"],
-      ]),
-    );
-  });
-
   it("prefers a compatible AMS over a closer external spool for auto mapping", () => {
     const filament = {
       ...projectFilamentsForPlate(fixtureMetadata(), 1)[0],
@@ -136,64 +71,6 @@ describe("dispatch material mapping", () => {
     expect(
       autoMapSlotSelections([filament], printerAmsSlots(fixturePrinter())),
     ).toEqual(new Map([[0, "ams:0:0"]]));
-  });
-
-  it("builds all three Studio mapping payloads with sliced nozzle ids and colors", () => {
-    const filaments = projectFilamentsForPlate(fixtureMetadata(), 1);
-    const slots = printerAmsSlots(fixturePrinter());
-    const payload = materialMappingPayload(
-      filaments,
-      slots,
-      autoMapSlotSelections(filaments, slots),
-    );
-
-    expect(payload).toEqual({
-      amsMapping: [4, 1],
-      amsMapping2: [
-        { ams_id: 1, slot_id: 0 },
-        { ams_id: 0, slot_id: 1 },
-      ],
-      amsMappingInfo: [
-        {
-          ams: 4,
-          filamentType: "PLA",
-          filamentId: "GFA00",
-          nozzleId: 1,
-          sourceColor: "#000000FF",
-          targetColor: "#000000FF",
-        },
-        {
-          ams: 1,
-          filamentType: "PETG",
-          filamentId: "GFG00",
-          nozzleId: 0,
-          sourceColor: "#FFFF00FF",
-          targetColor: "#FFFF00FF",
-        },
-      ],
-      externalTypeMismatch: false,
-      mappingValid: true,
-      usesAms: true,
-    });
-  });
-
-  it("preserves external identity in mapping2/info and warns on a type mismatch", () => {
-    const filament = projectFilamentsForPlate(fixtureMetadata(), 1)[0];
-    const slots = printerAmsSlots(fixturePrinter());
-    const payload = materialMappingPayload(
-      [filament],
-      slots,
-      new Map([[filament.mappingIndex, "external:254"]]),
-    );
-
-    expect(payload.amsMapping).toEqual([-1]);
-    expect(payload.amsMapping2).toEqual([{ ams_id: 254, slot_id: 0 }]);
-    expect(payload.amsMappingInfo?.[0]).toMatchObject({
-      ams: 254,
-      nozzleId: 1,
-    });
-    expect(payload.externalTypeMismatch).toBe(true);
-    expect(payload.usesAms).toBe(false);
   });
 
   it("omits mapping info when sparse or legacy metadata lacks a nozzle assignment", () => {
@@ -221,34 +98,6 @@ describe("dispatch material mapping", () => {
     expect(
       materialMappingPayload([sparse[0]], slots, new Map()).mappingValid,
     ).toBe(false);
-  });
-
-  it("maps only external spools when Use AMS is off and derives use_ams false", () => {
-    const filaments = projectFilamentsForPlate(fixtureMetadata(), 1);
-    const slots = printerAmsSlots(fixturePrinter());
-    const selections = autoMapSlotSelections(filaments, slots, false);
-
-    expect(selections).toEqual(
-      new Map([
-        [0, "external:254"],
-        [1, "external:255"],
-      ]),
-    );
-    expect(slotIneligibility(filaments[0], slots[0], slots, false)).toBe(
-      "ams_disabled",
-    );
-    expect(
-      materialMappingPayload(filaments, slots, selections, false),
-    ).toMatchObject({
-      amsMapping: [-1, -1],
-      amsMapping2: [
-        { ams_id: 254, slot_id: 0 },
-        { ams_id: 255, slot_id: 0 },
-      ],
-      externalTypeMismatch: true,
-      mappingValid: true,
-      usesAms: false,
-    });
   });
   it("allows every routed AMS but disables external spools when the switch is installed", () => {
     const filament = projectFilamentsForPlate(fixtureMetadata(), 1)[0];

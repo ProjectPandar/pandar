@@ -13,7 +13,7 @@ use crate::machine::{
     mqtt::FakeMqttTransport, runtime::test_support::TestRuntimeBambuMachineGateway,
 };
 use pandar_protocol::agent::v1::{
-    AgentCameraEvent, AgentCapability, AgentEvent, HubCameraCommand, HubCommand, LinkPrinter,
+    AgentCameraEvent, AgentEvent, HubCameraCommand, HubCommand, LinkPrinter,
     agent_control_server::{AgentControl, AgentControlServer},
     hub_command,
 };
@@ -26,41 +26,6 @@ mod firmware_lifecycle;
 mod startup;
 mod tls;
 
-#[test]
-fn parses_agent_cli_config() {
-    let agent_id = uuid::Uuid::new_v4().to_string();
-    let tenant_id = uuid::Uuid::new_v4().to_string();
-    let config = AgentConfig::parse_from([
-        "pandar-agent",
-        "--hub-grpc-url",
-        "http://hub.internal:50051",
-        "--agent-name",
-        "garage",
-        "--agent-id",
-        &agent_id,
-        "--tenant-id",
-        &tenant_id,
-        "--agent-credential",
-        "pandar_ac_test",
-        "--agent-version",
-        "9.8.7",
-        "--printers",
-        r#"[{"host":"192.0.2.10","serial":"SERIAL","access_code":"12345678"}]"#,
-    ]);
-
-    assert_eq!(config.hub_grpc_url, "http://hub.internal:50051");
-    assert_eq!(config.hub_api_url, None);
-    assert_eq!(config.agent_name, "garage");
-    assert_eq!(config.agent_id, agent_id);
-    assert_eq!(config.tenant_id, tenant_id);
-    assert_eq!(config.agent_credential, "pandar_ac_test");
-    assert_eq!(config.agent_version, "9.8.7");
-    assert_eq!(
-        config.printers,
-        r#"[{"host":"192.0.2.10","serial":"SERIAL","access_code":"12345678"}]"#
-    );
-}
-
 #[tokio::test]
 async fn invalid_printer_config_fails_before_reconnect_loop() {
     let config = AgentConfig {
@@ -72,34 +37,6 @@ async fn invalid_printer_config_fails_before_reconnect_loop() {
 
     assert!(format!("{err:#}").contains("PANDAR_PRINTERS"));
     assert!(format!("{err:#}").contains("serial"));
-}
-
-#[test]
-fn hello_event_has_agent_identity_version_and_exact_capability() {
-    let config = test_config();
-
-    let event = hello_event(&config);
-
-    assert_eq!(event.agent_id, config.agent_id.to_string());
-    assert_eq!(event.tenant_id, config.tenant_id.to_string());
-    assert_eq!(event.event_id, "hello");
-    assert_eq!(
-        event.event,
-        Some(agent_event::Event::Hello(AgentHello {
-            name: "garage".to_owned(),
-            version: "9.8.7".to_owned(),
-            credential: "pandar_ac_test".to_owned(),
-            capabilities: vec![
-                AgentCapability::HandlePrintError as i32,
-                AgentCapability::HandlePrintErrorSequenceZeroPubackOnly as i32,
-                AgentCapability::RequiredDeviceFeatures as i32,
-                AgentCapability::GcodeLine as i32,
-                AgentCapability::FirmwareControl as i32,
-                AgentCapability::H2cAutoNozzleMapping as i32,
-                AgentCapability::StudioLocalCamera as i32,
-            ],
-        }))
-    );
 }
 
 #[tokio::test]

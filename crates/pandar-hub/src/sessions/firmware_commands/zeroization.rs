@@ -15,19 +15,6 @@ fn firmware_secret_storage_types_zeroize_on_drop() {
     ));
 }
 
-#[test]
-fn firmware_secret_hash_matches_borrowed_str_lookup() {
-    let command_id = CommandId::new();
-    let mut prepared_tokens = HashMap::new();
-    prepared_tokens.insert(
-        FirmwareSecret::from("prepared-secret".to_owned()),
-        command_id,
-    );
-
-    assert_eq!(prepared_tokens.get("prepared-secret"), Some(&command_id));
-    assert_eq!(prepared_tokens.remove("prepared-secret"), Some(command_id));
-}
-
 fn assert_key_type<T: ZeroizeOnDrop>(_: Option<&T>) {}
 
 fn assert_pending_types(command: &PendingFirmwareCommand) {

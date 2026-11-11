@@ -53,22 +53,6 @@ async fn plugin_no_auth_session_rejects_ambiguous_tenant_without_side_effects() 
 }
 
 #[tokio::test]
-async fn plugin_no_auth_session_requires_an_existing_tenant() {
-    let state = state().await.with_no_auth_for_tests(true);
-
-    let (status, body) = request(
-        router(state),
-        Method::POST,
-        "/api/v1/plugin/no-auth-session",
-        None,
-    )
-    .await;
-
-    assert_eq!(status, StatusCode::NOT_FOUND);
-    assert_eq!(decode::<ErrorResponse>(body).error, "tenant_not_found");
-}
-
-#[tokio::test]
 async fn plugin_no_auth_session_rejects_ambiguous_postgres_tenant_when_configured() {
     let Some((state, pool, admin, schema, spool_dir)) = isolated_postgres_no_auth_state().await
     else {

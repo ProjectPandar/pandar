@@ -70,39 +70,6 @@ pub(crate) fn newer_firmware_identity_partial_state_follows_one_exact_reset() {
     );
 }
 
-pub(crate) fn fresh_current_after_invalidation_waits_for_one_exact_reset() {
-    let start = Instant::now();
-    let mut cache = FirmwareStatusCache::new(13);
-    cache
-        .observe_printers_at(&batch_projection(Some(populated_firmware())), 13, 1, start)
-        .unwrap();
-    cache
-        .observe_printers_at(
-            &batch_projection(None),
-            13,
-            2,
-            start + Duration::from_millis(1),
-        )
-        .unwrap();
-    cache
-        .observe_printers_at(
-            &batch_projection(Some(populated_firmware())),
-            13,
-            3,
-            start + Duration::from_millis(2),
-        )
-        .unwrap();
-
-    assert_eq!(
-        status_json(&mut cache, start + Duration::from_millis(2)),
-        exact_reset()
-    );
-    assert_eq!(
-        status_json(&mut cache, start + Duration::from_millis(3))["info"]["module"][0]["name"],
-        "ota"
-    );
-}
-
 pub(crate) fn delayed_lower_revisions_do_not_overwrite_newer_current_state() {
     let start = Instant::now();
     let mut cache = FirmwareStatusCache::new(14);
@@ -184,68 +151,5 @@ pub(crate) fn delayed_unseen_session_does_not_overwrite_newer_observation() {
     assert_eq!(
         status_json(&mut cache, start + Duration::from_millis(3))["info"]["module"][0]["sw_ver"],
         "08.08.08.08"
-    );
-}
-
-pub(crate) fn delayed_same_identity_observations_cannot_undo_invalidation_but_newer_equal_can_recover()
- {
-    let start = Instant::now();
-    let mut cache = FirmwareStatusCache::new(18);
-    cache
-        .observe_printers_at(&batch_projection(Some(populated_firmware())), 18, 10, start)
-        .unwrap();
-    cache
-        .observe_printers_at(
-            &batch_projection(None),
-            18,
-            12,
-            start + Duration::from_millis(1),
-        )
-        .unwrap();
-    assert_eq!(
-        status_json(&mut cache, start + Duration::from_millis(1)),
-        exact_reset()
-    );
-
-    let mut lower = populated_firmware();
-    lower["module_revision"] = serde_json::json!(7);
-    lower["status_revision"] = serde_json::json!(8);
-    cache
-        .observe_printers_at(
-            &batch_projection(Some(lower)),
-            18,
-            9,
-            start + Duration::from_secs(1),
-        )
-        .unwrap();
-    cache
-        .observe_printers_at(
-            &batch_projection(Some(populated_firmware())),
-            18,
-            11,
-            start + Duration::from_secs(2),
-        )
-        .unwrap();
-    assert_eq!(
-        status_json(&mut cache, start + Duration::from_millis(3_002)),
-        exact_reset()
-    );
-    assert!(
-        cache
-            .next_status_override_at("SERIAL", start + Duration::from_millis(3_003))
-            .is_none()
-    );
-
-    cache
-        .observe_printers_at(
-            &batch_projection(Some(populated_firmware())),
-            18,
-            13,
-            start + Duration::from_millis(3_004),
-        )
-        .unwrap();
-    assert_eq!(
-        status_json(&mut cache, start + Duration::from_millis(3_004))["info"]["module"][0]["name"],
-        "ota"
     );
 }

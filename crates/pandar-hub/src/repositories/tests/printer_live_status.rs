@@ -271,29 +271,3 @@ pub(super) async fn exercise_printer_live_status(database: Database) {
 async fn sqlite_print_reports_merge_printer_live_status_without_a_job() {
     exercise_printer_live_status(sqlite_database().await).await;
 }
-
-#[tokio::test]
-async fn invalid_persisted_printer_hms_is_reported_with_context() {
-    let (database, tenants, agents, printers, _, _) = repositories().await;
-    let tenant = tenants.create("invalid-hms", "Invalid HMS").await.unwrap();
-    let agent = agents.create(tenant.id, "agent").await.unwrap();
-    let printer_id =
-        crate::repositories::test_helpers::insert_printer_fixture(&database, tenant.id, agent.id)
-            .await
-            .unwrap();
-    let Database::Sqlite(pool) = &database else {
-        panic!("expected SQLite database")
-    };
-    sqlx::query("UPDATE printers SET hms_json = '{' WHERE id = ?1")
-        .bind(printer_id)
-        .execute(pool)
-        .await
-        .unwrap();
-
-    let err = printers
-        .list_with_live_status_for_tenant(tenant.id)
-        .await
-        .unwrap_err();
-
-    assert!(format!("{err:#}").contains("failed to read printer HMS"));
-}

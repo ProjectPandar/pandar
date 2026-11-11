@@ -1,29 +1,6 @@
 use super::*;
 
 #[tokio::test]
-async fn grpc_wrong_agent_ack_is_permission_denied() {
-    let state = fixture_state().await;
-    let (tenant_id, agent_id) = tenant_agent(&state).await;
-    let other = state.agents().create(tenant_id, "other").await.unwrap();
-    let command_id = sent_command(&state, tenant_id, agent_id).await;
-
-    let err = handle_ack(
-        &state,
-        tenant_id,
-        other.id,
-        CommandAck {
-            command_id: command_id.to_string(),
-            accepted: true,
-            error: String::new(),
-        },
-    )
-    .await
-    .unwrap_err();
-
-    assert_eq!(err.code(), Code::PermissionDenied);
-}
-
-#[tokio::test]
 async fn grpc_wrong_agent_ack_streams_permission_denied() {
     let state = fixture_state().await;
     let (tenant_id, agent_id) = tenant_agent(&state).await;
@@ -40,27 +17,6 @@ async fn grpc_wrong_agent_ack_streams_permission_denied() {
     let err = stream.next().await.unwrap().unwrap_err();
 
     assert_eq!(err.code(), Code::PermissionDenied);
-}
-
-#[tokio::test]
-async fn grpc_unknown_command_ack_is_not_found() {
-    let state = fixture_state().await;
-    let (tenant_id, agent_id) = tenant_agent(&state).await;
-
-    let err = handle_ack(
-        &state,
-        tenant_id,
-        agent_id,
-        CommandAck {
-            command_id: CommandId::new().to_string(),
-            accepted: true,
-            error: String::new(),
-        },
-    )
-    .await
-    .unwrap_err();
-
-    assert_eq!(err.code(), Code::NotFound);
 }
 
 #[tokio::test]
@@ -126,32 +82,6 @@ async fn grpc_unknown_command_ack_streams_not_found() {
     let err = stream.next().await.unwrap().unwrap_err();
 
     assert_eq!(err.code(), Code::NotFound);
-}
-
-#[tokio::test]
-async fn grpc_stale_ack_is_failed_precondition() {
-    let state = fixture_state().await;
-    let (tenant_id, agent_id) = tenant_agent(&state).await;
-    let command = state
-        .commands()
-        .enqueue_refresh_printers(tenant_id, agent_id)
-        .await
-        .unwrap();
-
-    let err = handle_ack(
-        &state,
-        tenant_id,
-        agent_id,
-        CommandAck {
-            command_id: command.id.to_string(),
-            accepted: true,
-            error: String::new(),
-        },
-    )
-    .await
-    .unwrap_err();
-
-    assert_eq!(err.code(), Code::FailedPrecondition);
 }
 
 #[tokio::test]

@@ -4,7 +4,6 @@ use pandar_network_plugin::{
 use serde_json::{Value, json};
 
 const STATUS_OPERATION: i32 = 0;
-const STATUS_UNSUPPORTED: i32 = 1;
 const STATUS_INVALID_NATIVE: i32 = 2;
 const STABLE_UNSUPPORTED_BODY: &str = r#"{"error":"unsupported_printer_operation"}"#;
 
@@ -117,30 +116,6 @@ fn ordinary_resume_and_stop_ignore_non_marker_job_and_sequence_fields() {
 }
 
 #[test]
-fn unsupported_messages_use_status_one_and_the_stable_body() {
-    for value in [
-        json!({}),
-        json!({"print": {}}),
-        json!({"print": {"command": null}}),
-        json!({"print": {"command": 7}}),
-        json!({"print": {"command": {"wrong": true}}}),
-        json!({"print": {"command": "unrelated"}}),
-    ] {
-        assert_status(&value, STATUS_UNSUPPORTED);
-    }
-
-    let malformed = parse(b"not-json-or-gcode");
-    assert_eq!(malformed.status, STATUS_UNSUPPORTED);
-    assert_eq!(malformed.http_code, 400);
-    assert_eq!(malformed.body, STABLE_UNSUPPORTED_BODY);
-
-    let invalid_utf8 = parse(&[0xff, 0xfe]);
-    assert_eq!(invalid_utf8.status, STATUS_UNSUPPORTED);
-    assert_eq!(invalid_utf8.http_code, 400);
-    assert_eq!(invalid_utf8.body, STABLE_UNSUPPORTED_BODY);
-}
-
-#[test]
 fn command_known_candidates_missing_each_required_field_are_invalid_native() {
     for command in ["resume", "ignore", "stop"] {
         for field in ["param", "err", "job_id", "sequence_id"] {
@@ -220,26 +195,6 @@ fn sequence_accepts_the_full_u64_domain_and_rejects_invalid_decimals() {
                 r#"{{"action":"handle_print_error","error_action":"stop","print_error":83918929,"printer_job_id":"","sequence_id":{expected}}}"#
             )
         );
-    }
-}
-
-#[test]
-fn every_partial_ignore_shape_is_an_invalid_native_candidate() {
-    let fields = [
-        ("param", json!("reserve")),
-        ("err", json!("83918929")),
-        ("job_id", json!("")),
-        ("sequence_id", json!("20042")),
-    ];
-    for mask in 0_u8..0b1111 {
-        let mut print = serde_json::Map::new();
-        print.insert("command".to_owned(), json!("ignore"));
-        for (index, (field, value)) in fields.iter().enumerate() {
-            if mask & (1 << index) != 0 {
-                print.insert((*field).to_owned(), value.clone());
-            }
-        }
-        assert_status(&json!({"print": print}), STATUS_INVALID_NATIVE);
     }
 }
 

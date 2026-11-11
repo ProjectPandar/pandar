@@ -13,11 +13,6 @@ struct TenantTokenCreateRequest<'a> {
     expires_at: Option<&'a str>,
 }
 
-#[derive(Serialize)]
-struct AgentNameRequest<'a> {
-    name: &'a str,
-}
-
 pub(super) fn user_role_value(role: &str) -> Value {
     serde_json::to_value(UserRoleRequest { role }).unwrap()
 }
@@ -33,8 +28,4 @@ pub(super) fn tenant_token_create_value(
         expires_at,
     })
     .unwrap()
-}
-
-pub(super) fn agent_name_value(name: &str) -> Value {
-    serde_json::to_value(AgentNameRequest { name }).unwrap()
 }

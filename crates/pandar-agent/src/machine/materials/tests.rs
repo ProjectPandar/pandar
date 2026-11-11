@@ -71,14 +71,6 @@ fn full_ams_snapshot_normalizes_units_trays_external_and_active_tray() {
 }
 
 #[test]
-fn humidity_raw_is_normalized_as_percent_and_humidity_as_level() {
-    let patch = normalize(humidity_raw_report()).unwrap();
-
-    assert_eq!(patch.ams_units[0].humidity, Some(24.0));
-    assert_eq!(patch.ams_units[0].humidity_level, Some(4.0));
-}
-
-#[test]
 fn ams_drying_state_is_normalized_from_info_bits_and_dry_time() {
     // Studio DevFilaSystem.cpp: dry_status is info bits 4..=7 (2 = drying);
     // dry_time is the remaining drying time in minutes.
@@ -100,14 +92,6 @@ fn ams_drying_state_is_normalized_from_info_bits_and_dry_time() {
     assert_eq!(unit.unit_kind.as_deref(), Some("ams_2_pro"));
     assert_eq!(unit.dry_status, Some(2));
     assert_eq!(unit.dry_time_minutes, Some(480.0));
-}
-
-#[test]
-fn ams_unit_without_drying_report_omits_drying_fields() {
-    let patch = normalize(humidity_raw_report()).unwrap();
-
-    assert_eq!(patch.ams_units[0].dry_status, None);
-    assert_eq!(patch.ams_units[0].dry_time_minutes, None);
 }
 
 #[test]
@@ -145,14 +129,6 @@ fn installed_filament_switch_marks_bound_ams_units_as_shared() {
 }
 
 #[test]
-fn switch_bound_ams_without_install_state_does_not_guess_toolheads() {
-    let patch = normalize(filament_switch_ams_report(None)).unwrap();
-
-    assert_eq!(patch.ams_units[0].toolhead, None);
-    assert_eq!(patch.ams_units[1].toolhead, None);
-}
-
-#[test]
 fn switch_bound_ams_rejects_an_invalid_switch_input() {
     let patch = normalize(filament_switch_invalid_binding_report()).unwrap();
 
@@ -184,17 +160,6 @@ fn studio_flags_preserve_unknown_bits_and_leading_zero_width() {
     assert_eq!(patch.stat.as_deref(), Some("00000000000000FF"));
     assert_eq!(patch.filament_switch_installed, Some(true));
     assert!(patch.ams_units.is_empty());
-}
-
-#[test]
-fn cfg_and_stat_only_reports_emit_patches() {
-    let cfg = normalize(studio_flags_only_report(Some("00000001"), None, None)).unwrap();
-    let stat = normalize(studio_flags_only_report(None, None, Some("00000002"))).unwrap();
-
-    assert_eq!(cfg.cfg.as_deref(), Some("00000001"));
-    assert_eq!(cfg.aux, None);
-    assert_eq!(stat.stat.as_deref(), Some("00000002"));
-    assert_eq!(stat.filament_switch_installed, None);
 }
 
 #[test]

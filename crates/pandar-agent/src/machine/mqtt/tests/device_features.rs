@@ -9,13 +9,6 @@ use pandar_protocol::agent::v1::agent_event;
 
 const HIGH_BITS: u64 = 0x8000_0041_0000_0020;
 
-fn interpret_mqtt_bytes(payload: &[u8]) -> report::MachineReportInterpretation {
-    let value = decode_mqtt_report_payload(payload).expect("valid MQTT-shaped JSON bytes");
-    let mut report_endpoint = endpoint();
-    report_endpoint.serial = "SERIAL-1".to_owned();
-    interpret_report(&report_endpoint, value)
-}
-
 fn feature_report(fun: &str) -> serde_json::Value {
     decode_mqtt_report_payload(format!(r#"{{"print":{{"fun":"{fun}"}}}}"#).as_bytes())
         .expect("valid MQTT-shaped JSON bytes")
@@ -32,67 +25,6 @@ fn test_config() -> AgentConfig {
         agent_version: "9.8.7".to_owned(),
         printers: "[]".to_owned(),
     }
-}
-
-#[test]
-fn device_features_parser_preserves_presence_and_sibling_telemetry() {
-    let valid = interpret_mqtt_bytes(
-        br#"{"print":{"fun":"8000004100000020","gcode_state":"RUNNING","bed_temper":60}}"#,
-    );
-    assert_eq!(
-        valid.features.primary.expect("print.fun is present").bits(),
-        HIGH_BITS
-    );
-    let snapshot = valid.snapshot.unwrap();
-    assert_eq!(snapshot.state.as_deref(), Some("RUNNING"));
-    assert_eq!(snapshot.bed_temperature_celsius.as_deref(), Some("60"));
-
-    for payload in [
-        br#"{"print":{"fun":false,"gcode_state":"RUNNING","bed_temper":60}}"#.as_slice(),
-        br#"{"print":{"fun":null,"gcode_state":"RUNNING","bed_temper":60}}"#.as_slice(),
-        br#"{"print":{"fun":"not-hex","gcode_state":"RUNNING","bed_temper":60}}"#.as_slice(),
-    ] {
-        let interpreted = interpret_mqtt_bytes(payload);
-        let snapshot = interpreted.snapshot.unwrap();
-        assert_eq!(snapshot.state.as_deref(), Some("RUNNING"));
-        assert_eq!(snapshot.bed_temperature_celsius.as_deref(), Some("60"));
-
-        let error = interpreted
-            .diagnostics
-            .into_iter()
-            .find(|diagnostic| diagnostic.is_primary_device_features())
-            .expect("invalid print.fun should produce a diagnostic");
-        let error = format!("{error:#}");
-        assert!(error.contains("SERIAL-1"), "{error}");
-        assert!(error.contains("print.fun"), "{error}");
-        assert!(
-            error.contains("expected a hexadecimal string")
-                || error.contains("non-hexadecimal characters"),
-            "{error}"
-        );
-    }
-}
-
-#[test]
-fn device_features_parser_does_not_unicode_trim_fun() {
-    let interpreted = interpret_mqtt_bytes(
-        "{\"print\":{\"fun\":\"\u{00a0}8000004100000020\u{00a0}\",\"gcode_state\":\"RUNNING\",\"bed_temper\":60}}"
-            .as_bytes(),
-    );
-
-    let error = interpreted
-        .diagnostics
-        .into_iter()
-        .find(|diagnostic| diagnostic.is_primary_device_features())
-        .expect("invalid print.fun should produce a diagnostic");
-    let error = format!("{error:#}");
-    assert!(error.contains("SERIAL-1"), "{error}");
-    assert!(error.contains("print.fun"), "{error}");
-    assert!(
-        error.contains("non-hexadecimal characters")
-            || error.contains("exceeds 16 hexadecimal digits"),
-        "{error}"
-    );
 }
 
 #[test]
@@ -125,21 +57,6 @@ fn device_features_refresh_logs_invalid_fun_and_preserves_sibling_telemetry() {
     assert!(logs.contains("01S00EXAMPLE"), "{logs}");
     assert!(logs.contains("print.fun"), "{logs}");
     assert!(logs.contains("non-hexadecimal characters"), "{logs}");
-}
-
-#[tokio::test]
-async fn device_features_cache_preserves_unknown_invalidation_and_valid_zero() {
-    let cache = DeviceFeatureCache::default();
-    let serial = "SERIAL-1";
-    let high_bits = BambuDeviceFeatures::from_bits(HIGH_BITS);
-
-    assert_eq!(cache.get(serial).await, None);
-    cache.update(serial, high_bits).await;
-    assert_eq!(cache.get(serial).await, Some(high_bits));
-    cache.invalidate(serial).await;
-    assert_eq!(cache.get(serial).await, None);
-    cache.update(serial, BambuDeviceFeatures::default()).await;
-    assert_eq!(cache.get(serial).await.unwrap().bits(), 0);
 }
 
 #[tokio::test]

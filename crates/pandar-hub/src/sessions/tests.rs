@@ -93,54 +93,6 @@ async fn sessions_token_scoped_remove_preserves_replacement() {
 }
 
 #[tokio::test]
-async fn sessions_close_local_agent_removes_matching_session_only() {
-    let registry = SessionRegistry::new();
-    let tenant_id = TenantId::new();
-    let other_tenant_id = TenantId::new();
-    let agent_id = AgentId::new();
-    let (wake_sender, _) = mpsc::channel(1);
-    let (close_sender, mut close_receiver) = mpsc::channel(1);
-
-    registry
-        .register(AgentSession {
-            token: SessionToken::new(),
-            tenant_id,
-            agent_id,
-            name: "agent".to_string(),
-            version: "0.1.0".to_string(),
-            connected_at: "2026-06-20T00:00:00Z".to_string(),
-            last_heartbeat_at: "2026-06-20T00:00:00Z".to_string(),
-            wake_sender,
-            close_sender,
-            command_sender: mpsc::channel(1).0,
-            capabilities: std::collections::HashSet::new(),
-            pending_live_commands: empty_pending_live_commands(),
-            live_command_transition: std::sync::Arc::new(tokio::sync::Mutex::new(())),
-        })
-        .await;
-
-    assert!(
-        registry
-            .close_local_agent(other_tenant_id, agent_id)
-            .await
-            .is_none()
-    );
-    assert!(registry.get(agent_id).await.is_some());
-
-    assert!(
-        registry
-            .close_local_agent(tenant_id, agent_id)
-            .await
-            .is_some()
-    );
-    assert!(registry.get(agent_id).await.is_none());
-    tokio::time::timeout(Duration::from_secs(1), close_receiver.recv())
-        .await
-        .expect("agent session should receive close")
-        .expect("close channel should stay open");
-}
-
-#[tokio::test]
 async fn sessions_close_local_agent_is_not_blocked_by_in_flight_current_operation() {
     let registry = SessionRegistry::new();
     let tenant_id = TenantId::new();
@@ -237,53 +189,6 @@ async fn sessions_live_dispatch_rechecks_token_before_send() {
 
     assert_eq!(err, LiveDispatchError::NotCurrent);
     assert!(old_command_receiver.try_recv().is_err());
-}
-
-#[tokio::test]
-async fn sessions_pending_live_command_ids_aggregates_all_sessions() {
-    let registry = SessionRegistry::new();
-    let tenant_id = TenantId::new();
-    let agent_a = AgentId::new();
-    let agent_b = AgentId::new();
-    let token_a = SessionToken::new();
-    let token_b = SessionToken::new();
-    let (sender_a, _receiver_a) = mpsc::channel(2);
-    let (sender_b, _receiver_b) = mpsc::channel(2);
-    let command_a = CommandId::new();
-    let command_b = CommandId::new();
-
-    registry
-        .register(test_session(tenant_id, agent_a, token_a, sender_a))
-        .await;
-    registry
-        .register(test_session(tenant_id, agent_b, token_b, sender_b))
-        .await;
-
-    registry
-        .try_dispatch_live_command(
-            tenant_id,
-            agent_a,
-            token_a,
-            command_a,
-            test_command(command_a),
-        )
-        .await
-        .unwrap();
-    registry
-        .try_dispatch_live_command(
-            tenant_id,
-            agent_b,
-            token_b,
-            command_b,
-            test_command(command_b),
-        )
-        .await
-        .unwrap();
-
-    let pending = registry.pending_live_command_ids().await;
-
-    assert!(pending.contains(&command_a));
-    assert!(pending.contains(&command_b));
 }
 
 #[tokio::test]

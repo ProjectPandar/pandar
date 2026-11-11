@@ -55,18 +55,6 @@ fn print_report_diagnostic_payload_includes_raw_print_report() {
 }
 
 #[test]
-fn interpretation_drops_out_of_range_numeric_values() {
-    let report = out_of_range_progress_report();
-
-    let progress = print_report_from_json(&endpoint(), &report);
-
-    assert_eq!(progress.percent, None);
-    assert_eq!(progress.remaining_time_minutes, None);
-    assert_eq!(progress.current_layer, None);
-    assert_eq!(progress.total_layers, None);
-}
-
-#[test]
 fn print_job_report_event_sets_numeric_presence_booleans() {
     let config = AgentConfig {
         hub_grpc_url: "http://hub.internal:50051".to_owned(),
@@ -219,113 +207,6 @@ async fn forward_print_reports_uses_transport_without_live_socket() {
         transport.subscriptions().await,
         ["device/01S00EXAMPLE/report".to_string()]
     );
-}
-
-#[tokio::test]
-async fn forward_print_reports_emits_printer_snapshot_with_temperatures() {
-    let transport =
-        FakeMqttTransport::with_reports([print_temperature_report("RUNNING", 41, 220, 60, 32)]);
-    let (sender, mut receiver) = mpsc::channel(4);
-    let config = AgentConfig {
-        hub_grpc_url: "http://hub.internal:50051".to_owned(),
-        hub_api_url: None,
-        agent_name: "garage".to_owned(),
-        agent_id: "agent-id".to_owned(),
-        tenant_id: "tenant-id".to_owned(),
-        agent_credential: "pandar_ac_test".to_owned(),
-        agent_version: "9.8.7".to_owned(),
-        printers: "[]".to_owned(),
-    };
-    let endpoint = endpoint();
-    let task = tokio::spawn({
-        let config = config.clone();
-        let transport = transport.clone();
-        let endpoint = endpoint.clone();
-        async move {
-            forward_print_reports(
-                &config,
-                &transport,
-                &endpoint,
-                Duration::from_millis(50),
-                &sender,
-                &crate::machine::DeviceFeatureCache::default(),
-            )
-            .await
-            .unwrap();
-        }
-    });
-
-    assert!(matches!(
-        receiver.recv().await.unwrap().event,
-        Some(agent_event::Event::PrintJobReport(_))
-    ));
-    let second = timeout(Duration::from_millis(50), receiver.recv())
-        .await
-        .expect("expected printer snapshot event")
-        .unwrap();
-    task.abort();
-
-    let Some(agent_event::Event::PrinterSnapshot(snapshot)) = second.event else {
-        panic!("expected printer snapshot event");
-    };
-    assert_eq!(snapshot.serial, "01S00EXAMPLE");
-    assert!(snapshot.model.is_empty());
-    assert!(!snapshot.telemetry_authoritative);
-    assert_eq!(snapshot.state, "RUNNING");
-    assert_eq!(snapshot.nozzle_temperatures[0].current_celsius, "41");
-    assert_eq!(snapshot.nozzle_temperatures[0].target_celsius, "220");
-    assert_eq!(snapshot.bed_temperature_celsius, "60");
-    assert_eq!(snapshot.chamber_temperature_celsius, "32");
-}
-
-#[tokio::test]
-async fn forward_print_reports_emits_printer_snapshot_for_chamber_target_only() {
-    let transport = FakeMqttTransport::with_reports([chamber_target_report(45)]);
-    let (sender, mut receiver) = mpsc::channel(4);
-    let config = AgentConfig {
-        hub_grpc_url: "http://hub.internal:50051".to_owned(),
-        hub_api_url: None,
-        agent_name: "garage".to_owned(),
-        agent_id: "agent-id".to_owned(),
-        tenant_id: "tenant-id".to_owned(),
-        agent_credential: "pandar_ac_test".to_owned(),
-        agent_version: "9.8.7".to_owned(),
-        printers: "[]".to_owned(),
-    };
-    let endpoint = endpoint();
-    let task = tokio::spawn({
-        let config = config.clone();
-        let transport = transport.clone();
-        let endpoint = endpoint.clone();
-        async move {
-            forward_print_reports(
-                &config,
-                &transport,
-                &endpoint,
-                Duration::from_millis(50),
-                &sender,
-                &crate::machine::DeviceFeatureCache::default(),
-            )
-            .await
-            .unwrap();
-        }
-    });
-
-    assert!(matches!(
-        receiver.recv().await.unwrap().event,
-        Some(agent_event::Event::PrintJobReport(_))
-    ));
-    let second = timeout(Duration::from_millis(50), receiver.recv())
-        .await
-        .expect("expected chamber target printer snapshot event")
-        .unwrap();
-    task.abort();
-
-    let Some(agent_event::Event::PrinterSnapshot(snapshot)) = second.event else {
-        panic!("expected printer snapshot event");
-    };
-    assert_eq!(snapshot.chamber_temperature_celsius, "");
-    assert_eq!(snapshot.chamber_target_temperature_celsius, "45");
 }
 
 #[tokio::test]

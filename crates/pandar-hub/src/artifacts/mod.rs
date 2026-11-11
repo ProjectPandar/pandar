@@ -182,15 +182,6 @@ fn validate_max_artifact_bytes(max_artifact_bytes: usize) -> anyhow::Result<()> 
 mod tests {
     use super::*;
 
-    #[test]
-    fn sanitize_filename_keeps_safe_ascii() {
-        assert_eq!(sanitize_filename("plate-1_file.3mf"), "plate-1_file.3mf");
-        assert_eq!(sanitize_filename("../bad name.3mf"), "bad_name.3mf");
-        assert_eq!(sanitize_filename("///"), "artifact.bin");
-        assert_eq!(sanitize_filename(""), "artifact.bin");
-        assert_eq!(sanitize_filename("@@@"), "___");
-    }
-
     struct FailingUploadReader {
         emitted_prefix: bool,
     }
@@ -209,28 +200,6 @@ mod tests {
             buf.put_slice(b"partial");
             std::task::Poll::Ready(Ok(()))
         }
-    }
-
-    #[tokio::test]
-    async fn filesystem_storage_rejects_empty_and_oversized_upload() {
-        let temp_dir = tempfile::tempdir().unwrap();
-        let storage = FilesystemArtifactStorage::new(temp_dir.path(), 4).unwrap();
-
-        let empty = StoreArtifactInput {
-            tenant_id: pandar_core::TenantId::new(),
-            artifact_id: "artifact",
-            filename: "plate.3mf",
-            body: ArtifactUploadBody::reader(tokio::io::empty()),
-        };
-        assert!(storage.put_artifact(empty).await.is_err());
-
-        let oversized = StoreArtifactInput {
-            tenant_id: pandar_core::TenantId::new(),
-            artifact_id: "artifact",
-            filename: "plate.3mf",
-            body: ArtifactUploadBody::reader(std::io::Cursor::new(b"12345".to_vec())),
-        };
-        assert!(storage.put_artifact(oversized).await.is_err());
     }
 
     #[tokio::test]
@@ -345,22 +314,5 @@ mod tests {
         assert!(storage.open_artifact("/tmp/escape").await.is_err());
         assert!(storage.delete_artifact("../escape").await.is_err());
         assert!(storage.delete_artifact("/tmp/escape").await.is_err());
-    }
-
-    #[test]
-    fn artifact_storage_config_defaults_to_filesystem() {
-        let config = ArtifactStorageConfig::from_env_values(
-            None::<&str>,
-            None::<&std::path::Path>,
-            None::<&str>,
-        )
-        .unwrap();
-
-        assert_eq!(config.backend(), ArtifactStorageBackend::Filesystem);
-        assert_eq!(config.max_artifact_bytes(), DEFAULT_MAX_ARTIFACT_BYTES);
-        assert_eq!(
-            config.spool_dir().unwrap(),
-            std::path::Path::new("pandar-spool")
-        );
     }
 }

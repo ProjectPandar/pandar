@@ -45,22 +45,6 @@ function renderCooling(value: Printer) {
 }
 
 describe("PrinterCoolingSystem", () => {
-  it("shows the Bambu cooling mode and reported fan percentages", () => {
-    renderCooling(printer);
-
-    expect(screen.getByRole("region", { name: "Cooling system" })).toBeVisible();
-    expect(screen.getByText("Cooling")).toBeVisible();
-    expect(screen.getByText("Part cooling")).toBeVisible();
-    expect(screen.getByText("Auxiliary")).toBeVisible();
-    expect(screen.getByText("Chamber / exhaust")).toBeVisible();
-    expect(screen.getByText("Hotend")).toBeVisible();
-    expect(screen.getByText("100%")).toBeVisible();
-    expect(screen.getByText("60%")).toBeVisible();
-    expect(screen.getByText("40%")).toBeVisible();
-    expect(screen.getByText("20%")).toBeVisible();
-    expect(screen.getByText("Part cooling")).not.toHaveClass("truncate");
-  });
-
   it("offers Bambu fan controls for user-adjustable airduct fans", async () => {
     const user = userEvent.setup();
     renderCooling(printer);

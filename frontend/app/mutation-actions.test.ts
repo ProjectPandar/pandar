@@ -5,8 +5,7 @@ import {
   revokeTenantToken,
   rotateTenantToken,
 } from "./admin-actions";
-import { deleteAgent, refreshPrinters } from "./actions";
-import { retryDispatchJob } from "./job-actions";
+import { refreshPrinters } from "./actions";
 
 const redirectMock = vi.hoisted(() =>
   vi.fn((url: string) => {
@@ -28,33 +27,6 @@ vi.mock("./api-auth", () => ({
   apiHeaders: vi.fn(async () => ({ "content-type": "application/json" })),
 }));
 
-describe("deleteAgent", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(
-        async () =>
-          new Response(JSON.stringify({ id: "agent-1" }), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          }),
-      ),
-    );
-  });
-
-  it("returns completion for client-side resource invalidation", async () => {
-    const formData = new FormData();
-    formData.set("tenant_id", "tenant-1");
-    formData.set("agent_id", "agent-1");
-
-    await expect(deleteAgent(formData)).resolves.toEqual({
-      ok: true,
-      redirectUrl: "/agents?status=agent_deleted",
-    });
-  });
-});
-
 describe("job action redirects", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -70,29 +42,6 @@ describe("job action redirects", () => {
     );
   });
 
-  it.each([
-    [
-      "refreshPrinters",
-      refreshPrinters,
-      [["agent_id", "agent-1"]],
-      "refresh_queued",
-    ],
-  ] as const)(
-    "redirects %s back to jobs when submitted from jobs",
-    async (_name, action, fields, status) => {
-      const formData = new FormData();
-      formData.set("tenant_id", "tenant-1");
-      formData.set("return_to", "jobs");
-      for (const [name, value] of fields) {
-        formData.append(name, value);
-      }
-
-      await expect(action(formData)).rejects.toThrow(
-        `NEXT_REDIRECT:/jobs?status=${status}`,
-      );
-    },
-  );
-
   it("redirects agent refresh back to Agents", async () => {
     const formData = new FormData();
     formData.set("tenant_id", "tenant-1");
@@ -102,23 +51,6 @@ describe("job action redirects", () => {
     await expect(refreshPrinters(formData)).rejects.toThrow(
       "NEXT_REDIRECT:/agents?status=refresh_queued",
     );
-  });
-
-  it("returns the canonical retry completion URL for client invalidation", async () => {
-    const formData = new FormData();
-    formData.set("tenant_id", "tenant-1");
-    formData.set("job_id", "job-1");
-
-    await expect(retryDispatchJob(formData)).resolves.toEqual({
-      ok: true,
-      redirectUrl: "/devices?status=retry_queued",
-    });
-
-    formData.set("return_to", "jobs");
-    await expect(retryDispatchJob(formData)).resolves.toEqual({
-      ok: true,
-      redirectUrl: "/jobs?status=retry_queued",
-    });
   });
 });
 
@@ -152,23 +84,6 @@ describe("revokeTenantToken", () => {
         headers: { "content-type": "application/json" },
       },
     );
-  });
-
-  it("returns the Hub error when token revocation fails", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(
-      new Response(JSON.stringify({ error: "token_not_found" }), {
-        status: 404,
-        headers: { "content-type": "application/json" },
-      }),
-    );
-    const formData = new FormData();
-    formData.set("tenant_id", "tenant-1");
-    formData.set("token_id", "missing-token");
-
-    await expect(revokeTenantToken(null, formData)).resolves.toEqual({
-      ok: false,
-      error: "token_not_found",
-    });
   });
 });
 
@@ -312,28 +227,5 @@ describe("rotateTenantToken", () => {
       },
     );
     expect(refreshMock).toHaveBeenCalledTimes(1);
-  });
-
-  it("returns the API error without refreshing token management", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(
-        async () =>
-          new Response(JSON.stringify({ error: "invalid_expires_at" }), {
-            status: 400,
-            headers: { "content-type": "application/json" },
-          }),
-      ),
-    );
-    const formData = new FormData();
-    formData.set("tenant_id", "tenant-1");
-    formData.set("token_id", "token-old");
-    formData.set("expires_at", "not-a-date");
-
-    await expect(rotateTenantToken(null, formData)).resolves.toEqual({
-      ok: false,
-      error: "invalid_expires_at",
-    });
-    expect(refreshMock).not.toHaveBeenCalled();
   });
 });

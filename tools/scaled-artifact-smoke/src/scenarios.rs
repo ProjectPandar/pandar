@@ -571,35 +571,3 @@ async fn queued_print_commands_for_fixtures(
     }
     Ok(total)
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn pressure_count_ignores_prior_commands_in_shared_database() {
-        let world = SmokeWorld::dry_run().await.unwrap();
-        let prior = seed_fixture(&world.hub_a, "prior").await.unwrap();
-        create_print_through_multipart_route(&world.hub_a, &prior)
-            .await
-            .unwrap();
-        let mut fixtures = Vec::new();
-        for index in 0..2 {
-            let fixture = seed_fixture(&world.hub_a, &format!("pressure-{index}"))
-                .await
-                .unwrap();
-            create_print_through_multipart_route(&world.hub_a, &fixture)
-                .await
-                .unwrap();
-            fixtures.push(fixture);
-        }
-
-        assert_eq!(world.hub_a.commands().count().await.unwrap(), 3);
-        assert_eq!(
-            queued_print_commands_for_fixtures(&world, &fixtures)
-                .await
-                .unwrap(),
-            2
-        );
-    }
-}

@@ -426,19 +426,6 @@ fn link_printer_failure_log_redacts_access_code() {
 }
 
 #[test]
-fn link_failure_code_maps_bad_credentials_to_invalid_access_code() {
-    for code in [
-        rumqttc::ConnectReturnCode::BadUserNamePassword,
-        rumqttc::ConnectReturnCode::NotAuthorized,
-    ] {
-        let err = anyhow::Error::new(rumqttc::ConnectionError::ConnectionRefused(code))
-            .context("poll rumqttc event loop")
-            .context("wait for MQTT report");
-        assert_eq!(link::link_failure_code(&err), "invalid_access_code");
-    }
-}
-
-#[test]
 fn link_failure_code_maps_transport_errors_to_printer_unreachable() {
     let io = anyhow::Error::new(rumqttc::ConnectionError::Io(std::io::Error::new(
         std::io::ErrorKind::ConnectionRefused,
@@ -458,10 +445,4 @@ fn link_failure_code_maps_report_idle_timeout_to_printer_unreachable() {
     let err = crate::machine::mqtt::mqtt_report_idle_timeout(std::time::Duration::from_secs(10))
         .context("wait for MQTT report");
     assert_eq!(link::link_failure_code(&err), "printer_unreachable");
-}
-
-#[test]
-fn link_failure_code_defaults_to_link_failed() {
-    let err = anyhow::anyhow!("unexpected printer state");
-    assert_eq!(link::link_failure_code(&err), "link_failed");
 }

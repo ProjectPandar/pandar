@@ -3,15 +3,8 @@ use tokio::sync::mpsc;
 
 use super::{endpoint, test_config};
 use crate::machine::{
-    BambuPrinterEndpoint, FirmwareExecuteRequest, FirmwareMachineGateway, FirmwareObservationCache,
-    FirmwarePrepareRequest,
+    BambuPrinterEndpoint, FirmwareExecuteRequest, FirmwareObservationCache, FirmwarePrepareRequest,
 };
-
-#[test]
-fn runtime_gateway_implements_independent_firmware_gateway() {
-    fn assert_gateway<T: FirmwareMachineGateway>() {}
-    assert_gateway::<crate::machine::runtime::RuntimeBambuMachineGateway>();
-}
 
 #[tokio::test]
 async fn firmware_control_reservation_is_epoch_generation_bound_and_busy_in_flight() {

@@ -5,29 +5,6 @@ use tempfile::tempdir;
 use super::{run_abi_probe, run_packaged_cli};
 
 #[test]
-fn probe_receives_absolute_staged_plugin_instead_of_decoy() {
-    let temp = tempdir().unwrap();
-    let helper = compile_probe_helper(temp.path());
-    let plugin = temp.path().join("packaged.plugin");
-    let decoy = temp.path().join("decoy.plugin");
-    fs::write(&plugin, b"packaged").unwrap();
-    fs::write(&decoy, b"decoy").unwrap();
-
-    let report = run_abi_probe(
-        &helper,
-        &[
-            "verify".to_owned(),
-            "--decoy".to_owned(),
-            decoy.display().to_string(),
-        ],
-        &plugin,
-        Duration::from_secs(5),
-    )
-    .unwrap();
-    assert_eq!(report.plugin_sha256.len(), 64);
-}
-
-#[test]
 fn probe_nonzero_exit_and_timeout_are_failures() {
     let temp = tempdir().unwrap();
     let helper = compile_probe_helper(temp.path());

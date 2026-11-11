@@ -140,12 +140,3 @@ fn pinned_studio_consumer_fails_closed_without_an_emmc_observation() {
     assert!(telemetry.get("fun2").is_none());
     assert_eq!(consumed["emmc_print_supported"], false);
 }
-
-#[test]
-fn projected_emmc_capability_reports_unset_bit_zero() {
-    let (telemetry, consumed) =
-        projected(r#"{"fun2":"80000000000000A0","cfg":"","aux":"0","stat":"0"}"#);
-
-    assert_eq!(telemetry["fun2"], "0");
-    assert_eq!(consumed["emmc_print_supported"], false);
-}

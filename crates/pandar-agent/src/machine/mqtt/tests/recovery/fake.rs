@@ -2,7 +2,7 @@ use std::{
     collections::VecDeque,
     future::pending,
     sync::{
-        Arc, Mutex,
+        Arc,
         atomic::{AtomicBool, AtomicUsize, Ordering},
     },
 };
@@ -31,7 +31,6 @@ pub(super) struct FakeRecoveryProbe {
 }
 
 struct FakeRecoveryState {
-    publishes: Mutex<Vec<CapturedPublish>>,
     publish_calls: AtomicUsize,
     poll_calls: AtomicUsize,
     dropped: AtomicBool,
@@ -39,18 +38,9 @@ struct FakeRecoveryState {
     poll_started: Arc<Notify>,
 }
 
-#[derive(Debug, Clone)]
-pub(super) struct CapturedPublish {
-    pub(super) topic: String,
-    pub(super) qos: QoS,
-    pub(super) retain: bool,
-    pub(super) payload: Vec<u8>,
-}
-
 impl FakeRecoveryAttempt {
     pub(super) fn new(steps: impl IntoIterator<Item = PollStep>) -> (Self, FakeRecoveryProbe) {
         let state = Arc::new(FakeRecoveryState {
-            publishes: Mutex::new(Vec::new()),
             publish_calls: AtomicUsize::new(0),
             poll_calls: AtomicUsize::new(0),
             dropped: AtomicBool::new(false),
@@ -81,18 +71,12 @@ impl Drop for FakeRecoveryAttempt {
 impl RecoveryAttempt for FakeRecoveryAttempt {
     async fn publish(
         &mut self,
-        topic: String,
-        qos: QoS,
-        retain: bool,
-        payload: Vec<u8>,
+        _topic: String,
+        _qos: QoS,
+        _retain: bool,
+        _payload: Vec<u8>,
     ) -> anyhow::Result<()> {
         self.state.publish_calls.fetch_add(1, Ordering::SeqCst);
-        self.state.publishes.lock().unwrap().push(CapturedPublish {
-            topic,
-            qos,
-            retain,
-            payload,
-        });
         if let Some(error) = self.publish_error {
             bail!(error);
         }
@@ -111,10 +95,6 @@ impl RecoveryAttempt for FakeRecoveryAttempt {
 }
 
 impl FakeRecoveryProbe {
-    pub(super) fn publishes(&self) -> Vec<CapturedPublish> {
-        self.state.publishes.lock().unwrap().clone()
-    }
-
     pub(super) fn publish_calls(&self) -> usize {
         self.state.publish_calls.load(Ordering::SeqCst)
     }

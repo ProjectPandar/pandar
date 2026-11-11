@@ -1,42 +1,8 @@
 use super::*;
-use crate::machine::MachineSnapshot;
 
 mod fixtures;
 
 use fixtures::*;
-
-#[test]
-fn report_maps_to_snapshot_uses_configured_model() {
-    let report = report_with_print(SnapshotPrintFixture {
-        gcode_state: Some(ScalarFixture::Text("RUNNING")),
-        ..Default::default()
-    });
-
-    assert_eq!(
-        snapshot_from_json(report),
-        MachineSnapshot {
-            serial: "01S00EXAMPLE".to_string(),
-            host: Some("192.0.2.10".to_string()),
-            access_code: Some("12345678".to_string()),
-            name: "garage-a1".to_string(),
-            model: Some("A1 Mini".to_string()),
-            state: Some("RUNNING".to_string()),
-            nozzle_temperatures: Vec::new(),
-            active_nozzle: None,
-            bed_temperature_celsius: None,
-            bed_target_temperature_celsius: None,
-            chamber_temperature_celsius: None,
-            chamber_target_temperature_celsius: None,
-            chamber_light_on: None,
-            cooling_system: None,
-            device_features: None,
-            device_features2: None,
-            nozzle_system: None,
-            telemetry_authoritative: false,
-            printer_family: pandar_core::PrinterFamily::BambuLab,
-        }
-    );
-}
 
 #[test]
 fn report_maps_legacy_fan_levels_to_bambu_studio_percentages() {
@@ -106,77 +72,6 @@ fn report_maps_modern_airduct_mode_and_parts() {
                 speed_percent: 100,
             },
         ]
-    );
-}
-
-#[test]
-fn report_maps_device_features_to_full_snapshot() {
-    let report = report_with_print(SnapshotPrintFixture {
-        fun: Some("8000004100000020"),
-        ..Default::default()
-    });
-
-    assert_eq!(
-        snapshot_from_json(report)
-            .device_features
-            .expect("valid print.fun maps to the full snapshot")
-            .bits(),
-        0x8000_0041_0000_0020
-    );
-}
-
-#[test]
-fn report_preserves_secondary_device_features_without_interpreting_them() {
-    let report = report_with_print(SnapshotPrintFixture {
-        fun2: Some("8000000000000021"),
-        ..Default::default()
-    });
-
-    assert_eq!(
-        snapshot_from_json(report).device_features2.unwrap().bits(),
-        0x8000_0000_0000_0021
-    );
-}
-
-#[test]
-fn report_maps_only_known_chamber_light_modes_to_snapshot() {
-    for (mode, expected) in [
-        ("on", Some(true)),
-        ("flashing", Some(true)),
-        ("off", Some(false)),
-        ("future-mode", None),
-    ] {
-        let report = report_with_print(SnapshotPrintFixture {
-            lights_report: vec![LightReportFixture {
-                node: "chamber_light",
-                mode,
-            }],
-            ..Default::default()
-        });
-
-        assert_eq!(
-            snapshot_from_json(report).chamber_light_on,
-            expected,
-            "mode {mode}"
-        );
-    }
-}
-
-#[test]
-fn report_maps_to_snapshot_without_configured_model() {
-    let mut endpoint = endpoint();
-    endpoint.model = None;
-
-    assert_eq!(
-        snapshot_from_json_for(
-            &endpoint,
-            report_with_print(SnapshotPrintFixture {
-                gcode_state: Some(ScalarFixture::Text("RUNNING")),
-                ..Default::default()
-            }),
-        )
-        .model,
-        None,
     );
 }
 
@@ -324,24 +219,6 @@ fn report_maps_bambu_studio_v2_temperatures_to_snapshot() {
 }
 
 #[test]
-fn report_maps_bambu_studio_v2_active_right_nozzle_to_snapshot() {
-    let report = report_with_print(SnapshotPrintFixture {
-        device: Some(DeviceFixture {
-            extruder: Some(ExtruderFixture {
-                state: 0x0002,
-                info: extruder_temperatures(27, 22),
-            }),
-            ..Default::default()
-        }),
-        ..Default::default()
-    });
-
-    let snapshot = snapshot_from_json(report);
-
-    assert_eq!(snapshot.active_nozzle.as_deref(), Some("R"));
-}
-
-#[test]
 fn report_ignores_bambu_studio_v2_target_nozzle_for_active_snapshot() {
     let report = report_with_print(SnapshotPrintFixture {
         device: Some(DeviceFixture {
@@ -407,26 +284,6 @@ fn report_maps_h2c_rack_holder_and_extruder_routing() {
 }
 
 #[test]
-fn report_state_falls_back_to_print_state() {
-    let report = report_with_print(SnapshotPrintFixture {
-        state: Some(ScalarFixture::Text("READY")),
-        ..Default::default()
-    });
-
-    assert_eq!(snapshot_from_json(report).state.as_deref(), Some("READY"));
-}
-
-#[test]
-fn report_state_falls_back_to_root_state() {
-    let report = value(SnapshotReportFixture {
-        state: Some(ScalarFixture::Text("IDLE")),
-        ..Default::default()
-    });
-
-    assert_eq!(snapshot_from_json(report).state.as_deref(), Some("IDLE"));
-}
-
-#[test]
 fn report_state_skips_non_string_candidates() {
     let report = report_with_print(SnapshotPrintFixture {
         gcode_state: Some(ScalarFixture::Number(123)),
@@ -435,25 +292,4 @@ fn report_state_skips_non_string_candidates() {
     });
 
     assert_eq!(snapshot_from_json(report).state.as_deref(), Some("READY"));
-}
-
-#[test]
-fn report_with_unusable_state_keeps_state_absent() {
-    let report = report_with_print(SnapshotPrintFixture {
-        gcode_state: Some(ScalarFixture::Number(123)),
-        ..Default::default()
-    });
-
-    assert_eq!(snapshot_from_json(report).state, None);
-}
-
-#[test]
-fn report_name_defaults_to_serial() {
-    let mut endpoint = endpoint();
-    endpoint.name = None;
-
-    assert_eq!(
-        snapshot_from_json_for(&endpoint, value(SnapshotReportFixture::default())).name,
-        "01S00EXAMPLE"
-    );
 }

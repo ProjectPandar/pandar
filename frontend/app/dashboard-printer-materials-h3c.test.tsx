@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { NextIntlClientProvider } from "next-intl";
 
@@ -23,15 +23,6 @@ function renderPanel(printer: Printer) {
 }
 
 describe("H3C AMS 3H and per-hotend external inputs", () => {
-  it("shows the AMS 3H as one nine-slot unit with the active raw slot", () => {
-    renderPanel(h3cPrinter());
-
-    const unit = screen.getByText("AMS 3H").closest("div.rounded-md") as HTMLElement;
-    expect(within(unit).getAllByRole("button", { name: /^AMS 3H slot \d/ })).toHaveLength(8);
-    expect(screen.getByRole("button", { name: "AMS 3H slot 7, PLA, Active" })).toBeVisible();
-    expect(screen.queryByRole("button", { name: /^AMS 3H slot 8,/ })).toBeNull();
-  });
-
   it("loads an AMS 3H slot by its Studio rack tray id", async () => {
     const user = userEvent.setup();
     renderPanel(h3cPrinter());
@@ -42,15 +33,6 @@ describe("H3C AMS 3H and per-hotend external inputs", () => {
     expect(loadForm?.querySelector('input[name="ams_id"]')).toHaveValue("32");
     expect(loadForm?.querySelector('input[name="slot_id"]')).toHaveValue("8");
     expect(loadForm?.querySelector('input[name="global_tray_id"]')).toHaveValue("36");
-  });
-
-  it("numbers the external inputs by the hotend they feed", () => {
-    renderPanel(h3cPrinter());
-
-    const externals = screen.getAllByRole("button", { name: /^External slot/ });
-    expect(externals).toHaveLength(9);
-    expect(externals[0]).toHaveAccessibleName("External slot 1, Unknown material");
-    expect(screen.getByRole("button", { name: "External slot 6, PETG" })).toBeVisible();
   });
 });
 

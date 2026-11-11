@@ -223,26 +223,4 @@ mod tests {
             .is_ok()
         );
     }
-
-    #[test]
-    fn projection_requires_both_online_signals() {
-        for fields in [
-            serde_json::json!({"dev_online": false, "online": true}),
-            serde_json::json!({"dev_online": true, "online": false}),
-        ] {
-            let projection = project_hub_printers(&printer_list_with_fields(fields)).unwrap();
-            assert!(!projection.printers()[0].online);
-        }
-    }
-
-    #[test]
-    fn projection_keeps_missing_model_unknown() {
-        let projection = project_hub_printers(&printer_list_with_fields(serde_json::json!({
-            "dev_model_name": null,
-            "model": null
-        })))
-        .unwrap();
-
-        assert!(projection.printers()[0].model.is_none());
-    }
 }

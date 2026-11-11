@@ -91,52 +91,6 @@ pub(crate) async fn handle_current_session_ack_and_job(
     Ok(())
 }
 
-#[cfg(test)]
-pub async fn handle_ack_and_job(
-    state: &AppState,
-    tenant_id: TenantId,
-    agent_id: AgentId,
-    command_id: CommandId,
-    accepted: bool,
-    error: String,
-    link_printer_access_code: Option<&str>,
-) -> Result<(), Status> {
-    let command = state
-        .commands()
-        .load_owned(command_id, tenant_id, agent_id)
-        .await
-        .map_err(repository_status)?;
-    let error = redact_command_error(&command.kind, &error, link_printer_access_code);
-    if accepted {
-        if command.kind == "print_project_file" {
-            state
-                .jobs()
-                .mark_print_acknowledged(command_id, tenant_id, agent_id)
-                .await
-                .map_err(repository_status)?;
-        } else {
-            state
-                .commands()
-                .mark_acknowledged(command_id, tenant_id, agent_id)
-                .await
-                .map_err(repository_status)?;
-        }
-    } else if command.kind == "print_project_file" {
-        state
-            .jobs()
-            .mark_print_failed(command_id, tenant_id, agent_id, error)
-            .await
-            .map_err(repository_status)?;
-    } else {
-        state
-            .commands()
-            .mark_failed(command_id, tenant_id, agent_id, error)
-            .await
-            .map_err(repository_status)?;
-    }
-    Ok(())
-}
-
 pub(crate) async fn handle_current_session_result_and_job(
     state: &AppState,
     session: CurrentAgentSession<'_>,

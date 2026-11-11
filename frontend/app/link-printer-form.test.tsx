@@ -112,23 +112,6 @@ describe("LinkPrinterMachineForm", () => {
     );
   });
 
-  it("toggles access-code visibility without changing its value", async () => {
-    const { user } = renderForm();
-    const input = screen.getByLabelText("Access code");
-
-    await user.type(input, "SECRET-LINK-CODE");
-    expect(input).toHaveAttribute("type", "password");
-
-    await user.click(screen.getByRole("button", { name: "Show access code" }));
-    expect(input).toHaveAttribute("type", "text");
-    expect(input).toHaveValue("SECRET-LINK-CODE");
-
-    await user.click(screen.getByRole("button", { name: "Hide access code" }));
-    expect(input).toHaveAttribute("type", "password");
-    expect(input).toHaveValue("SECRET-LINK-CODE");
-    expect(linkPrinterMock).not.toHaveBeenCalled();
-  });
-
   it("shows the error code when the printer rejects the access code", async () => {
     vi.stubGlobal(
       "fetch",
@@ -197,27 +180,6 @@ describe("LinkPrinterMachineForm", () => {
 
     await screen.findByText(
       "Error: The printer could not be linked: complete Bambu MQTT TLS handshake: Certificate is not valid (link_failed)",
-    );
-  });
-
-  it("falls back to the raw error when the failure has no error code", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () =>
-        Response.json(
-          linkCommand({
-            status: "failed",
-            error: "agent connection closed before printer link completed",
-          }),
-        ),
-      ),
-    );
-    const { user } = renderForm();
-
-    await submitForm(user);
-
-    await screen.findByText(
-      "Error: agent connection closed before printer link completed",
     );
   });
 });

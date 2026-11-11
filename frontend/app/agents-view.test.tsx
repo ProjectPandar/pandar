@@ -83,23 +83,6 @@ const baseProps: AgentsViewProps = {
 };
 
 describe("Agents view composition", () => {
-  it("renders agents before diagnostics without the selected command", async () => {
-    renderWithMessages(<AgentsView {...baseProps} />);
-
-    const agentsHeading = screen.getByRole("heading", { name: "Agents" });
-    const diagnosticsHeading = await screen.findByRole("heading", {
-      name: "Diagnostics",
-    });
-
-    expect(
-      agentsHeading.compareDocumentPosition(diagnosticsHeading) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-    expect(
-      screen.queryByRole("heading", { name: "Discovered printers" }),
-    ).not.toBeInTheDocument();
-  });
-
   it("routes a selected discovery command to the discovery section", async () => {
     renderWithMessages(
       <AgentsView

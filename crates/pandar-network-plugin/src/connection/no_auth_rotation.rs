@@ -203,122 +203,9 @@ mod tests {
     };
 
     use super::*;
-    use crate::connection::ffi::{
-        pandar_plugin_printer_refresh_session_create,
-        pandar_plugin_printer_refresh_session_destroy,
-        pandar_plugin_printer_refresh_session_update,
-    };
 
     fn key(token: &str, config_epoch: u64) -> NoAuthRotationKey {
         NoAuthRotationKey::new("http://hub".to_owned(), token.to_owned(), 0, config_epoch)
-    }
-
-    fn outcome(body: &str) -> NoAuthRotationOutcome {
-        NoAuthRotationOutcome {
-            status: 1,
-            http_code: 409,
-            body: body.to_owned(),
-        }
-    }
-
-    #[test]
-    fn each_credential_key_can_claim_only_one_rotation() {
-        let hub = b"http://127.0.0.1:1";
-        let token = b"old-token";
-        let session = unsafe {
-            pandar_plugin_printer_refresh_session_create(
-                hub.as_ptr(),
-                hub.len(),
-                token.as_ptr(),
-                token.len(),
-            )
-        };
-        let claim = |token: &[u8], config_epoch| unsafe {
-            pandar_plugin_no_auth_rotation_claim(
-                session,
-                0,
-                config_epoch,
-                hub.as_ptr(),
-                hub.len(),
-                token.as_ptr(),
-                token.len(),
-            )
-        };
-
-        assert_eq!(claim(token, 7), 1);
-        assert_eq!(claim(token, 7), 0);
-        assert_eq!(claim(token, 8), 1);
-
-        let replacement = b"replacement-token";
-        assert_eq!(
-            unsafe {
-                pandar_plugin_printer_refresh_session_update(
-                    session,
-                    hub.as_ptr(),
-                    hub.len(),
-                    replacement.as_ptr(),
-                    replacement.len(),
-                )
-            },
-            0
-        );
-        assert_eq!(claim(replacement, 8), 1);
-        unsafe { pandar_plugin_printer_refresh_session_destroy(session) };
-    }
-
-    #[test]
-    fn finished_outcome_is_replayed_and_a_new_key_can_start() {
-        let session = ConnectionSession::new("http://hub".to_owned(), "old-token".to_owned());
-        let first = key("old-token", 7);
-        let failure = outcome("ambiguous_no_auth_tenant");
-
-        assert_eq!(
-            session.begin_no_auth_rotation(first.clone()),
-            NoAuthRotationBegin::Started
-        );
-        assert!(session.finish_no_auth_rotation(first.clone(), failure.clone()));
-        assert_eq!(
-            session.begin_no_auth_rotation(first),
-            NoAuthRotationBegin::Finished(failure)
-        );
-        assert_eq!(
-            session.begin_no_auth_rotation(key("old-token", 8)),
-            NoAuthRotationBegin::Started
-        );
-    }
-
-    #[test]
-    fn same_key_waiter_reuses_the_owned_finished_outcome() {
-        let session = Arc::new(ConnectionSession::new(
-            "http://hub".to_owned(),
-            "old-token".to_owned(),
-        ));
-        let rotation_key = key("old-token", 7);
-        let failure = outcome("rotation_response_lost");
-        assert_eq!(
-            session.begin_no_auth_rotation(rotation_key.clone()),
-            NoAuthRotationBegin::Started
-        );
-
-        let (waiting_tx, waiting_rx) = mpsc::channel();
-        let waiter_session = Arc::clone(&session);
-        let waiter_key = rotation_key.clone();
-        let waiter = thread::spawn(move || {
-            waiter_session.begin_no_auth_rotation_before_wait(
-                waiter_key,
-                RequestCancellation::disabled(),
-                || waiting_tx.send(()).expect("announce wait"),
-            )
-        });
-        waiting_rx
-            .recv_timeout(Duration::from_secs(1))
-            .expect("waiter reached in-flight state");
-
-        assert!(session.finish_no_auth_rotation(rotation_key, failure.clone()));
-        assert_eq!(
-            waiter.join().expect("waiter result"),
-            NoAuthRotationBegin::Finished(failure)
-        );
     }
 
     #[test]
@@ -357,23 +244,6 @@ mod tests {
         assert_eq!(
             waiter.join().expect("waiter result"),
             NoAuthRotationBegin::Finished(success)
-        );
-    }
-
-    #[test]
-    fn different_in_flight_key_and_current_mismatch_are_not_applicable() {
-        let session = ConnectionSession::new("http://hub".to_owned(), "old-token".to_owned());
-        assert_eq!(
-            session.begin_no_auth_rotation(key("old-token", 7)),
-            NoAuthRotationBegin::Started
-        );
-        assert_eq!(
-            session.begin_no_auth_rotation(key("old-token", 8)),
-            NoAuthRotationBegin::NotApplicable
-        );
-        assert_eq!(
-            session.begin_no_auth_rotation(key("replacement-token", 7)),
-            NoAuthRotationBegin::NotApplicable
         );
     }
 }

@@ -31,6 +31,7 @@ Run `cargo nextest run --manifest-path "Cargo.toml" --workspace` test after task
 - Never write unit tests after you write code.
 - Highly prefer E2E tests as the sole testing mechanism. Use them to verify complex features work. At the end of E2E tests, produce a verifiable and repeatable artifact.
 - If you must test a system in isolation, first write down all the ways it could fail, then write the code.
+- Write test about public API, not codebase struct.
 
 ### Workspace Crates
 

@@ -18,12 +18,6 @@ struct PrinterAmsLoadRequest {
 }
 
 #[derive(Serialize)]
-struct PrinterSelectExtruderRequest {
-    action: &'static str,
-    extruder_id: u32,
-}
-
-#[derive(Serialize)]
 struct PrinterAmsStartDryingRequest<'a> {
     action: &'static str,
     ams_id: u32,
@@ -67,15 +61,6 @@ struct LinkPrinterWithModelRequest<'a> {
     model: &'a str,
 }
 
-#[derive(Serialize)]
-struct LinkPrinterWithUnexpectedFieldRequest<'a> {
-    #[serde(rename = "type")]
-    printer_type: &'a str,
-    host: &'a str,
-    access_code: &'a str,
-    unexpected: bool,
-}
-
 pub(super) fn update_printer_body(host: &str, access_code: &str, name: &str) -> Option<Value> {
     Some(value(UpdatePrinterRequest {
         host,
@@ -95,13 +80,6 @@ pub(super) fn printer_ams_load_body(
         ams_id,
         slot_id,
         global_tray_id,
-        extruder_id,
-    }))
-}
-
-pub(super) fn printer_select_extruder_body(extruder_id: u32) -> Option<Value> {
-    Some(value(PrinterSelectExtruderRequest {
-        action: "select_extruder",
         extruder_id,
     }))
 }
@@ -171,19 +149,6 @@ pub(super) fn link_printer_with_model_value(
         access_code,
         model,
     })
-}
-
-pub(super) fn link_printer_with_unexpected_field_body(
-    printer_type: &str,
-    host: &str,
-    access_code: &str,
-) -> Option<Value> {
-    Some(value(LinkPrinterWithUnexpectedFieldRequest {
-        printer_type,
-        host,
-        access_code,
-        unexpected: true,
-    }))
 }
 
 fn value(input: impl Serialize) -> Value {

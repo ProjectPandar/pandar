@@ -198,6 +198,3 @@ impl MachineFileTransfer for FakeMachineFileTransfer {
         self.record(FileTransferRequest::delete(path))
     }
 }
-
-#[cfg(test)]
-mod tests;

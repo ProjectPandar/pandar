@@ -248,36 +248,3 @@ pub extern "C" fn pandar_plugin_studio_disposition(
         body,
     )
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn every_version_one_disposition_is_total_and_only_handled_or_never_track_succeeds() {
-        for raw in 1..=53 {
-            let operation = Operation::from_raw(raw).expect("version one operation");
-            let result = pandar_plugin_studio_disposition(raw, true);
-            assert_eq!(
-                result.status == 0,
-                operation.is_tracking()
-                    || matches!(
-                        operation,
-                        Operation::UserPresets
-                            | Operation::RequestSettingId
-                            | Operation::PutSetting
-                            | Operation::GetSettingList
-                            | Operation::GetSettingList2
-                            | Operation::DeleteSetting
-                    )
-            );
-        }
-        assert!(Operation::from_raw(54).is_none());
-    }
-
-    #[test]
-    fn bind_uses_the_pinned_studio_bind_failure_code() {
-        let result = pandar_plugin_studio_disposition(Operation::Bind as u32, true);
-        assert_eq!(result.status, -5);
-    }
-}

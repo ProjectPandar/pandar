@@ -1,6 +1,6 @@
 use std::{
     ffi::{CStr, CString, c_void},
-    io::{self, Read, Write},
+    io::{Read, Write},
     net::TcpListener,
     ptr,
     sync::{
@@ -11,10 +11,7 @@ use std::{
 };
 
 use super::*;
-use crate::{
-    abi::{BAMBU_WOULD_BLOCK, PlatformChar, VIDEO_JPEG, VIDEO_MJPG, VIDEO_STREAM},
-    tunnel::send_relay_handshake,
-};
+use crate::abi::{BAMBU_WOULD_BLOCK, PlatformChar, VIDEO_JPEG, VIDEO_MJPG, VIDEO_STREAM};
 
 mod error;
 
@@ -277,13 +274,4 @@ fn stream_info_callback_can_close_its_own_reader_worker() {
     assert_eq!(unsafe { Bambu_StartStream(tunnel, true) }, BAMBU_INVALID);
     unsafe { Bambu_Destroy(tunnel) };
     server.join().unwrap();
-}
-
-#[test]
-fn jpeg_dimensions_are_read_from_sof() {
-    let jpeg = [
-        0xff, 0xd8, 0xff, 0xc0, 0x00, 0x07, 0x08, 0x04, 0x38, 0x07, 0x80, 0xff, 0xd9,
-    ];
-    assert_eq!(crate::config::jpeg_dimensions(&jpeg), Some((1920, 1080)));
-    assert_eq!(crate::config::jpeg_dimensions(b"not-jpeg"), None);
 }

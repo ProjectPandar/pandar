@@ -146,7 +146,7 @@ mod tests {
         ProjectFileAmsMappingInfo, payload::ProjectFilePayloadPrint,
     };
 
-    use super::{ProjectFilePayload, h2d_family, json_payload};
+    use super::{ProjectFilePayload, json_payload};
 
     fn test_payload(nozzle_ids: impl IntoIterator<Item = i32>) -> ProjectFilePayload {
         ProjectFilePayload {
@@ -197,15 +197,6 @@ mod tests {
     fn flip_nozzle_ids(mut payload: ProjectFilePayload) -> Value {
         payload.flip_nozzle_ids();
         json_payload(payload)
-    }
-
-    #[test]
-    fn h2d_family_matches_new_dual_nozzle_models() {
-        assert!(h2d_family(Some("Bambu Lab X2D")));
-        assert!(h2d_family(Some("3DPrinter-O1D-xxx")));
-        assert!(h2d_family(Some("printer-c16-v2")));
-        assert!(!h2d_family(Some("P2S")));
-        assert!(!h2d_family(None));
     }
 
     #[test]

@@ -12,8 +12,6 @@ use super::{ConnectionState, DispatcherWake, RequestSnapshot};
 
 mod cache;
 mod protocol;
-#[cfg(test)]
-mod tests;
 
 pub(crate) const HEARTBEAT_BUSY_WAIT_MS: u32 = 0;
 

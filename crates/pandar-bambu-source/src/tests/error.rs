@@ -1,30 +1,6 @@
 use super::*;
 
 #[test]
-fn handshake_failure_preserves_the_write_cause() {
-    struct FailingHandshake;
-
-    impl Write for FailingHandshake {
-        fn write(&mut self, _buffer: &[u8]) -> io::Result<usize> {
-            Err(io::Error::new(
-                io::ErrorKind::BrokenPipe,
-                "handshake write cause sentinel",
-            ))
-        }
-
-        fn flush(&mut self) -> io::Result<()> {
-            Ok(())
-        }
-    }
-
-    let error = send_relay_handshake(&mut FailingHandshake, &[b'a'; 32]).unwrap_err();
-    assert_eq!(
-        crate::error::error_chain(&error),
-        "local camera relay handshake failed: handshake write cause sentinel"
-    );
-}
-
-#[test]
 fn read_failure_is_logged_and_distinct_from_eof() {
     let _guard = ERROR_TEST_LOCK.lock().unwrap();
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();

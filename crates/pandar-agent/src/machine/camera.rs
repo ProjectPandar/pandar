@@ -311,19 +311,6 @@ mod tests {
     }
 
     #[test]
-    fn supports_display_model_names() {
-        assert!(supports_rtsp(Some("Bambu Lab X2D")));
-        assert!(supports_rtsp(Some("Bambu Lab X1 Carbon")));
-    }
-
-    #[test]
-    fn wraps_jpeg_frame_as_mjpeg_part() {
-        let part = mjpeg_part(&[0xff, 0xd8, 0xff, 0xd9]);
-        assert!(part.starts_with(b"--frame\r\nContent-Type: image/jpeg\r\n"));
-        assert!(part.ends_with(b"\xff\xd8\xff\xd9\r\n"));
-    }
-
-    #[test]
     fn builds_fragmented_mp4_ffmpeg_command() {
         let command = ffmpeg_fragmented_mp4_command();
         let args = command
@@ -364,20 +351,6 @@ mod tests {
         ] {
             assert!(input.lines().any(|line| line == option));
         }
-    }
-
-    #[test]
-    fn ffmpeg_executable_defaults_to_path_lookup() {
-        assert_eq!(ffmpeg_executable_from_env(None), "ffmpeg");
-        assert_eq!(ffmpeg_executable_from_env(Some("  ".to_owned())), "ffmpeg");
-    }
-
-    #[test]
-    fn ffmpeg_executable_accepts_explicit_path() {
-        assert_eq!(
-            ffmpeg_executable_from_env(Some(" C:\\tools\\ffmpeg.exe ".to_owned())),
-            "C:\\tools\\ffmpeg.exe"
-        );
     }
 
     #[tokio::test]

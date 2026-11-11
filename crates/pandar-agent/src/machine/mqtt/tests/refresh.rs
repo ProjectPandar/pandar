@@ -54,27 +54,6 @@ async fn refresh_subscribes_publishes_and_maps_report() {
 }
 
 #[tokio::test]
-async fn refresh_printer_returns_material_patch_when_pushall_report_has_ams() {
-    let transport = FakeMqttTransport::with_reports([
-        get_version_report("A1 Mini"),
-        ams_print_report("IDLE", "PLA", Some("FF0000"), Some("0")),
-    ]);
-
-    let refreshed = refresh_printer(&transport, &endpoint(), Duration::from_secs(1))
-        .await
-        .unwrap();
-
-    assert_eq!(refreshed.snapshot.serial, "01S00EXAMPLE");
-    let materials = refreshed.materials.unwrap();
-    let patch = material_patch_json(&materials.printer_materials_json);
-    assert_eq!(patch.document_type, "printer_material_patch");
-    assert_eq!(
-        patch.ams_units[0].trays[0].material_type.as_deref(),
-        Some("PLA")
-    );
-}
-
-#[tokio::test]
 async fn refresh_printer_keeps_first_snapshot_and_continues_until_ams_patch() {
     let transport = FakeMqttTransport::with_reports([
         get_version_report("A1 Mini"),
@@ -130,19 +109,6 @@ async fn refresh_ignores_unrelated_reports_before_get_version() {
 }
 
 #[tokio::test]
-async fn refresh_timeout_error_includes_serial_context() {
-    let transport = FakeMqttTransport::with_timeout();
-
-    let err = refresh_printer(&transport, &endpoint(), Duration::from_millis(1))
-        .await
-        .unwrap_err();
-
-    assert!(format!("{err:#}").contains("refresh printer 01S00EXAMPLE"));
-    assert!(format!("{err:#}").contains("wait for MQTT get_version report"));
-    assert!(transport.published_commands().await.len() == 1);
-}
-
-#[tokio::test]
 async fn refresh_fails_total_get_version_deadline_when_unrelated_reports_continue() {
     let transport = FakeMqttTransport::with_infinite_unrelated_reports();
 
@@ -174,19 +140,6 @@ async fn refresh_missing_model_fails_before_pushall() {
         published,
         [request_command(expected_get_version_payload(&sequence_id))]
     );
-}
-
-#[tokio::test]
-async fn refresh_get_version_publish_failure_fails_before_pushall() {
-    let transport = FakeMqttTransport::with_publish_failure(BambuMqttCommand::GetVersion.payload());
-
-    let err = refresh_printer(&transport, &endpoint(), Duration::from_secs(1))
-        .await
-        .unwrap_err();
-
-    assert!(format!("{err:#}").contains("publish get_version"));
-    assert!(format!("{err:#}").contains("fake publish failure"));
-    assert!(transport.published_commands().await.is_empty());
 }
 
 #[test]

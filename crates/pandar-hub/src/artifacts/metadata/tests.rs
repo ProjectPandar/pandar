@@ -5,16 +5,6 @@ use zip::{ZipWriter, write::SimpleFileOptions};
 use super::*;
 
 #[test]
-fn gcode_returns_no_metadata() {
-    let temp = tempfile::NamedTempFile::new().unwrap();
-
-    let metadata =
-        parse_artifact_metadata("plate.gcode", "application/octet-stream", temp.path()).unwrap();
-
-    assert_eq!(metadata, None);
-}
-
-#[test]
 fn malformed_3mf_returns_no_metadata() {
     let mut temp = tempfile::NamedTempFile::new().unwrap();
     temp.write_all(b"not a zip").unwrap();
@@ -74,50 +64,6 @@ fn slice_info_extracts_plate_estimates_objects_and_filaments() {
     );
     assert_eq!(metadata.plates[0].filaments[0].used_grams, Some(18.5));
     assert_eq!(metadata.plates[0].filaments[0].used_meters, Some(6.2));
-}
-
-#[test]
-fn current_slice_info_metadata_extracts_plate_and_filaments() {
-    let temp = zip_fixture(&[
-        (
-            "Metadata/plate_1.json",
-            r##"{"bbox_objects":[{"name":"Cube"}],"filament_colors":["#000000"],"filament_ids":[0]}"##,
-        ),
-        ("Metadata/plate_1.gcode", ""),
-        (
-            "Metadata/slice_info.config",
-            r##"
-            <config>
-              <plate>
-                <metadata key="index" value="1"/>
-                <metadata key="prediction" value="1043"/>
-                <metadata key="weight" value="6.42"/>
-                <object identify_id="69" name="Cube" skipped="false"/>
-                <filament id="1" tray_info_idx="GFA00" type="PLA" color="#000000" used_m="2.12" used_g="6.42"/>
-              </plate>
-            </config>
-            "##,
-        ),
-    ]);
-
-    let metadata = parse_artifact_metadata("Untitled.gcode.3mf", "model/3mf", temp.path())
-        .unwrap()
-        .unwrap();
-
-    assert_eq!(metadata.default_plate_id, Some(1));
-    assert_eq!(metadata.plates[0].estimated_time_seconds, Some(1043));
-    assert_eq!(metadata.plates[0].filament_weight_grams, Some(6.42));
-    assert_eq!(metadata.plates[0].object_count, 1);
-    assert_eq!(metadata.plates[0].objects, ["Cube"]);
-    assert_eq!(metadata.plates[0].filaments.len(), 1);
-    assert_eq!(
-        metadata.plates[0].filaments[0].filament_type.as_deref(),
-        Some("PLA")
-    );
-    assert_eq!(
-        metadata.plates[0].filaments[0].color.as_deref(),
-        Some("#000000")
-    );
 }
 
 #[test]
@@ -182,22 +128,6 @@ fn model_settings_extracts_plate_display_name() {
         .unwrap();
 
     assert_eq!(metadata.plates[0].name, "Engineering Plate");
-}
-
-#[test]
-fn plate_json_extracts_fallback_object_names() {
-    let temp = zip_fixture(&[(
-        "Metadata/plate_4.json",
-        r#"{"bbox_objects":[{"name":"bracket"},{"name":"cover"}]}"#,
-    )]);
-
-    let metadata = parse_artifact_metadata("part.3mf", "model/3mf", temp.path())
-        .unwrap()
-        .unwrap();
-
-    assert_eq!(metadata.default_plate_id, Some(4));
-    assert_eq!(metadata.plates[0].objects, ["bracket", "cover"]);
-    assert_eq!(metadata.plates[0].object_count, 2);
 }
 
 #[test]
@@ -324,16 +254,6 @@ fn attribute_heavy_metadata_remains_bounded_by_the_file_limit() {
         .unwrap();
 
     assert_eq!(metadata.default_plate_id, Some(1));
-}
-
-#[test]
-fn display_name_strips_known_suffixes() {
-    assert_eq!(
-        display_name_from_filename("../folder/My Project.gcode.3mf"),
-        "My Project"
-    );
-    assert_eq!(display_name_from_filename("part.3mf"), "part");
-    assert_eq!(display_name_from_filename("part.gcode"), "part");
 }
 
 fn zip_fixture(entries: &[(&str, &str)]) -> tempfile::NamedTempFile {

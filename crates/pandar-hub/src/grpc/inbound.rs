@@ -21,7 +21,7 @@ mod commands;
 mod printer_device_features;
 
 #[cfg(test)]
-pub(super) use commands::{handle_ack, handle_result};
+pub(super) use commands::handle_result;
 use commands::{handle_command_ack, handle_command_result};
 
 /// Printer snapshots apply off the serial inbound loop so a slow snapshot

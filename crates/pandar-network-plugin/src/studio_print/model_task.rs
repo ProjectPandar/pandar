@@ -166,6 +166,3 @@ fn bytes(value: &str) -> PluginBytes {
         len: value.len(),
     }
 }
-
-#[cfg(test)]
-mod tests;

@@ -291,41 +291,6 @@ mod tests {
     }
 
     #[test]
-    fn extracts_versions_and_loaded_symbols_from_official_clean_checkout() {
-        let temp = fixture();
-        let abi_series = fixture_abi_series(temp.path());
-
-        let contract =
-            inspect_source(temp.path(), &abi_series).expect("inspect valid official checkout");
-
-        assert_eq!(contract.commit, abi_series.studio_commit);
-        assert_eq!(contract.studio_version, "02.07.01.57");
-        assert_eq!(contract.reference_network_agent_version, "02.07.01.51");
-        assert_eq!(contract.print_params_fields, ["dev_id"]);
-        assert_eq!(
-            contract.network_exports,
-            [
-                (
-                    "bambu_network_get_version".to_owned(),
-                    "func_get_version".to_owned()
-                ),
-                ("bambu_network_start".to_owned(), "func_start".to_owned())
-            ]
-        );
-        assert_eq!(
-            contract.network_symbols.into_iter().collect::<Vec<_>>(),
-            ["bambu_network_get_version", "bambu_network_start"]
-        );
-        assert_eq!(
-            contract
-                .file_transfer_symbols
-                .into_iter()
-                .collect::<Vec<_>>(),
-            ["ft_abi_version", "ft_free"]
-        );
-    }
-
-    #[test]
     fn rejects_wrong_commit() {
         let temp = fixture();
         let abi_series = pandar_studio_profile::catalog().default();

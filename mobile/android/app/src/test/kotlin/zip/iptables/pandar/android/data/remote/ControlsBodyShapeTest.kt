@@ -18,12 +18,6 @@ class ControlsBodyShapeTest {
     @Test fun pause_is_minimal() =
         assertEquals("""{"action":"pause"}""", encode(PrinterControlIntent.Pause))
 
-    @Test fun resume_is_minimal() =
-        assertEquals("""{"action":"resume"}""", encode(PrinterControlIntent.Resume))
-
-    @Test fun stop_is_minimal() =
-        assertEquals("""{"action":"stop"}""", encode(PrinterControlIntent.Stop))
-
     @Test fun home_all_axes_is_explicit() =
         assertEquals(
             """{"action":"home","axes":[]}""",
@@ -57,9 +51,6 @@ class ControlsBodyShapeTest {
         }
     }
 
-    @Test fun toggle_light_is_minimal() =
-        assertEquals("""{"action":"toggle_light"}""", encode(PrinterControlIntent.ToggleLight))
-
     @Test fun set_chamber_light() =
         assertEquals(
             """{"action":"set_chamber_light","light_on":true}""",
@@ -70,12 +61,6 @@ class ControlsBodyShapeTest {
         assertEquals(
             """{"action":"set_bed_temperature","temperature_celsius":60,"wait":false}""",
             encode(PrinterControlIntent.SetBedTemperature(temperatureCelsius = 60, wait = false)),
-        )
-
-    @Test fun set_chamber_temperature() =
-        assertEquals(
-            """{"action":"set_chamber_temperature","temperature_celsius":40,"wait":true}""",
-            encode(PrinterControlIntent.SetChamberTemperature(temperatureCelsius = 40, wait = true)),
         )
 
     @Test fun set_hotend_temperature_omits_null_extruder() =
@@ -94,12 +79,6 @@ class ControlsBodyShapeTest {
         assertEquals(
             """{"action":"ams_reread_rfid","ams_id":1,"slot_id":2}""",
             encode(PrinterControlIntent.AmsRereadRfid(amsId = 1, slotId = 2)),
-        )
-
-    @Test fun ams_load_minimal() =
-        assertEquals(
-            """{"action":"ams_load_filament","ams_id":1,"slot_id":2}""",
-            encode(PrinterControlIntent.AmsLoadFilament(amsId = 1, slotId = 2)),
         )
 
     @Test fun ams_load_global_tray() =

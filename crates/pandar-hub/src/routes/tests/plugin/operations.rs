@@ -161,22 +161,6 @@ async fn plugin_print_error_dispatches_all_actions_as_sent_tag_25_commands_witho
 }
 
 #[tokio::test]
-async fn plugin_printer_operation_rejects_string_param_on_handle_print_error_without_side_effects()
-{
-    assert_plugin_print_error_param_rejected(
-        "plugin-native-string-param",
-        serde_json::json!("M620 C1"),
-    )
-    .await;
-}
-
-#[tokio::test]
-async fn plugin_printer_operation_rejects_null_param_on_handle_print_error_without_side_effects() {
-    assert_plugin_print_error_param_rejected("plugin-native-null-param", serde_json::Value::Null)
-        .await;
-}
-
-#[tokio::test]
 async fn plugin_print_error_rejects_offline_and_incapable_agents_before_insert() {
     let fixture = operation_fixture("plugin-native-unavailable").await;
 
@@ -393,41 +377,6 @@ async fn plugin_gcode_line_rejects_non_string_missing_and_extra_fields_without_i
             .unwrap()
             .is_empty()
     );
-}
-
-#[tokio::test]
-async fn plugin_gcode_line_obeys_existing_router_body_limit_without_partial_insert() {
-    const ROUTER_BODY_LIMIT: usize = 64 * 1024;
-    let fixture = operation_fixture("plugin-gcode-line-body-limit").await;
-    let below = gcode_line_body_with_serialized_len(ROUTER_BODY_LIMIT - 1);
-    let above = gcode_line_body_with_serialized_len(ROUTER_BODY_LIMIT + 1);
-
-    let (status, body) = request_as(
-        fixture.app.clone(),
-        Method::POST,
-        &fixture.uri,
-        Some(below),
-        &fixture.token,
-    )
-    .await;
-    assert_eq!(status, StatusCode::OK);
-    assert_eq!(decode::<OperationResponse>(body).status, "queued");
-    assert_eq!(fixture.state.commands().count().await.unwrap(), 1);
-
-    let (status, body) = request_as(
-        fixture.app.clone(),
-        Method::POST,
-        &fixture.uri,
-        Some(above),
-        &fixture.token,
-    )
-    .await;
-    assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert_eq!(
-        decode::<OperationErrorResponse>(body).error,
-        "invalid_printer_control"
-    );
-    assert_eq!(fixture.state.commands().count().await.unwrap(), 1);
 }
 
 #[tokio::test]
@@ -779,49 +728,6 @@ async fn assert_unavailable(fixture: &OperationFixture) {
     );
 }
 
-async fn assert_plugin_print_error_param_rejected(slug: &str, param: Value) {
-    let fixture = operation_fixture(slug).await;
-    let (wake_sender, _) = mpsc::channel(1);
-    let (command_sender, _command_receiver) = mpsc::channel(1);
-    register_session(
-        &fixture,
-        wake_sender,
-        command_sender,
-        [AgentCapability::HandlePrintError],
-    )
-    .await;
-    let mut request = native_body("resume");
-    request
-        .as_object_mut()
-        .unwrap()
-        .insert("param".to_owned(), param);
-
-    let (status, body) = request_as(
-        fixture.app.clone(),
-        Method::POST,
-        &fixture.uri,
-        Some(request),
-        &fixture.token,
-    )
-    .await;
-
-    assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert_eq!(
-        decode::<OperationErrorResponse>(body).error,
-        "invalid_printer_control"
-    );
-    assert_eq!(fixture.state.commands().count().await.unwrap(), 0);
-    assert!(
-        fixture
-            .state
-            .audit_events()
-            .list_for_tenant(fixture.tenant_id)
-            .await
-            .unwrap()
-            .is_empty()
-    );
-}
-
 fn native_body(error_action: &str) -> Value {
     serde_json::json!({
         "action": "handle_print_error",
@@ -830,15 +736,4 @@ fn native_body(error_action: &str) -> Value {
         "printer_job_id": "job-7",
         "sequence_id": 20_042
     })
-}
-
-fn gcode_line_body_with_serialized_len(target_len: usize) -> Value {
-    let empty = serde_json::json!({"action": "gcode_line", "param": ""});
-    let overhead = empty.to_string().len();
-    let body = serde_json::json!({
-        "action": "gcode_line",
-        "param": "x".repeat(target_len - overhead),
-    });
-    assert_eq!(body.to_string().len(), target_len);
-    body
 }

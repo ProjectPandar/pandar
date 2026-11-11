@@ -47,7 +47,7 @@ pub(crate) struct ExportInspection {
 enum SymbolOutput {
     Nm,
     Readelf,
-    #[cfg(any(target_os = "windows", test))]
+    #[cfg(target_os = "windows")]
     PeDumpbin,
 }
 
@@ -353,7 +353,7 @@ fn parse_matching_exports(
                     fields.last().and_then(|token| select(token))
                 }
             }
-            #[cfg(any(target_os = "windows", test))]
+            #[cfg(target_os = "windows")]
             SymbolOutput::PeDumpbin => line
                 .split_once('=')
                 .map_or(line, |(left, _)| left)

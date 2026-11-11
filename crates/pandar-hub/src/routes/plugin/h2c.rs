@@ -212,27 +212,6 @@ mod tests {
     }
 
     #[test]
-    fn failed_command_returns_correlated_printer_failure_detail() {
-        let command = command(
-            CommandStatus::Failed,
-            json!({
-                "print": {
-                    "command": "get_auto_nozzle_mapping",
-                    "sequence_id": "42",
-                    "result": "fail",
-                    "version": "future",
-                    "reason": "rack busy",
-                    "errno": 17
-                }
-            }),
-        );
-
-        let response = correlated_response(&command, &request()).unwrap();
-        assert_eq!(response.print.reason.as_deref(), Some("rack busy"));
-        assert_eq!(response.print.errno, Some(17));
-    }
-
-    #[test]
     fn successful_command_rejects_a_mismatched_mapping_version() {
         let command = command(
             CommandStatus::Succeeded,

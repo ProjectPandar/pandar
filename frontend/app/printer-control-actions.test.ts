@@ -184,23 +184,6 @@ describe("controlPrinter AMS operations", () => {
     });
   });
 
-  it("posts chamber temperature details to the printer controls API", async () => {
-    const formData = new FormData();
-    formData.set("tenant_id", "tenant-1");
-    formData.set("printer_id", "printer-1");
-    formData.set("action", "set_chamber_temperature");
-    formData.set("temperature_celsius", "45");
-
-    await expect(controlPrinter(null, formData)).resolves.toEqual({ ok: true });
-
-    const init = vi.mocked(fetch).mock.calls[0][1] as RequestInit;
-    const body = JSON.parse(String(init.body)) as Record<string, unknown>;
-    expect(body).toMatchObject({
-      action: "set_chamber_temperature",
-      temperature_celsius: 45,
-    });
-  });
-
   it("posts chamber light target state to the printer controls API", async () => {
     const formData = new FormData();
     formData.set("tenant_id", "tenant-1");

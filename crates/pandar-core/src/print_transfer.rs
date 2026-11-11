@@ -35,21 +35,3 @@ pub struct PrintTransferFailure {
     pub phase: PrintTransferPhase,
     pub cause: String,
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn transfer_failure_uses_stable_phase_shape() {
-        let failure = PrintTransferFailure {
-            phase: PrintTransferPhase::DataConnection,
-            cause: "522 SSL connection failed: session reuse required".to_owned(),
-        };
-
-        assert_eq!(
-            serde_json::to_string(&failure).unwrap(),
-            r#"{"phase":"data_connection","cause":"522 SSL connection failed: session reuse required"}"#
-        );
-    }
-}

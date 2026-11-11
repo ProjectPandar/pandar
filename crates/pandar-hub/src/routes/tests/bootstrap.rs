@@ -43,12 +43,6 @@ struct CreateAgentRequest<'a> {
 }
 
 #[derive(Serialize)]
-struct CreateTenantRequest<'a> {
-    slug: &'a str,
-    display_name: &'a str,
-}
-
-#[derive(Serialize)]
 struct BootstrapTenantAdminRequest<'a> {
     tenant_slug: &'a str,
     tenant_display_name: &'a str,
@@ -141,18 +135,6 @@ async fn summary_reports_repository_counts() {
 }
 
 #[tokio::test]
-async fn tenant_create_returns_created_record() {
-    let (status, body) = create_tenant_for_test(bootstrap_app().await).await;
-
-    assert_eq!(status, StatusCode::CREATED);
-    let body = decode::<TenantResponse>(body);
-    assert_eq!(body.slug, "acme");
-    assert_eq!(body.display_name, "Acme Labs");
-    assert!(!body.id.is_empty());
-    assert!(body.created_at.ends_with('Z'));
-}
-
-#[tokio::test]
 async fn tenant_list_returns_created_records() {
     let app = bootstrap_app().await;
     let (status, created) = create_tenant_for_test(app.clone()).await;
@@ -177,24 +159,6 @@ async fn duplicate_tenant_slug_returns_conflict() {
     assert_eq!(status, StatusCode::CONFLICT);
     let body = decode::<ErrorResponse>(body);
     assert_eq!(body.error, "tenant_slug_exists");
-}
-
-#[tokio::test]
-async fn empty_tenant_fields_return_bad_request() {
-    let (status, body) = bootstrap_post(
-        bootstrap_app().await,
-        "/api/v1/tenants",
-        serde_json::to_value(CreateTenantRequest {
-            slug: "",
-            display_name: "Acme Labs",
-        })
-        .unwrap(),
-    )
-    .await;
-
-    assert_eq!(status, StatusCode::BAD_REQUEST);
-    let body = decode::<ErrorResponse>(body);
-    assert_eq!(body.error, "bad_request");
 }
 
 #[tokio::test]

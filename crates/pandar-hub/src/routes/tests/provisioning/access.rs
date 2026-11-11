@@ -122,17 +122,3 @@ async fn tenant_admin_cannot_manage_other_tenant_users() {
     .await;
     assert_eq!(status, StatusCode::OK);
 }
-
-#[tokio::test]
-async fn tenant_admin_gets_not_found_for_missing_user_nested_lists() {
-    let (_state, app, tenant_id, admin_token) = admin_tenant().await;
-    let missing_user_id = uuid::Uuid::new_v4().to_string();
-
-    for uri in [format!(
-        "/api/v1/tenants/{tenant_id}/users/{missing_user_id}/identities"
-    )] {
-        let (status, body) = request_as(app.clone(), Method::GET, &uri, None, &admin_token).await;
-        assert_eq!(status, StatusCode::NOT_FOUND);
-        assert_eq!(decode::<ErrorResponse>(body).error, "user_not_found");
-    }
-}

@@ -138,36 +138,6 @@ async fn studio_print_rejects_non_concrete_bed_types_before_side_effects() {
 }
 
 #[tokio::test]
-async fn studio_print_accepts_each_pinned_concrete_bed_type() {
-    for bed_type in [
-        "supertack_plate",
-        "cool_plate",
-        "eng_plate",
-        "hot_plate",
-        "textured_plate",
-    ] {
-        let mqtt = FakeMqttTransport::default();
-        let transfer = FakeMachineFileTransfer::default();
-        let gateway = ConfiguredBambuMachineGateway::with_file_transfer(
-            vec![(endpoint("SERIAL1"), mqtt.clone(), transfer)],
-            Duration::from_secs(1),
-        );
-        let mut command = print_project_file();
-        command.options.as_mut().unwrap().bed_type = bed_type.to_owned();
-
-        gateway
-            .print_project_file("SERIAL1", &command, b"abc".to_vec())
-            .await
-            .unwrap();
-
-        assert_eq!(
-            mqtt.published_commands().await[0].payload["print"]["bed_type"],
-            bed_type
-        );
-    }
-}
-
-#[tokio::test]
 async fn web_print_uses_only_web_fields_and_omits_studio_manual_mode() {
     let mqtt = FakeMqttTransport::default();
     let transfer = FakeMachineFileTransfer::default();

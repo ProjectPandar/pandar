@@ -6,8 +6,7 @@ use tokio::sync::{Mutex, mpsc};
 use super::*;
 use crate::{
     grpc::commands::{
-        SessionQueuedDispatch, dispatch_next_queued_for_session, hub_command_from_record,
-        required_feature_dispatch_pause,
+        SessionQueuedDispatch, dispatch_next_queued_for_session, required_feature_dispatch_pause,
     },
     repositories::{AuditActor, PrinterOperationKind},
     sessions::{AgentSession, SessionToken, empty_pending_live_commands},
@@ -15,24 +14,6 @@ use crate::{
 use pandar_protocol::agent::v1::{AgentCapability, HubCommand, hub_command, printer_operation};
 
 const EXACT_PARAM: &str = "M620 C1 \r\n; keep trailing  \n\n";
-
-#[tokio::test]
-async fn gcode_line_conversion_preserves_exact_param_without_required_features() {
-    let fixture = GcodeDispatchFixture::new().await;
-    let command = fixture.enqueue_gcode_line(EXACT_PARAM).await;
-
-    let converted = hub_command_from_record(command).unwrap();
-
-    let Some(hub_command::Command::PrinterOperation(operation)) = converted.command else {
-        panic!("expected printer operation command");
-    };
-    assert!(operation.required_device_features.is_empty());
-    assert!(matches!(
-        operation.operation,
-        Some(printer_operation::Operation::GcodeLine(operation))
-            if operation.param == EXACT_PARAM
-    ));
-}
 
 #[tokio::test]
 async fn gcode_line_current_capable_session_receives_exact_param() {

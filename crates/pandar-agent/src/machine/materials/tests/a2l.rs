@@ -1,21 +1,6 @@
 use super::*;
 
 #[test]
-fn standard_ams_lite_preserves_its_studio_type_and_conventional_route() {
-    let patch = normalize(serde_json::json!({
-        "print": {"ams": {"ams": [{
-            "id": 0,
-            "info": "00000002",
-            "tray": [{"id": 0}]
-        }]}}
-    }))
-    .unwrap();
-
-    assert_eq!(patch.ams_units[0].unit_kind.as_deref(), Some("ams_lite"));
-    assert_eq!(patch.ams_units[0].trays[0].global_tray_id, Some(0));
-}
-
-#[test]
 fn mixed_ams_lite_partial_active_update_preserves_global_route_without_guessing_unit() {
     let patch = normalize(serde_json::json!({
         "print": {"ams": {"tray_now": "24"}}

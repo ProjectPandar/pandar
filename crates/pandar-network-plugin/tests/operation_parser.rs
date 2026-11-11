@@ -16,15 +16,9 @@ macro_rules! test_case {
     };
 }
 
-test_case!(gcode_parser_maps_home_and_axes_to_semantic_json, gcode);
 test_case!(gcode_parser_maps_relative_move_to_semantic_json, gcode);
-test_case!(gcode_parser_maps_hotend_temperature_to_semantic_json, gcode);
 test_case!(
     gcode_parser_maps_targeted_hotend_temperature_to_semantic_json,
-    gcode
-);
-test_case!(
-    gcode_parser_maps_bed_and_chamber_temperature_to_semantic_json,
     gcode
 );
 test_case!(
@@ -54,10 +48,6 @@ test_case!(
 test_case!(
     operation_parser_rejects_non_string_studio_gcode_line_params,
     studio
-);
-test_case!(
-    every_finite_non_firmware_unsupported_pair_returns_the_stable_parser_error,
-    unsupported
 );
 test_case!(
     unknown_malformed_and_mixed_studio_messages_return_the_stable_parser_error,

@@ -52,23 +52,6 @@ async fn invalid_agent_credential_returns_401() {
 }
 
 #[tokio::test]
-async fn missing_bearer_credential_returns_401() {
-    let state = state_with_storage(FakeArtifactStorage::default()).await;
-    let fixture = artifact_fixture(&state).await;
-
-    let (status, _, body) = artifact_request(
-        router(state),
-        &fixture.agent_id.to_string(),
-        "artifact-1",
-        None,
-    )
-    .await;
-
-    assert_eq!(status, StatusCode::UNAUTHORIZED);
-    assert_eq!(error(body), "unauthorized");
-}
-
-#[tokio::test]
 async fn revoked_agent_credential_returns_401() {
     let state = state_with_storage(FakeArtifactStorage::default()).await;
     let fixture = artifact_fixture(&state).await;

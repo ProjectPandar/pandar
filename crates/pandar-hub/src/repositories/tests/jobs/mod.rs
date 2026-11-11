@@ -3,8 +3,7 @@ use serde::Serialize;
 
 use super::*;
 use crate::repositories::{
-    AgentArtifactAccess, ApplyPrintReport, CreatePrintJob, PrintProjectFilePayload,
-    PrintReportDiagnostic,
+    ApplyPrintReport, CreatePrintJob, PrintProjectFilePayload, PrintReportDiagnostic,
 };
 
 pub(super) mod clear;
@@ -143,26 +142,6 @@ async fn material_snapshot_count(database: &Database) -> i64 {
         .fetch_one(pool)
         .await
         .unwrap()
-}
-
-async fn queued_payloads(
-    commands: &crate::repositories::CommandRepository,
-    tenant_id: pandar_core::TenantId,
-    agent_id: AgentId,
-) -> Vec<PrintProjectFilePayload> {
-    let mut payloads = Vec::new();
-    while let Some(command) = commands
-        .next_queued_for_agent(tenant_id, agent_id)
-        .await
-        .unwrap()
-    {
-        payloads.push(serde_json::from_str(&command.payload_json).unwrap());
-        commands
-            .mark_sent(command.id, tenant_id, agent_id)
-            .await
-            .unwrap();
-    }
-    payloads
 }
 
 fn material_patch_json(observed_at: &str) -> String {

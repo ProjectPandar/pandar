@@ -10,7 +10,6 @@ mod audit;
 mod authorization;
 mod camera;
 mod firmware;
-mod firmware_batch;
 mod h2c;
 mod live_status;
 mod login_tickets;
@@ -56,7 +55,6 @@ struct PluginPrinterListResponse {
 struct PluginPrinterResponse {
     dev_id: String,
     fun: String,
-    fun2: Option<String>,
     dev_name: String,
     name: String,
     dev_model_name: Option<String>,
@@ -84,7 +82,6 @@ struct PluginPrinterResponse {
     chamber_light_on: Option<bool>,
     studio_local_camera: bool,
     materials: Option<PluginMaterialsResponse>,
-    firmware: Option<pandar_core::PrinterFirmwareState>,
 }
 
 #[derive(Debug, Deserialize, PartialEq, Eq)]
@@ -133,18 +130,6 @@ struct PluginPrintResponse {
 }
 
 #[derive(Debug, Deserialize)]
-struct PluginJobListResponse {
-    total: u64,
-    hits: Vec<PluginJobResponse>,
-}
-
-#[derive(Debug, Deserialize)]
-struct PluginJobResponse {
-    id: i32,
-    title: String,
-}
-
-#[derive(Debug, Deserialize)]
 struct PluginTokenAuditMetadata {
     tenant_token_id: String,
     tenant_token_scopes: Vec<String>,
@@ -186,10 +171,6 @@ struct RedactedHeaders {
     #[serde(rename = "Authorization")]
     authorization: Option<String>,
 }
-
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-struct EmptyAuditMetadata {}
 
 #[derive(Debug, Deserialize)]
 struct ErrorResponse {
@@ -426,28 +407,4 @@ fn sqlite_pool(state: &AppState) -> &sqlx::SqlitePool {
         panic!("expected SQLite database");
     };
     pool
-}
-
-async fn set_secondary_device_features(
-    state: &AppState,
-    tenant_id: TenantId,
-    agent_id: pandar_core::AgentId,
-    token: crate::sessions::SessionToken,
-    serial: &str,
-    features: Option<pandar_core::BambuDeviceFeatures>,
-) {
-    assert_eq!(
-        state
-            .printers()
-            .update_secondary_device_features_if_current(
-                tenant_id,
-                agent_id,
-                &token.persisted_id(),
-                serial,
-                features,
-            )
-            .await
-            .unwrap(),
-        crate::repositories::DeviceFeatureUpdateOutcome::Updated
-    );
 }

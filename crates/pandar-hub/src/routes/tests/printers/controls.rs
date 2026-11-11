@@ -30,7 +30,7 @@ async fn printer_control_enqueues_ams_slot_operation() {
     assert_eq!(body.kind, "printer_operation");
     let payload: PrinterOperationPayload = serde_json::from_str(&body.payload_json).unwrap();
     match payload.operation {
-        PrinterOperation::AmsLoadFilament {
+        PrinterOperation::LoadFilament {
             ams_id,
             slot_id,
             global_tray_id,
@@ -75,7 +75,7 @@ async fn printer_control_enqueues_ams_drying_operations() {
     assert_eq!(body.kind, "printer_operation");
     let payload: PrinterOperationPayload = serde_json::from_str(&body.payload_json).unwrap();
     match payload.operation {
-        PrinterOperation::AmsStartDrying {
+        PrinterOperation::StartDrying {
             ams_id,
             temperature_celsius,
             duration_hours,
@@ -104,7 +104,7 @@ async fn printer_control_enqueues_ams_drying_operations() {
     let body = decode::<CommandResponse>(body);
     let payload: PrinterOperationPayload = serde_json::from_str(&body.payload_json).unwrap();
     match payload.operation {
-        PrinterOperation::AmsStopDrying { ams_id } => assert_eq!(ams_id, 0),
+        PrinterOperation::StopDrying { ams_id } => assert_eq!(ams_id, 0),
         other => panic!("expected ams_stop_drying operation, got {other:?}"),
     }
 }
@@ -177,39 +177,4 @@ async fn tenant_printer_control_rejects_gcode_line_without_insert() {
         "invalid_printer_control"
     );
     assert_eq!(state.commands().count().await.unwrap(), 0);
-}
-
-#[tokio::test]
-async fn printer_control_enqueues_select_extruder_operation() {
-    let state = state().await;
-    let app = router(state.clone());
-    let (tenant, agent, token) = tenant_and_agent(&state, app.clone()).await;
-    let tenant_id = TenantId::parse(&decode::<TenantResponse>(tenant).id).unwrap();
-    let agent_id = AgentId::parse(&decode::<AgentResponse>(agent).id).unwrap();
-    let printer_id = crate::repositories::test_helpers::insert_printer_fixture_with_model(
-        state.database(),
-        tenant_id,
-        agent_id,
-        Some("Bambu Lab X2D"),
-    )
-    .await
-    .unwrap();
-
-    let (status, body) = request_as(
-        app,
-        Method::POST,
-        &format!("/api/v1/tenants/{tenant_id}/printers/{printer_id}/controls"),
-        printer_select_extruder_body(1),
-        &token,
-    )
-    .await;
-
-    assert_eq!(status, StatusCode::OK);
-    let body = decode::<CommandResponse>(body);
-    assert_eq!(body.kind, "printer_operation");
-    let payload: PrinterOperationPayload = serde_json::from_str(&body.payload_json).unwrap();
-    match payload.operation {
-        PrinterOperation::SelectExtruder { extruder_id } => assert_eq!(extruder_id, 1),
-        other => panic!("expected select_extruder operation, got {other:?}"),
-    }
 }

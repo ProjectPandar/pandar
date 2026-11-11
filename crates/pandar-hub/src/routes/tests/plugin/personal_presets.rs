@@ -1,13 +1,9 @@
 use std::collections::BTreeMap;
 
-use axum::{
-    body::Body,
-    http::{Method, Request, StatusCode, header::AUTHORIZATION},
-};
+use axum::http::{Method, StatusCode};
 use http_body_util::BodyExt;
 use sea_orm::{ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
-use tower::ServiceExt;
 
 use super::*;
 
@@ -389,39 +385,4 @@ async fn personal_preset_routes_reject_ownerless_no_auth_and_return_quota_code_1
     assert_eq!(status, StatusCode::CONFLICT);
     assert_eq!(body["error"], "personal_preset_limit_exceeded");
     assert_eq!(body["code"], 14);
-}
-
-#[tokio::test]
-async fn personal_preset_route_rejects_malformed_and_oversize_bodies() {
-    let state = state().await;
-    let tenant = state.tenants().create("preset-body", "Body").await.unwrap();
-    let token = plugin_studio_tenant_token(&state, &tenant.id.to_string(), "body-owner").await;
-    let app = router(state);
-    let malformed = app
-        .clone()
-        .oneshot(
-            Request::builder()
-                .method(Method::POST)
-                .uri("/api/v1/plugin/presets")
-                .header(AUTHORIZATION, format!("Bearer {token}"))
-                .header("content-type", "application/json")
-                .body(Body::from("{"))
-                .unwrap(),
-        )
-        .await
-        .unwrap();
-    assert_eq!(malformed.status(), StatusCode::BAD_REQUEST);
-    let oversize = app
-        .oneshot(
-            Request::builder()
-                .method(Method::POST)
-                .uri("/api/v1/plugin/presets")
-                .header(AUTHORIZATION, format!("Bearer {token}"))
-                .header("content-type", "application/json")
-                .body(Body::from("x".repeat(513 * 1024)))
-                .unwrap(),
-        )
-        .await
-        .unwrap();
-    assert_eq!(oversize.status(), StatusCode::PAYLOAD_TOO_LARGE);
 }

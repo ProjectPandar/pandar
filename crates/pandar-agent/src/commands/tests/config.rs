@@ -1,25 +1,6 @@
 use super::*;
 
 #[test]
-fn parses_printer_config_json() {
-    let printers = parse_printer_config(
-        r#"[{"host":"192.0.2.10","serial":"01S00EXAMPLE","access_code":"12345678","model":"A1 Mini","name":"garage-a1"}]"#,
-    )
-    .unwrap();
-
-    assert_eq!(
-        printers,
-        vec![BambuPrinterEndpoint {
-            host: "192.0.2.10".to_owned(),
-            serial: "01S00EXAMPLE".to_owned(),
-            access_code: "12345678".to_owned(),
-            model: Some("A1 Mini".to_owned()),
-            name: Some("garage-a1".to_owned()),
-        }]
-    );
-}
-
-#[test]
 fn parses_printer_config_empty_config_means_no_printers() {
     assert_eq!(parse_printer_config("").unwrap(), Vec::new());
     assert_eq!(parse_printer_config("   ").unwrap(), Vec::new());

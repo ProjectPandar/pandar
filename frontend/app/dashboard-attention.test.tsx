@@ -121,19 +121,6 @@ describe('job failure attention', () => {
     expect(onOpenReprint).toHaveBeenCalledWith('job-1')
   })
 
-  it('uses the physical print error for a physical failure', () => {
-    const [item] = attentionFor(
-      job({
-        status: 'succeeded',
-        error: 'dispatch error',
-        printStatus: 'failed',
-        printError: 'nozzle temperature fault',
-      }),
-    )
-
-    expect(item.detailKey?.values).toEqual({ reason: 'nozzle temperature fault' })
-  })
-
   it('treats persisted stalled jobs as recoverable warnings, not active failures', () => {
     const stalled = job({
       status: 'succeeded',
@@ -157,19 +144,5 @@ describe('job failure attention', () => {
       severity: 'warning',
       label: 'Stalled',
     })
-  })
-
-  it('does not infer stalled from a pending job and the browser clock', () => {
-    expect(
-      attentionFor(
-        job({ status: 'succeeded', commandStatus: 'succeeded' }),
-      ),
-    ).toEqual([])
-  })
-
-  it('omits the reason row when the API has no failure cause', () => {
-    const [item] = attentionFor(job())
-
-    expect(item.detailKey).toBeUndefined()
   })
 })

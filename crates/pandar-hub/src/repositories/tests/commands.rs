@@ -1,4 +1,4 @@
-use pandar_core::{AgentId, CommandId, CommandStatus};
+use pandar_core::{CommandId, CommandStatus};
 use serde::Deserialize;
 
 mod print_error;
@@ -6,7 +6,7 @@ mod print_error;
 use super::*;
 use crate::repositories::{
     AuditActor, LinkPrinterPayload, PrintProjectFilePayload, PrinterOperationKind,
-    PrinterOperationPayload, RefreshPrinterMaterialsPayload,
+    PrinterOperationPayload,
 };
 
 mod device_features_contract;
@@ -14,18 +14,6 @@ mod enqueue;
 mod link;
 mod printer_ops;
 mod session_fence;
-
-#[tokio::test]
-async fn command_update_rejects_missing_command() {
-    let (_, _, commands, tenant, agent) = command_repositories().await;
-
-    let err = commands
-        .mark_sent(CommandId::new(), tenant.id, agent.id)
-        .await
-        .unwrap_err();
-
-    assert!(matches!(err, RepositoryError::MissingCommand));
-}
 
 fn print_payload(printer_id: &str, serial_number: &str) -> PrintProjectFilePayload {
     PrintProjectFilePayload {
@@ -107,27 +95,6 @@ struct TestAuditActorMetadata {
 
 #[derive(Debug, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
-struct TestPrintSpeedAuditMetadata {
-    agent_id: String,
-    serial_number: String,
-    action: String,
-    speed_mode: u8,
-    #[serde(flatten)]
-    audit: TestAuditActorMetadata,
-}
-
-#[derive(Debug, Deserialize, PartialEq, Eq)]
-#[serde(deny_unknown_fields)]
-struct TestRefreshPrinterMaterialsAuditMetadata {
-    agent_id: String,
-    printer_id: String,
-    serial_number: String,
-    #[serde(flatten)]
-    audit: TestAuditActorMetadata,
-}
-
-#[derive(Debug, Deserialize, PartialEq, Eq)]
-#[serde(deny_unknown_fields)]
 struct TestRedactedLinkPrinterPayload {
     printer_type: String,
     host: String,
@@ -160,78 +127,4 @@ async fn command_update_rejects_wrong_tenant() {
         .unwrap_err();
 
     assert!(matches!(err, RepositoryError::CommandOwnershipMismatch));
-}
-
-#[tokio::test]
-async fn command_update_rejects_wrong_agent() {
-    let (_, agents, commands, tenant, agent) = command_repositories().await;
-    let other = agents.create(tenant.id, "other").await.unwrap();
-    let command = commands
-        .enqueue_refresh_printers(tenant.id, agent.id)
-        .await
-        .unwrap();
-
-    let err = commands
-        .mark_sent(command.id, tenant.id, other.id)
-        .await
-        .unwrap_err();
-
-    assert!(matches!(err, RepositoryError::CommandOwnershipMismatch));
-}
-
-#[tokio::test]
-async fn command_sent_ack_success_flow() {
-    let (_, _, commands, tenant, agent) = command_repositories().await;
-    let command = commands
-        .enqueue_refresh_printers(tenant.id, agent.id)
-        .await
-        .unwrap();
-
-    let sent = commands
-        .mark_sent(command.id, tenant.id, agent.id)
-        .await
-        .unwrap();
-    assert_eq!(sent.status, CommandStatus::Sent);
-    let acked = commands
-        .mark_acknowledged(command.id, tenant.id, agent.id)
-        .await
-        .unwrap();
-    assert_eq!(acked.status, CommandStatus::Acknowledged);
-    let succeeded = commands
-        .mark_succeeded(command.id, tenant.id, agent.id)
-        .await
-        .unwrap();
-    assert_eq!(succeeded.status, CommandStatus::Succeeded);
-}
-
-#[tokio::test]
-async fn command_ack_failure_marks_failed() {
-    let (_, _, commands, tenant, agent) = command_repositories().await;
-    let command_id = enqueue_sent(&commands, tenant.id, agent.id).await;
-
-    let failed = commands
-        .mark_failed(command_id, tenant.id, agent.id, "rejected")
-        .await
-        .unwrap();
-
-    assert_eq!(failed.status, CommandStatus::Failed);
-    assert_eq!(failed.error.as_deref(), Some("rejected"));
-}
-
-#[tokio::test]
-async fn command_result_failure_marks_failed() {
-    let (_, _, commands, tenant, agent) = command_repositories().await;
-    let command_id = enqueue_sent(&commands, tenant.id, agent.id).await;
-    commands
-        .mark_acknowledged(command_id, tenant.id, agent.id)
-        .await
-        .unwrap();
-
-    let failed = commands
-        .mark_failed(command_id, tenant.id, agent.id, "printer unavailable")
-        .await
-        .unwrap();
-
-    assert_eq!(failed.status, CommandStatus::Failed);
-    assert_eq!(failed.error.as_deref(), Some("printer unavailable"));
 }

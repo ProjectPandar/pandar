@@ -45,14 +45,13 @@ use crate::machine::{
     runtime::test_support::TestRuntimeBambuMachineGateway,
 };
 use pandar_protocol::agent::v1::{
-    AmsLoadFilamentOperation, AmsRereadRfidOperation, AmsStartDryingOperation,
-    AmsStopDryingOperation, AmsUnloadFilamentOperation, Axis, AxisMovement, DeviceFeature,
+    AmsRereadRfidOperation, AmsStartDryingOperation, Axis, AxisMovement, DeviceFeature,
     DiagnosePrinter, DiscoverPrinters, GcodeLineOperation, HolderNozzleRefreshOperation,
     HomeOperation, HubCommand, LinkPrinter, MoveAxesOperation, NozzleHolderCtrlOperation,
     NozzleInfoConfirmOperation, PauseOperation, PrinterOperation as ProtoPrinterOperation,
-    RefreshPrinterMaterials, RefreshPrinters, SelectExtruderOperation, SetBedTemperatureOperation,
-    SetChamberLightOperation, SetChamberTemperatureOperation, SetFanSpeedOperation,
-    SetHotendTemperatureOperation, SetPrintSpeedOperation, ToggleLightOperation, printer_operation,
+    RefreshPrinterMaterials, RefreshPrinters, SelectExtruderOperation,
+    SetChamberTemperatureOperation, SetFanSpeedOperation, SetHotendTemperatureOperation,
+    SetPrintSpeedOperation, ToggleLightOperation, printer_operation,
 };
 
 fn refresh_command(command_id: String) -> HubCommand {

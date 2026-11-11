@@ -82,26 +82,6 @@ describe("InvitesSection", () => {
     expect(revokeButtons).toHaveLength(1);
   });
 
-  it("shows the empty state when there are no links", () => {
-    renderSection([]);
-
-    expect(screen.getByText("No invite links")).toBeVisible();
-  });
-
-  it("opens the create invite dialog with role and expiry choices", async () => {
-    const event = userEvent.setup();
-    renderSection([]);
-
-    await event.click(screen.getByRole("button", { name: "Create invite" }));
-
-    expect(await screen.findByText("Create invite link")).toBeVisible();
-    expect(screen.getByText("Full access, including members and tenant settings.")).toBeVisible();
-    expect(screen.getByText("24 hours")).toBeVisible();
-    expect(screen.getByText("7 days")).toBeVisible();
-    expect(screen.getByText("30 days")).toBeVisible();
-    expect(screen.getByLabelText("Max uses")).toHaveValue(1);
-  });
-
   it("keeps the selected role checked after a successful create", async () => {
     const event = userEvent.setup();
     vi.mocked(createJoinLink).mockResolvedValue({

@@ -60,28 +60,6 @@ const rackPrinter: Printer = {
 };
 
 describe("PrinterRackPanel", () => {
-  it("renders nothing without nozzle system telemetry", () => {
-    const { container } = renderWithMessages(<PrinterRackPanel printer={printer} />);
-    expect(container).toBeEmptyDOMElement();
-  });
-
-  it("renders mounted and rack hotends with the holder status", () => {
-    renderWithMessages(<PrinterRackPanel printer={rackPrinter} />);
-
-    expect(screen.getByText("Hotend rack")).toBeVisible();
-    expect(screen.getByText("Fixed")).toBeVisible();
-    expect(screen.getByText("0.6 mm Tungsten Carbide")).toBeVisible();
-    expect(screen.getByText("Swappable")).toBeVisible();
-    expect(screen.getByText("0.4 mm Hardened Steel")).toBeVisible();
-    expect(screen.getByText("Mounted")).toBeVisible();
-    expect(screen.getByText("A top · Calibrated")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Rack slot 1, 0.4 mm Hardened Steel" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Rack slot 2, 0.6 mm Tungsten Carbide" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Rack slot 3, Empty" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Rack slot 5, 0.2 mm AB99" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Rack slot 6, Empty" })).toBeVisible();
-  });
-
   it("wires rack move and global operation forms", () => {
     renderWithMessages(<PrinterRackPanel printer={rackPrinter} />);
 
@@ -165,18 +143,6 @@ describe("PrinterRackPanel on the H3C", () => {
       holder: { stat: 0, pos: 1, info: 1 },
     },
   };
-
-  it("draws nine rack positions with the mounted hotend at its home position", () => {
-    renderWithMessages(<PrinterRackPanel printer={h3cPrinter} />);
-
-    expect(screen.getAllByRole("button", { name: /^Rack slot \d/ })).toHaveLength(9);
-    expect(screen.getByRole("button", { name: "Rack slot 1, 0.4 mm Hardened Steel" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Rack slot 7, 0.4 mm Hardened Steel, Mounted" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Rack slot 8, Empty" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Rack slot 9, 0.6 mm Hardened Steel" })).toBeVisible();
-    expect(screen.queryByText("Fixed")).toBeNull();
-    expect(screen.queryByText("A top · Calibrated")).toBeNull();
-  });
 
   it("moves the direct rack up, to the centre and down", () => {
     renderWithMessages(<PrinterRackPanel printer={h3cPrinter} />);

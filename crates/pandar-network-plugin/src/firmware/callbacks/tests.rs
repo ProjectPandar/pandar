@@ -44,38 +44,6 @@ fn firmware_ffi_stop_wakes_callback_after_real_wait_entry() {
 }
 
 #[test]
-fn dequeued_callback_retains_captured_generation_after_cancellation() {
-    let queue = FirmwareCallbackQueue::new();
-    let token = queue
-        .push(
-            7,
-            FirmwareCallback {
-                dev_id: "SERIAL".into(),
-                tunnel: FirmwareTunnel::Cloud,
-                message: "callback".into(),
-            },
-        )
-        .unwrap();
-    let handoff = std::time::Instant::now();
-    assert!(queue.return_handoff_at(token, 1, 2, 3, handoff));
-
-    let ready = queue
-        .take_ready_at(handoff + Duration::from_millis(1_100))
-        .unwrap();
-    queue.cancel_generation(7);
-    let _ = queue.push(
-        8,
-        FirmwareCallback {
-            dev_id: "NEXT".into(),
-            tunnel: FirmwareTunnel::Cloud,
-            message: "next".into(),
-        },
-    );
-
-    assert_eq!(ready.generation, 7);
-}
-
-#[test]
 fn cancelling_old_generation_cannot_relabel_its_ready_callback() {
     let queue = FirmwareCallbackQueue::new();
     let old = queue

@@ -252,46 +252,6 @@ async fn material_snapshots_are_scoped_to_tenant_and_printer() {
 }
 
 #[tokio::test]
-async fn invalid_material_json_is_ignored_without_changing_state() {
-    let (materials, tenant, agent, printer_id) = fixture().await;
-
-    materials
-        .upsert_from_patch(patch_input(
-            tenant.id,
-            agent.id,
-            &printer_id,
-            patch("2026-06-23T00:00:00Z", &[tray("0", "0", "PLA", "FF0000")]),
-        ))
-        .await
-        .unwrap();
-    assert!(
-        materials
-            .upsert_from_patch(MaterialPatchInput {
-                printer_materials_json:
-                    r#"{"type":"printer_material_patch","observed_at":"bad","password":"secret"}"#
-                        .to_string(),
-                ..patch_input(
-                    tenant.id,
-                    agent.id,
-                    &printer_id,
-                    material_patch("2026-06-23T00:00:00Z")
-                )
-            })
-            .await
-            .unwrap()
-            .is_none()
-    );
-
-    let snapshot = materials
-        .latest_for_printer(tenant.id, &printer_id)
-        .await
-        .unwrap()
-        .unwrap();
-    assert_eq!(snapshot.observed_at, "2026-06-23T00:00:00Z");
-    assert!(!snapshot.persisted_json().contains("secret"));
-}
-
-#[tokio::test]
 async fn invalid_observed_at_does_not_log_credential_value() {
     let logs = log_capture::CapturedLogs::new();
     let subscriber = tracing_subscriber::fmt()

@@ -122,51 +122,6 @@ async fn profile_claims_are_extracted_from_valid_jwt() {
 }
 
 #[tokio::test]
-async fn display_name_falls_back_to_username_then_verified_email() {
-    let config = config_from_vars([(AUDIENCE_VAR, "api://pandar")]);
-    let verifier = JwtVerifier::static_jwks(config, jwks());
-    let username_token = token(TestClaims {
-        iss: "https://issuer.example.test",
-        sub: "user_username",
-        iat: jsonwebtoken::get_current_timestamp(),
-        exp: jsonwebtoken::get_current_timestamp() + 300,
-        aud: Some(AudienceClaimForTest::One("api://pandar".to_owned())),
-        scope: None,
-        scp: Vec::new(),
-        email: Some("username@example.test"),
-        email_verified: Some(true),
-        name: Some(" "),
-        preferred_username: Some("alice"),
-    });
-    let email_token = token(TestClaims {
-        iss: "https://issuer.example.test",
-        sub: "user_email",
-        iat: jsonwebtoken::get_current_timestamp(),
-        exp: jsonwebtoken::get_current_timestamp() + 300,
-        aud: Some(AudienceClaimForTest::One("api://pandar".to_owned())),
-        scope: None,
-        scp: Vec::new(),
-        email: Some("alice@example.test"),
-        email_verified: Some(true),
-        name: None,
-        preferred_username: None,
-    });
-
-    assert_eq!(
-        verifier
-            .verify(&username_token)
-            .await
-            .unwrap()
-            .display_name(),
-        "alice"
-    );
-    assert_eq!(
-        verifier.verify(&email_token).await.unwrap().display_name(),
-        "alice@example.test"
-    );
-}
-
-#[tokio::test]
 async fn verification_rejects_missing_audience_and_excessive_lifetime() {
     let verifier =
         JwtVerifier::static_jwks(config_from_vars([(AUDIENCE_VAR, "api://pandar")]), jwks());

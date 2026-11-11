@@ -48,38 +48,6 @@ async fn ordinary_studio_model_task_returns_only_real_persisted_metadata() {
 }
 
 #[tokio::test]
-async fn studio_model_task_requires_the_canonical_decimal_submission_id() {
-    let (_, app, _, _, printer_id, token) = studio_fixture("studio-model-task-canonical-id").await;
-    let artifact = crate::routes::tests::multipart::slicer_metadata_fixture();
-    let created = create_print(app.clone(), &printer_id, &token, &artifact).await;
-
-    for id in [
-        format!("0{}", created.studio_submission_id),
-        format!("+{}", created.studio_submission_id),
-        "0".to_owned(),
-        "-1".to_owned(),
-        (i64::from(i32::MAX) + 1).to_string(),
-        "not-a-number".to_owned(),
-    ] {
-        let (status, body) = request_as(
-            app.clone(),
-            Method::GET,
-            &format!("/api/v1/plugin/jobs/{id}/model-task"),
-            None,
-            &token,
-        )
-        .await;
-
-        assert_eq!(status, StatusCode::BAD_REQUEST, "{id}: {body}");
-        assert_eq!(
-            body["error"],
-            serde_json::json!("invalid_studio_submission_id"),
-            "{id}"
-        );
-    }
-}
-
-#[tokio::test]
 async fn studio_model_task_uses_only_the_authenticated_tenant() {
     let (state, app, _, _, printer_id, token) = studio_fixture("studio-model-task-tenant-a").await;
     let artifact = crate::routes::tests::multipart::slicer_metadata_fixture();

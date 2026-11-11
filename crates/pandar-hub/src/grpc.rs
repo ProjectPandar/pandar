@@ -12,7 +12,7 @@ use crate::grpc::printer_snapshots::handle_snapshot;
 use camera_events::{handle_camera_event, parse_camera_hello};
 use inbound::spawn_inbound_handler;
 #[cfg(test)]
-use inbound::{disconnect_session, handle_ack, handle_event, handle_result};
+use inbound::{disconnect_session, handle_event, handle_result};
 
 use crate::{
     AppState,

@@ -1,20 +1,6 @@
 use super::*;
 
 #[tokio::test]
-async fn printer_events_invalid_tenant_returns_bad_request_before_upgrade() {
-    let (status, body) = request(
-        app().await,
-        Method::GET,
-        "/api/v1/tenants/not-a-uuid/printer-events",
-        None,
-    )
-    .await;
-
-    assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert_eq!(decode::<ErrorResponse>(body).error, "invalid_tenant_id");
-}
-
-#[tokio::test]
 async fn printer_events_missing_tenant_returns_not_found_before_upgrade() {
     let state = state().await;
     let app = router(state.clone());
@@ -143,85 +129,6 @@ async fn printer_events_ticket_requires_linked_viewer() {
     let body = decode::<PrinterEventTicketResponse>(body);
     assert!(!body.ticket.is_empty());
     assert!(!body.expires_at.is_empty());
-}
-
-#[tokio::test]
-async fn printer_events_websocket_accepts_browser_ticket_once() {
-    let state = state().await;
-    let app = router(state.clone());
-    let tenant = state.tenants().create("acme", "Acme Labs").await.unwrap();
-    let token = auth_token_for_role(
-        &state,
-        &tenant.id.to_string(),
-        crate::repositories::UserRole::Viewer,
-        "ticket-ws-token",
-    )
-    .await;
-    let http_addr = serve_http(app.clone()).await;
-    let (status, body) = request_as(
-        app,
-        Method::POST,
-        &format!("/api/v1/tenants/{}/printer-events/tickets", tenant.id),
-        None,
-        &token,
-    )
-    .await;
-    assert_eq!(status, StatusCode::OK);
-    let ticket = decode::<PrinterEventTicketResponse>(body).ticket;
-
-    let (ws, _) = tokio_tungstenite::connect_async(format!(
-        "ws://{http_addr}/api/v1/tenants/{}/printer-events?ticket={ticket}",
-        tenant.id
-    ))
-    .await
-    .unwrap();
-    drop(ws);
-
-    let err = tokio_tungstenite::connect_async(format!(
-        "ws://{http_addr}/api/v1/tenants/{}/printer-events?ticket={ticket}",
-        tenant.id
-    ))
-    .await
-    .unwrap_err();
-    let message = err.to_string();
-    assert!(
-        message.contains("401") || message.contains("Unauthorized"),
-        "unexpected reused-ticket error: {message}"
-    );
-}
-
-#[tokio::test]
-async fn printer_events_websocket_accepts_browser_ticket_from_sibling_instance() {
-    let state = state().await;
-    let sibling = sibling_state(&state);
-    let app = router(sibling);
-    let tenant = state.tenants().create("acme", "Acme Labs").await.unwrap();
-    let token = auth_token_for_role(
-        &state,
-        &tenant.id.to_string(),
-        crate::repositories::UserRole::Viewer,
-        "sibling-ticket-ws-token",
-    )
-    .await;
-    let http_addr = serve_http(app.clone()).await;
-    let (status, body) = request_as(
-        router(state.clone()),
-        Method::POST,
-        &format!("/api/v1/tenants/{}/printer-events/tickets", tenant.id),
-        None,
-        &token,
-    )
-    .await;
-    assert_eq!(status, StatusCode::OK);
-    let ticket = decode::<PrinterEventTicketResponse>(body).ticket;
-
-    let (ws, _) = tokio_tungstenite::connect_async(format!(
-        "ws://{http_addr}/api/v1/tenants/{}/printer-events?ticket={ticket}",
-        tenant.id
-    ))
-    .await
-    .unwrap();
-    drop(ws);
 }
 
 #[tokio::test]

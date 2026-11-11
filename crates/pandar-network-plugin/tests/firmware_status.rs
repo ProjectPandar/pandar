@@ -41,10 +41,6 @@ test_case!(
     generation
 );
 test_case!(
-    fresh_current_after_invalidation_waits_for_one_exact_reset,
-    generation
-);
-test_case!(
     delayed_lower_revisions_do_not_overwrite_newer_current_state,
     generation
 );
@@ -52,16 +48,4 @@ test_case!(
     delayed_unseen_session_does_not_overwrite_newer_observation,
     generation
 );
-test_case!(
-    delayed_same_identity_observations_cannot_undo_invalidation_but_newer_equal_can_recover,
-    generation
-);
-test_case!(
-    malformed_higher_sequence_does_not_block_lower_valid_typed_batch,
-    validation
-);
 test_case!(never_populated_marker_does_not_fabricate_reset, validation);
-test_case!(
-    firmware_status_rejects_malformed_typed_batch_member_without_mutation,
-    validation
-);

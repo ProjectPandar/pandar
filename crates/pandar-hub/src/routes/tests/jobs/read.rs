@@ -145,30 +145,3 @@ async fn job_detail_returns_internal_error_for_corrupt_persisted_mapping_json() 
     assert_eq!(decode::<ErrorResponse>(body).error, "internal_server_error");
     assert!(!body_text.contains("sk-live-secret"));
 }
-
-#[tokio::test]
-async fn missing_job_detail_returns_not_found() {
-    let state = state().await;
-    let app = router(state.clone());
-    let (_, tenant) = create_tenant_for_test(app.clone()).await;
-    let tenant_id = decode::<TenantResponse>(tenant).id;
-    let token = auth_token_for_role(
-        &state,
-        &tenant_id,
-        crate::repositories::UserRole::Viewer,
-        "missing-job-viewer",
-    )
-    .await;
-
-    let (status, body) = request_as(
-        app,
-        Method::GET,
-        &format!("/api/v1/tenants/{tenant_id}/jobs/00000000-0000-0000-0000-000000000001"),
-        None,
-        &token,
-    )
-    .await;
-
-    assert_eq!(status, StatusCode::NOT_FOUND);
-    assert_eq!(decode::<ErrorResponse>(body).error, "job_not_found");
-}

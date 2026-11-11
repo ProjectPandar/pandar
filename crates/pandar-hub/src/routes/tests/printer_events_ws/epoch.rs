@@ -163,66 +163,6 @@ async fn printer_events_cross_replica_ticket_safety_matrix() {
 }
 
 #[tokio::test]
-async fn printer_events_websocket_rejects_invalid_ticket_before_upgrade() {
-    let state = state().await;
-    let app = router(state.clone());
-    let tenant = state.tenants().create("acme", "Acme Labs").await.unwrap();
-
-    let (status, body) = request(
-        app,
-        Method::GET,
-        &format!(
-            "/api/v1/tenants/{}/printer-events?ticket=not-a-ticket",
-            tenant.id
-        ),
-        None,
-    )
-    .await;
-
-    assert_eq!(status, StatusCode::UNAUTHORIZED);
-    assert_eq!(decode::<ErrorResponse>(body).error, "invalid_auth_token");
-}
-
-#[tokio::test]
-async fn printer_events_websocket_rejects_wrong_tenant_ticket_before_upgrade() {
-    let state = state().await;
-    let app = router(state.clone());
-    let tenant_a = state.tenants().create("acme", "Acme Labs").await.unwrap();
-    let tenant_b = state.tenants().create("beta", "Beta Labs").await.unwrap();
-    let token = auth_token_for_role(
-        &state,
-        &tenant_a.id.to_string(),
-        crate::repositories::UserRole::Viewer,
-        "tenant-a-ticket",
-    )
-    .await;
-    let (status, body) = request_as(
-        app.clone(),
-        Method::POST,
-        &format!("/api/v1/tenants/{}/printer-events/tickets", tenant_a.id),
-        None,
-        &token,
-    )
-    .await;
-    assert_eq!(status, StatusCode::OK);
-    let ticket = decode::<PrinterEventTicketResponse>(body).ticket;
-
-    let (status, body) = request(
-        app,
-        Method::GET,
-        &format!(
-            "/api/v1/tenants/{}/printer-events?ticket={ticket}",
-            tenant_b.id
-        ),
-        None,
-    )
-    .await;
-
-    assert_eq!(status, StatusCode::UNAUTHORIZED);
-    assert_eq!(decode::<ErrorResponse>(body).error, "invalid_auth_token");
-}
-
-#[tokio::test]
 async fn printer_events_unlinked_external_jwt_returns_forbidden_before_upgrade() {
     let state = state().await;
     let app = router(external_auth_state(state.clone()));

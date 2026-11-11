@@ -330,50 +330,6 @@ async fn grpc_dispatch_to_online_agent_yields_refresh_and_marks_sent() {
     );
 }
 
-#[tokio::test]
-async fn grpc_ack_and_result_update_command_status() {
-    let state = fixture_state().await;
-    let (tenant_id, agent_id) = tenant_agent(&state).await;
-    let (mut stream, _sender) = connect_live(&state, vec![hello_event(tenant_id, agent_id)])
-        .await
-        .unwrap();
-    let command = state
-        .commands()
-        .enqueue_refresh_printers(tenant_id, agent_id)
-        .await
-        .unwrap();
-    state.sessions().wake_local_agent(tenant_id, agent_id).await;
-    let _ = stream.next().await.unwrap().unwrap();
-
-    handle_ack(
-        &state,
-        tenant_id,
-        agent_id,
-        CommandAck {
-            command_id: command.id.to_string(),
-            accepted: true,
-            error: String::new(),
-        },
-    )
-    .await
-    .unwrap();
-
-    handle_result(
-        &state,
-        tenant_id,
-        agent_id,
-        CommandResult {
-            command_id: command.id.to_string(),
-            success: true,
-            error: String::new(),
-            result_json: String::new(),
-            firmware_result: None,
-        },
-    )
-    .await
-    .unwrap();
-}
-
 async fn fixture_state() -> AppState {
     AppState::sqlite_for_tests().await.unwrap()
 }

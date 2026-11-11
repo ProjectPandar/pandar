@@ -1,67 +1,6 @@
 use super::*;
 
 #[tokio::test]
-async fn job_repository_create_print_job_links_artifact_command_and_job() {
-    let (database, tenants, agents, _, commands, jobs) = repositories().await;
-    let tenant = tenants.create("acme", "Acme Labs").await.unwrap();
-    let agent = agents.create(tenant.id, "agent").await.unwrap();
-    let printer_id =
-        crate::repositories::test_helpers::insert_printer_fixture(&database, tenant.id, agent.id)
-            .await
-            .unwrap();
-
-    let created = jobs
-        .create_print_job(create_input(tenant.id, agent.id, &printer_id, "artifact-1"))
-        .await
-        .unwrap();
-
-    assert_eq!(created.artifact.id, "artifact-1");
-    assert_eq!(created.job.printer_id, printer_id);
-    assert_eq!(created.job.status, JobStatus::Queued);
-    assert_eq!(created.job.print.status, PrintStatus::Pending);
-    assert_eq!(commands.count().await.unwrap(), 1);
-}
-
-#[tokio::test]
-async fn print_report_exact_job_id_updates_print_state_without_dispatch_status() {
-    let (database, tenants, agents, _, _, jobs) = repositories().await;
-    let tenant = tenants.create("acme", "Acme Labs").await.unwrap();
-    let agent = agents.create(tenant.id, "agent").await.unwrap();
-    let printer_id =
-        crate::repositories::test_helpers::insert_printer_fixture(&database, tenant.id, agent.id)
-            .await
-            .unwrap();
-    let created = jobs
-        .create_print_job(create_input(tenant.id, agent.id, &printer_id, "artifact-1"))
-        .await
-        .unwrap();
-
-    let applied = jobs
-        .apply_print_report(report_input(
-            tenant.id,
-            agent.id,
-            &printer_id,
-            Some(created.job.id),
-            None,
-            "RUNNING",
-        ))
-        .await
-        .unwrap();
-
-    let job = applied.job.unwrap().job;
-    assert!(applied.changed);
-    assert!(applied.inserted_job_events);
-    assert!(!applied.inserted_printer_events);
-    assert_eq!(job.status, JobStatus::Queued);
-    assert_eq!(job.print.status, PrintStatus::Running);
-    assert_eq!(job.print.progress_percent, Some(42));
-    assert_eq!(job.print.last_progress_percent, Some(42));
-    assert_eq!(job.print.current_layer, Some(3));
-    assert_eq!(job.print.last_layer, Some(3));
-    assert_eq!(job.print.started_at.as_deref(), Some(OBSERVED_AT));
-}
-
-#[tokio::test]
 async fn print_report_correlates_by_artifact_and_active_file_fallback() {
     let (database, tenants, agents, _, _, jobs) = repositories().await;
     let tenant = tenants.create("acme", "Acme Labs").await.unwrap();

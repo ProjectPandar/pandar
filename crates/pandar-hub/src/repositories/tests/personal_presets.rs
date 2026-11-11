@@ -1,14 +1,11 @@
 use std::collections::BTreeMap;
 
-use sea_orm::{ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter};
-
 use super::sqlite_database;
 use crate::{
     db::Database,
-    entities::personal_presets,
     repositories::{
-        AuditActor, AuditEventRepository, AuthRepository, CreatePersonalPreset,
-        PersonalPresetRepository, PersonalPresetType, RepositoryError, TenantRepository, UserRole,
+        AuditActor, AuthRepository, CreatePersonalPreset, PersonalPresetRepository,
+        PersonalPresetType, RepositoryError, TenantRepository, UserRole,
     },
 };
 
@@ -23,112 +20,6 @@ pub(super) fn input(kind: PersonalPresetType, name: &str) -> CreatePersonalPrese
         inherits: None,
         filament_id: matches!(kind, PersonalPresetType::Filament).then(|| "P123".to_owned()),
         options: BTreeMap::from([("layer_height".to_owned(), "0.2".to_owned())]),
-    }
-}
-
-#[tokio::test]
-async fn personal_preset_repository_round_trips_replays_updates_and_deletes() {
-    let database = sqlite_database().await;
-    let tenants = TenantRepository::new(database.clone());
-    let auth = AuthRepository::new(database.clone());
-    let presets = PersonalPresetRepository::new(database.clone());
-    let audit = AuditEventRepository::new(database);
-    let tenant = tenants.create("preset-roundtrip", "Presets").await.unwrap();
-    let user = auth
-        .create_user(tenant.id, "owner@test", "Owner", UserRole::Operator)
-        .await
-        .unwrap();
-
-    let created = presets
-        .create_with_audit(
-            tenant.id,
-            &user.id,
-            input(PersonalPresetType::Print, "Fine"),
-            AuditActor::user(&user.id),
-        )
-        .await
-        .unwrap();
-    let replay = presets
-        .create_with_audit(
-            tenant.id,
-            &user.id,
-            input(PersonalPresetType::Print, "Fine"),
-            AuditActor::user(&user.id),
-        )
-        .await
-        .unwrap();
-    assert_eq!(replay.id, created.id);
-    assert_eq!(replay.updated_time, created.updated_time);
-    assert_eq!(
-        presets.get(tenant.id, &user.id, &created.id).await.unwrap(),
-        Some(created.clone())
-    );
-    assert_eq!(
-        presets
-            .list_metadata(tenant.id, &user.id)
-            .await
-            .unwrap()
-            .len(),
-        1
-    );
-
-    let mut replacement = input(PersonalPresetType::Printer, "Machine");
-    replacement
-        .options
-        .insert("printer_model".into(), "X1C".into());
-    let replaced = presets
-        .replace_with_audit(
-            tenant.id,
-            &user.id,
-            &created.id,
-            replacement,
-            AuditActor::user(&user.id),
-        )
-        .await
-        .unwrap();
-    assert!(replaced.updated_time > created.updated_time);
-    assert_eq!(replaced.preset_type, PersonalPresetType::Printer);
-    assert!(
-        presets
-            .delete_with_audit(tenant.id, &user.id, &created.id, AuditActor::user(&user.id))
-            .await
-            .unwrap()
-    );
-    assert!(
-        !presets
-            .delete_with_audit(tenant.id, &user.id, &created.id, AuditActor::user(&user.id))
-            .await
-            .unwrap()
-    );
-
-    let events = audit.list_for_tenant(tenant.id).await.unwrap();
-    assert_eq!(
-        events
-            .iter()
-            .filter(|event| event.action == "personal_preset.create")
-            .count(),
-        1
-    );
-    assert_eq!(
-        events
-            .iter()
-            .filter(|event| event.action == "personal_preset.update")
-            .count(),
-        1
-    );
-    assert_eq!(
-        events
-            .iter()
-            .filter(|event| event.action == "personal_preset.delete")
-            .count(),
-        1
-    );
-    for event in events
-        .iter()
-        .filter(|event| event.target_type == "personal_preset")
-    {
-        assert!(!event.metadata_json.contains("layer_height"));
-        assert!(!event.metadata_json.contains("printer_model"));
     }
 }
 

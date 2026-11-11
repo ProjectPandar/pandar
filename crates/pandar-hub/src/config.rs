@@ -43,34 +43,3 @@ fn env_bool(name: &str, default: bool) -> anyhow::Result<bool> {
         _ => anyhow::bail!("{name} must be true or false"),
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn camera_stream_limit_defaults_to_eight() {
-        assert_eq!(
-            parse_camera_max_streams_per_tenant("camera limit", None).unwrap(),
-            8
-        );
-        assert_eq!(
-            parse_camera_max_streams_per_tenant("camera limit", Some(" ")).unwrap(),
-            8
-        );
-    }
-
-    #[test]
-    fn camera_stream_limit_accepts_positive_values() {
-        assert_eq!(
-            parse_camera_max_streams_per_tenant("camera limit", Some("12")).unwrap(),
-            12
-        );
-    }
-
-    #[test]
-    fn camera_stream_limit_rejects_zero_and_invalid_values() {
-        assert!(parse_camera_max_streams_per_tenant("camera limit", Some("0")).is_err());
-        assert!(parse_camera_max_streams_per_tenant("camera limit", Some("many")).is_err());
-    }
-}

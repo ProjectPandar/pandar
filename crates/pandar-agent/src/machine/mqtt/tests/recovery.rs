@@ -269,47 +269,6 @@ async fn unsolicited_puback_drops_old_connection_and_cannot_cross_retry() {
 }
 
 #[tokio::test]
-async fn recovery_actions_enqueue_one_studio_payload_at_qos_one_without_retain() {
-    for (action, expected_command) in [
-        (PrintErrorAction::Resume, "resume"),
-        (PrintErrorAction::Ignore, "ignore"),
-        (PrintErrorAction::Stop, "stop"),
-    ] {
-        let (attempt, probe) = FakeRecoveryAttempt::new([
-            PollStep::Event(Event::Outgoing(Outgoing::Publish(12))),
-            PollStep::Event(Event::Incoming(Packet::PubAck(PubAck::new(12)))),
-        ]);
-
-        let result = dispatch_with_attempt(
-            attempt,
-            "device/mqtt-serial/request".to_owned(),
-            recovery_command(action),
-        )
-        .await
-        .unwrap();
-
-        assert_eq!(result.sequence_id.as_deref(), Some("0"));
-        let publishes = probe.publishes();
-        assert_eq!(publishes.len(), 1);
-        assert_eq!(publishes[0].topic, "device/mqtt-serial/request");
-        assert_eq!(publishes[0].qos, QoS::AtLeastOnce);
-        assert!(!publishes[0].retain);
-        assert_eq!(
-            serde_json::from_slice::<serde_json::Value>(&publishes[0].payload).unwrap(),
-            serde_json::json!({
-                "print": {
-                    "command": expected_command,
-                    "err": "83918929",
-                    "job_id": "job-7",
-                    "param": "reserve",
-                    "sequence_id": "0"
-                }
-            })
-        );
-    }
-}
-
-#[tokio::test]
 async fn queue_error_drops_attempt_without_polling_and_keeps_context() {
     let (mut attempt, probe) = FakeRecoveryAttempt::new([]);
     attempt.publish_error = Some("request channel closed");

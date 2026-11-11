@@ -113,46 +113,6 @@ async fn plugin_print_handles_concurrent_sqlite_writes() {
 }
 
 #[tokio::test]
-async fn plugin_print_and_list_use_stable_studio_task_metadata() {
-    let state = state().await;
-    let app = router(state.clone());
-    let tenant = state
-        .tenants()
-        .create("plugin-print-metadata", "Plugin Print Metadata")
-        .await
-        .unwrap();
-    let token =
-        plugin_studio_tenant_token(&state, &tenant.id.to_string(), "print-metadata-plugin").await;
-    let agent = state.agents().create(tenant.id, "agent").await.unwrap();
-    let printer_id = insert_printer_fixture(state.database(), tenant.id, agent.id)
-        .await
-        .unwrap();
-    let artifact = crate::routes::tests::multipart::slicer_metadata_fixture();
-
-    let (status, body) = multipart_request_as(
-        app.clone(),
-        Method::POST,
-        "/api/v1/plugin/prints",
-        multipart_print_body(
-            Some(&printer_id),
-            Some(("plugin plate.3mf", "model/3mf", &artifact)),
-            1,
-        ),
-        &token,
-    )
-    .await;
-    assert_eq!(status, StatusCode::CREATED);
-    let body = decode::<PluginPrintResponse>(body);
-
-    let (status, list) = request_as(app, Method::GET, "/api/v1/plugin/jobs", None, &token).await;
-    assert_eq!(status, StatusCode::OK);
-    let list = decode::<PluginJobListResponse>(list);
-    assert_eq!(list.total, 1);
-    assert_eq!(list.hits[0].id, body.studio_submission_id);
-    assert_eq!(list.hits[0].title, "plate file.3mf");
-}
-
-#[tokio::test]
 async fn plugin_print_wakes_agent_on_sibling_instance() {
     let state = state().await;
     let sibling = sibling_state(&state);

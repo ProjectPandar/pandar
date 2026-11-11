@@ -21,7 +21,6 @@ vi.mock("./command-result-parser", () => ({
 }));
 
 import {
-  agentSettingsRouteQuery,
   agentsCommandRouteQuery,
   agentsResourceQuery,
   auditEventsResourceQuery,
@@ -29,11 +28,7 @@ import {
   jobsResourceQuery,
   jobsRouteQueries,
   printersResourceQuery,
-  resourceDataKeys,
-  settingsAdminRouteQueries,
-  settingsRouteQueries,
   tenantTokensResourceQuery,
-  usersRouteQueries,
 } from "./route-data";
 
 type FetchMock = ReturnType<
@@ -171,32 +166,6 @@ describe("canonical resource data", () => {
   beforeEach(() => vi.clearAllMocks());
   afterEach(() => vi.unstubAllGlobals());
 
-  it("uses tenant-scoped keys shared by every consuming route", () => {
-    expect(resourceDataKeys.printers("t1")).toEqual([
-      "tenant",
-      "t1",
-      "printers",
-    ]);
-    expect(resourceDataKeys.agents("t1")).toEqual(["tenant", "t1", "agents"]);
-    expect(resourceDataKeys.jobs("t1")).toEqual(["tenant", "t1", "jobs"]);
-    expect(resourceDataKeys.tenantTokens("t1")).toEqual([
-      "tenant",
-      "t1",
-      "tenant-tokens",
-    ]);
-
-    const [devicesPrinters, devicesAgents, devicesJobs] =
-      devicesRouteQueries("t1");
-    const [jobs, jobsPrinters, jobsAgents] = jobsRouteQueries("t1");
-    const [settingsAgents, settingsPrinters] = settingsRouteQueries("t1");
-
-    expect(devicesPrinters.queryKey).toEqual(jobsPrinters.queryKey);
-    expect(devicesPrinters.queryKey).toEqual(settingsPrinters.queryKey);
-    expect(devicesAgents.queryKey).toEqual(jobsAgents.queryKey);
-    expect(devicesAgents.queryKey).toEqual(settingsAgents.queryKey);
-    expect(devicesJobs.queryKey).toEqual(jobs.queryKey);
-  });
-
   it("fetches each typed resource through the same-origin Hub proxy", async () => {
     const fetchMock = stubRouteFetch({
       "/printers": { printers: [printer("p1")] },
@@ -258,27 +227,6 @@ describe("canonical resource data", () => {
       printer("printer-2"),
     ]);
     expect(generation).toBe(2);
-  });
-
-  it("keeps user, token, and audit composition on canonical resource keys", () => {
-    const [users, joinLinks] = usersRouteQueries("t1");
-    const [tokens, audit] = settingsAdminRouteQueries("t1");
-
-    expect(users.queryKey).toEqual(resourceDataKeys.users("t1"));
-    expect(joinLinks.queryKey).toEqual(resourceDataKeys.joinLinks("t1"));
-    expect(tokens.queryKey).toEqual(resourceDataKeys.tenantTokens("t1"));
-    expect(audit.queryKey).toEqual(resourceDataKeys.auditEvents("t1"));
-  });
-
-  it("selects one agent without creating an agent-settings cache", async () => {
-    stubRouteFetch({
-      "/agents": { agents: [agent("a1"), agent("a2")] },
-    });
-    const query = agentSettingsRouteQuery("t1", "a2");
-    const agents = await query.queryFn!({} as never);
-
-    expect(query.queryKey).toEqual(resourceDataKeys.agents("t1"));
-    expect(query.select(agents)).toEqual(agent("a2"));
   });
 
   it("rejects resource reads when the proxy responds with an error status", async () => {

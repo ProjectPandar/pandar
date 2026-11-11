@@ -75,25 +75,6 @@ fn printer_telemetry_keeps_legacy_lr_projection_when_switch_is_absent() {
 }
 
 #[test]
-fn printer_telemetry_does_not_invent_aux_when_raw_state_is_missing() {
-    let telemetry =
-        telemetry_json(r#"{"materials":{"filament_switch_installed":true,"ams_units":[]}}"#);
-
-    assert!(telemetry.get("aux").is_none());
-}
-
-#[test]
-fn printer_telemetry_preserves_explicit_empty_studio_flags() {
-    let telemetry = telemetry_json(
-        r#"{"materials":{"cfg":"","aux":"","stat":"","filament_switch_installed":false,"ams_units":[]}}"#,
-    );
-
-    assert_eq!(telemetry["cfg"], serde_json::json!(""));
-    assert_eq!(telemetry["aux"], serde_json::json!(""));
-    assert_eq!(telemetry["stat"], serde_json::json!(""));
-}
-
-#[test]
 fn printer_telemetry_synthesizes_switch_binding_for_units_without_raw_info() {
     let telemetry = telemetry_json(
         r#"{"materials":{"aux":"20000000","filament_switch_installed":true,"ams_units":[{"unit_id":"0","toolhead":"LR","trays":[{"tray_id":"0"}]},{"unit_id":"1","toolhead":"LR","trays":[{"tray_id":"0"}]}]}}"#,

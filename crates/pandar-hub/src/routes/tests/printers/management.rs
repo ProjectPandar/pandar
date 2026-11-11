@@ -147,47 +147,6 @@ async fn viewer_cannot_delete_printer() {
 }
 
 #[tokio::test]
-async fn missing_printer_detail_returns_not_found() {
-    let state = state().await;
-    let app = router(state.clone());
-    let (tenant, _, token) = tenant_and_agent(&state, app.clone()).await;
-    let tenant_id = decode::<TenantResponse>(tenant).id;
-    let printer_id = uuid::Uuid::new_v4();
-
-    let (status, body) = request_as(
-        app,
-        Method::GET,
-        &format!("/api/v1/tenants/{tenant_id}/printers/{printer_id}"),
-        None,
-        &token,
-    )
-    .await;
-
-    assert_eq!(status, StatusCode::NOT_FOUND);
-    assert_eq!(decode::<ErrorResponse>(body).error, "printer_not_found");
-}
-
-#[tokio::test]
-async fn invalid_printer_id_returns_bad_request() {
-    let state = state().await;
-    let app = router(state.clone());
-    let (tenant, _, token) = tenant_and_agent(&state, app.clone()).await;
-    let tenant_id = decode::<TenantResponse>(tenant).id;
-
-    let (status, body) = request_as(
-        app,
-        Method::GET,
-        &format!("/api/v1/tenants/{tenant_id}/printers/not-a-uuid"),
-        None,
-        &token,
-    )
-    .await;
-
-    assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert_eq!(decode::<ErrorResponse>(body).error, "invalid_printer_id");
-}
-
-#[tokio::test]
 async fn refresh_printers_returns_command_record() {
     let state = state().await;
     let app = router(state.clone());

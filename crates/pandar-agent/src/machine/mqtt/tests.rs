@@ -3,7 +3,6 @@ use std::{sync::atomic::AtomicU32, time::Duration};
 use pandar_core::PrintCalibrationMode;
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc;
-use tokio::time::timeout;
 
 use super::*;
 use crate::AgentConfig;

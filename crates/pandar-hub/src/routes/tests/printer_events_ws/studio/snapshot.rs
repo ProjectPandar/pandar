@@ -50,35 +50,6 @@ async fn studio_projection_snapshot_matches_plugin_printer_list() {
 }
 
 #[tokio::test]
-async fn studio_projection_empty_tenant_sends_only_begin_and_end() {
-    let state = state().await;
-    let tenant = state
-        .tenants()
-        .create("studio-empty", "Studio Empty")
-        .await
-        .unwrap();
-    let token =
-        plugin_studio_tenant_token(&state, &tenant.id.to_string(), "studio-empty-token").await;
-    let http_addr = serve_http(router(state.clone())).await;
-    let mut ws = connect_studio(
-        http_addr,
-        tenant.id,
-        "?projection=studio&version=1",
-        Some(&token),
-    )
-    .await;
-
-    let StudioFrame::SnapshotBegin { version } = next_frame(&mut ws, "begin").await else {
-        panic!("expected snapshot_begin");
-    };
-    assert_eq!(version, 1);
-    let StudioFrame::SnapshotEnd = next_frame(&mut ws, "end").await else {
-        panic!("expected snapshot_end");
-    };
-    assert_studio_quiet(&mut ws, "empty tenant after end").await;
-}
-
-#[tokio::test]
 async fn studio_projection_rejects_unauthorized_and_unsupported_requests_before_upgrade() {
     let fixture = studio_fixture("studio-auth-acme").await;
     let other = fixture

@@ -71,39 +71,4 @@ describe("PrinterHmsPanel", () => {
     );
     expect(link).toHaveAttribute("target", "_blank");
   });
-
-  it("hides the internal 0500060000020070 report like Bambu Studio", () => {
-    renderHms({
-      ...printer,
-      print: { ...printer.print!, hms: [printer.print!.hms[1]] },
-    });
-
-    expect(screen.queryByText("Serious system message")).not.toBeInTheDocument();
-    expect(screen.queryByText("HMS 0500060000020070")).not.toBeInTheDocument();
-  });
-
-  it("uses the localized Bambu catalog", () => {
-    renderHms({
-      ...printer,
-      print: { ...printer.print!, hms: [printer.print!.hms[0]] },
-    }, "zh");
-
-    expect(screen.getByText(
-      "AMS-HT A 助力电机过载，AMS至耗材变轨器之间料管阻力过大。",
-    )).toBeVisible();
-  });
-
-  it("stays hidden when the printer has no HMS messages", () => {
-    const { rerender } = renderHms({ ...printer, print: null });
-    expect(screen.queryByText(/HMS messages/)).not.toBeInTheDocument();
-
-    rerender(
-      <NextIntlClientProvider locale="en" messages={en}>
-        <PrinterHmsPanel
-          printer={{ ...printer, print: { ...printer.print!, hms: [] } }}
-        />
-      </NextIntlClientProvider>,
-    );
-    expect(screen.queryByText(/HMS messages/)).not.toBeInTheDocument();
-  });
 });

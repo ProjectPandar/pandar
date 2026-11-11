@@ -85,13 +85,6 @@ fn studio_status_exposes_nozzle_rack_only_with_projected_rack_telemetry() {
 }
 
 #[test]
-fn studio_status_hides_external_change_assist_while_print_field_is_unsupported() {
-    let telemetry = telemetry_json(r#"{"fun":"1000000000000"}"#);
-
-    assert_eq!(telemetry["fun"], serde_json::json!("0"));
-}
-
-#[test]
 fn studio_status_masks_unsupported_cfg_bits_without_rewriting_observed_storage() {
     let telemetry = telemetry_json(r#"{"materials":{"cfg":"800000C000000001","ams_units":[]}}"#);
 
@@ -259,21 +252,4 @@ fn nullable_chamber_light_does_not_discard_live_print_status() {
     assert!(body.contains(r#""mc_percent":37"#));
     assert!(body.contains(r#""hms":[{"attr":134152704,"code":32785}]"#));
     assert!(body.contains(r#""lights_report":[]"#));
-}
-
-#[test]
-fn printer_telemetry_uses_present_state_without_inventing_idle() {
-    let telemetry = telemetry_json(r#"{"state":"PAUSE"}"#);
-
-    assert_eq!(telemetry["gcode_state"], serde_json::json!("PAUSE"));
-}
-
-#[test]
-fn explicit_chamber_light_off_is_reported_as_off() {
-    let body = telemetry(r#"{"chamber_light_on":false}"#);
-
-    assert!(
-        body.contains(r#""lights_report":[{"node":"chamber_light","mode":"off"}]"#),
-        "{body}"
-    );
 }

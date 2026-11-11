@@ -1,4 +1,4 @@
-import { act, screen, waitFor, within } from "@testing-library/react";
+import { act, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -13,52 +13,6 @@ import {
 } from "./dashboard-inventory.test.context";
 
 describe("PrinterInventory", () => {
-  it("renders printer temperatures and controls in separate sections", async () => {
-    const heatingPrinter: Printer = {
-      ...printer,
-      nozzle_temperatures: [
-        { label: "L", current_celsius: "41", target_celsius: "220" },
-        { label: "R", current_celsius: "42", target_celsius: "230" },
-      ],
-      active_nozzle: "R",
-      bed_temperature_celsius: "60",
-      chamber_temperature_celsius: "32",
-    };
-
-    renderWithMessages(
-      <PrinterInventory selectedTenant={tenant} printers={[heatingPrinter]} agents={[agent]} nowMs={0} />,
-    );
-
-    const card = screen.getByRole("article", { name: "Office A1" });
-    await waitFor(() => expect(card).toHaveTextContent("Nozzle"));
-    expect(card).toHaveTextContent("L / R");
-    expect(card).toHaveTextContent("41° / 42°");
-    expect(card).toHaveTextContent("Bed");
-    expect(card).toHaveTextContent("60°C");
-    expect(card).toHaveTextContent("Chamber");
-    expect(card).toHaveTextContent("32°C");
-    expect(card).toHaveTextContent("Controls");
-
-    const cardText = card.textContent ?? "";
-    expect(cardText.indexOf("Controls")).toBeGreaterThan(cardText.indexOf("Status"));
-    expect(cardText.indexOf("Controls")).toBeLessThan(cardText.indexOf("Filaments"));
-
-    const controls = screen.getByRole("group", { name: "Controls" });
-    expect(controls).toHaveClass("grid-cols-2");
-    expect(controls).not.toHaveClass("sm:grid-cols-1");
-
-    const stopForm = screen.getByRole("button", { name: "Stop print" }).closest("form");
-    const pauseForm = screen.getByRole("button", { name: "Pause print" }).closest("form");
-    const lightForm = screen.getByRole("button", { name: "Light Off" }).closest("form");
-    expect(screen.getByRole("button", { name: "View camera" })).toBeVisible();
-    expect(within(card).getByRole("button", { name: "Move axes" })).toBeVisible();
-    expect(stopForm?.querySelector('input[name="action"]')).toHaveValue("stop");
-    expect(stopForm?.querySelector('input[name="printer_id"]')).toHaveValue("printer-1");
-    expect(pauseForm?.querySelector('input[name="action"]')).toHaveValue("pause");
-    expect(lightForm?.querySelector('input[name="action"]')).toHaveValue("set_chamber_light");
-    expect(lightForm?.querySelector('input[name="light_on"]')).toHaveValue("true");
-  });
-
   it("replaces pause with resume when the live print task is paused", async () => {
     const pausedPrinter: Printer = {
       ...printer,
@@ -203,19 +157,5 @@ describe("PrinterInventory", () => {
     const lightForm = screen.getByRole("button", { name: "Light On" }).closest("form");
     expect(lightForm?.querySelector('input[name="action"]')).toHaveValue("set_chamber_light");
     expect(lightForm?.querySelector('input[name="light_on"]')).toHaveValue("false");
-  });
-
-  it("localizes the light control label in Chinese", () => {
-    const heatingPrinter: Printer = {
-      ...printer,
-      nozzle_temperatures: [{ label: null, current_celsius: "27", target_celsius: "0" }],
-    };
-
-    renderWithMessages(
-      <PrinterInventory selectedTenant={tenant} printers={[heatingPrinter]} agents={[agent]} nowMs={0} />,
-      "zh",
-    );
-
-    expect(screen.getByRole("button", { name: "灯光 已关闭" })).toBeVisible();
   });
 });

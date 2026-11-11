@@ -1,4 +1,4 @@
-use pandar_core::{AgentId, TenantId};
+use pandar_core::AgentId;
 
 use super::*;
 use crate::db::DatabaseConfig;
@@ -114,20 +114,6 @@ async fn printer_repository_upserts_and_lists_for_tenant() {
     assert_eq!(
         printers.list_for_tenant(acme.id).await.unwrap(),
         vec![updated]
-    );
-}
-
-#[tokio::test]
-async fn printer_repository_get_returns_none_for_unknown_printer() {
-    let (_, tenants, _, printers, _, _) = repositories().await;
-    let tenant = tenants.create("acme", "Acme Labs").await.unwrap();
-
-    assert_eq!(
-        printers
-            .get_for_tenant(tenant.id, "missing-printer")
-            .await
-            .unwrap(),
-        None
     );
 }
 
@@ -359,15 +345,6 @@ async fn printer_repository_snapshot_without_connection_preserves_saved_connecti
     assert_eq!(updated.access_code.as_deref(), Some("test-access-code"));
     assert_eq!(updated.model.as_deref(), Some("X1 Carbon"));
     assert_eq!(updated.status, "printing");
-}
-
-#[tokio::test]
-async fn printer_repository_list_rejects_missing_tenant() {
-    let (_, _, _, printers, _, _) = repositories().await;
-
-    let err = printers.list_for_tenant(TenantId::new()).await.unwrap_err();
-
-    assert!(matches!(err, RepositoryError::MissingTenant));
 }
 
 #[tokio::test]

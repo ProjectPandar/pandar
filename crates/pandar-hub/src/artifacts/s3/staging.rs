@@ -29,56 +29,14 @@ pub(super) async fn staged_upload_body(
     key: &str,
 ) -> anyhow::Result<(StagedS3Upload, u64)> {
     let path = temp_artifact_path("s3-staged-upload");
-    staged_upload_body_with_path(body, max_artifact_bytes, key, path, false, false).await
+    staged_upload_body_with_path(body, max_artifact_bytes, key, path).await
 }
 
-#[cfg(test)]
 pub(super) async fn staged_upload_body_with_path(
     body: ArtifactUploadBody<'_>,
     max_artifact_bytes: usize,
     key: &str,
     path: PathBuf,
-    fail_before_flush: bool,
-    fail_before_reopen: bool,
-) -> anyhow::Result<(StagedS3Upload, u64)> {
-    staged_upload_body_at_path(
-        body,
-        max_artifact_bytes,
-        key,
-        path,
-        fail_before_flush,
-        fail_before_reopen,
-    )
-    .await
-}
-
-#[cfg(not(test))]
-async fn staged_upload_body_with_path(
-    body: ArtifactUploadBody<'_>,
-    max_artifact_bytes: usize,
-    key: &str,
-    path: PathBuf,
-    fail_before_flush: bool,
-    fail_before_reopen: bool,
-) -> anyhow::Result<(StagedS3Upload, u64)> {
-    staged_upload_body_at_path(
-        body,
-        max_artifact_bytes,
-        key,
-        path,
-        fail_before_flush,
-        fail_before_reopen,
-    )
-    .await
-}
-
-async fn staged_upload_body_at_path(
-    body: ArtifactUploadBody<'_>,
-    max_artifact_bytes: usize,
-    key: &str,
-    path: PathBuf,
-    fail_before_flush: bool,
-    fail_before_reopen: bool,
 ) -> anyhow::Result<(StagedS3Upload, u64)> {
     let mut reader = body.reader;
     let mut file = fs::File::create(&path)
@@ -111,18 +69,11 @@ async fn staged_upload_body_at_path(
         cleanup_staged_file(file, &path).await;
         bail!("artifact bytes cannot be empty");
     }
-    if fail_before_flush {
-        cleanup_staged_file(file, &path).await;
-        bail!("injected staged S3 artifact flush failure");
-    }
     if let Err(err) = file.sync_all().await {
         cleanup_staged_file(file, &path).await;
         return Err(err).context("failed to flush staged S3 artifact upload");
     }
     drop(file);
-    if fail_before_reopen {
-        let _ = fs::remove_file(&path).await;
-    }
     if let Err(err) = fs::File::open(&path).await {
         let _ = fs::remove_file(&path).await;
         return Err(err).context("failed to reopen staged S3 artifact upload");

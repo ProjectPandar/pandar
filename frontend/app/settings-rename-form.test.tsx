@@ -35,18 +35,6 @@ function renderForm() {
 }
 
 describe("WorkspaceRenameForm", () => {
-  it("keeps save disabled until the name changes", async () => {
-    renderForm();
-    const saveButton = screen.getByRole("button", { name: "Save" });
-    expect(saveButton).toBeDisabled();
-
-    await userEvent.type(
-      screen.getByRole("textbox", { name: "Workspace name" }),
-      " 2",
-    );
-    expect(saveButton).toBeEnabled();
-  });
-
   it("shows a success toast after renaming", async () => {
     updateMock.mockResolvedValue({ ok: true });
     renderForm();

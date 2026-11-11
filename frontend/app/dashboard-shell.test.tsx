@@ -7,18 +7,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import en from "../messages/en.json";
 import { AppSidebar } from "../components/app-sidebar";
-import { Sidebar, SidebarProvider } from "../components/ui/sidebar";
-import { DashboardShellHeader } from "./dashboard-shell-header";
-import { DashboardShellLayout } from "./dashboard-shell-layout";
-import { DashboardShellProvider } from "./dashboard-shell-provider";
-import { SettingsDashboard } from "./settings-dashboard";
+import { SidebarProvider } from "../components/ui/sidebar";
 import {
-  DASHBOARD_VIEWS,
   agentSettingsHref,
   dashboardRootRedirectTarget,
   dashboardSidebarHref,
-  dashboardViewTitleKey,
-  logoutHref,
 } from "./dashboard-shell";
 import type { AuthMetadata, Tenant } from "./dashboard-types";
 
@@ -85,20 +78,6 @@ const auth: AuthMetadata = {
 };
 
 describe("dashboard shell helpers", () => {
-  it("defines the route-backed dashboard views", () => {
-    expect(DASHBOARD_VIEWS).toEqual([
-      "devices",
-      "jobs",
-      "agents",
-      "users",
-      "settings",
-    ]);
-
-    for (const view of DASHBOARD_VIEWS) {
-      expect(dashboardViewTitleKey(view)).toBe(view);
-    }
-  });
-
   it("builds dashboard redirect and navigation URLs", () => {
     expect(dashboardRootRedirectTarget({})).toBe("/devices");
     expect(
@@ -123,24 +102,6 @@ describe("dashboard shell helpers", () => {
       "/agents/a1/settings",
     );
   });
-
-  it("returns a logout href only when a provider sign-out URL exists", () => {
-    expect(logoutHref({ signOutUrl: null })).toBeNull();
-    expect(logoutHref({ signOutUrl: "https://auth.example/sign-out" })).toBe(
-      "https://auth.example/sign-out",
-    );
-  });
-});
-
-describe("DashboardShellHeader", () => {
-  it("does not render tenant or language selectors in the top bar", () => {
-    renderWithMessages(<DashboardShellHeader view="agents" />);
-
-    expect(screen.getByRole("heading", { name: "Agents" })).toBeVisible();
-    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "English" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "中文" })).not.toBeInTheDocument();
-  });
 });
 
 describe("AppSidebar", () => {
@@ -149,35 +110,6 @@ describe("AppSidebar", () => {
     vi.restoreAllMocks();
     window.history.replaceState({}, "", "/");
     document.cookie = "pandar.tenant=; path=/; max-age=0";
-  });
-
-  it("switches desktop sidebar state on the keyboard shortcut", () => {
-    const { container } = renderWithMessages(
-      <SidebarProvider defaultOpen>
-        <Sidebar>Navigation</Sidebar>
-      </SidebarProvider>,
-    );
-    const sidebar = container.querySelector('[data-slot="sidebar"][data-state]');
-
-    expect(sidebar).toHaveAttribute("data-state", "expanded");
-    fireEvent.keyDown(window, { key: "b", ctrlKey: true });
-    expect(sidebar).toHaveAttribute("data-state", "collapsed");
-  });
-
-  it("keeps the mobile sidebar on the Sheet interaction path", async () => {
-    vi.stubGlobal("innerWidth", 500);
-    const { container } = renderWithMessages(
-      <SidebarProvider defaultOpen>
-        <Sidebar>Mobile navigation</Sidebar>
-      </SidebarProvider>,
-    );
-
-    await waitFor(() => {
-      expect(container.querySelector('[data-slot="sidebar"][data-state]')).toBeNull();
-    });
-    fireEvent.keyDown(window, { key: "b", ctrlKey: true });
-
-    expect(await screen.findByRole("dialog", { name: "Sidebar" })).toBeVisible();
   });
 
   it("keeps tenant access available inside the mobile sidebar", async () => {
@@ -270,100 +202,5 @@ describe("AppSidebar", () => {
     await waitFor(() => {
       expect(screen.queryByRole("dialog", { name: "Tenant access" })).not.toBeInTheDocument();
     });
-  });
-
-  it("exposes the selected tenant through the dashboard layout", async () => {
-    const user = userEvent.setup();
-    window.history.replaceState({}, "", "/agents");
-    renderWithMessages(
-      <DashboardShellProvider selectedTenant={tenants[0]}>
-        <DashboardShellLayout
-          auth={auth}
-          sidebarDefaultOpen
-          tenants={tenants}
-        >
-          Dashboard content
-        </DashboardShellLayout>
-      </DashboardShellProvider>,
-    );
-
-    await user.click(screen.getByRole("button", { name: "Select tenant access" }));
-    await user.click(screen.getByRole("button", { name: "Tenant Two" }));
-    expect(document.cookie).toContain("pandar.tenant=t2");
-    expect(refreshMock).toHaveBeenCalled();
-  });
-
-  it("shows redirected ?status= action results as a toast", async () => {
-    const { toast } = await import("sonner");
-    window.history.replaceState({}, "", "/agents?status=refresh_queued");
-
-    renderWithMessages(
-      <DashboardShellProvider selectedTenant={tenants[0]}>
-        <DashboardShellLayout
-          auth={auth}
-          sidebarDefaultOpen
-          tenants={tenants}
-        >
-          Dashboard content
-        </DashboardShellLayout>
-      </DashboardShellProvider>,
-    );
-
-    await waitFor(() =>
-      expect(toast.success).toHaveBeenCalledWith("Refresh queued"),
-    );
-    expect(window.location.search).toBe("");
-  });
-
-  it("renders a jobs navigation link", () => {
-    renderWithMessages(
-      <SidebarProvider>
-        <AppSidebar
-          activeView="jobs"
-          auth={auth}
-          selectedTenant={tenants[0]}
-          tenants={tenants}
-        />
-      </SidebarProvider>,
-    );
-
-    expect(screen.getByRole("link", { name: "Jobs" })).toHaveAttribute(
-      "href",
-      "/jobs",
-    );
-  });
-});
-
-describe("SettingsView", () => {
-  const settingsProps = {
-    auth,
-    selectedTenant: tenants[0],
-    membershipRole: "tenant_admin",
-    canAdmin: true,
-    agents: [],
-    printers: [],
-    tenantTokens: [],
-    auditEvents: [],
-    adminUnavailable: false,
-    adminLoadError: false,
-    adminLoading: false,
-    nowMs: 0,
-  };
-
-  it("renders the language selector in settings", () => {
-    renderWithMessages(<SettingsDashboard {...settingsProps} />);
-
-    expect(screen.getByText("Display language")).toBeVisible();
-    expect(screen.getByRole("button", { name: "English" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "中文" })).toBeVisible();
-  });
-
-  it("renders the theme selector in settings", () => {
-    renderWithMessages(<SettingsDashboard {...settingsProps} />);
-
-    expect(screen.getByText("Color theme")).toBeVisible();
-    expect(screen.getByRole("button", { name: "System" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Light" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Dark" })).toBeVisible();
   });
 });

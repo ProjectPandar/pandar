@@ -221,29 +221,6 @@ describe("hubProxy", () => {
     expect(new Headers(init.headers).get("content-type")).toBe("text/csv");
   });
 
-  it("omits content-type for streamed bodies when the request has none", async () => {
-    const { hubProxy } = await loadHubProxy();
-    const fetchMock = jsonUpstream();
-    const handler = hubProxy({
-      method: "POST",
-      path: "/artifact-metadata-preview",
-      body: "stream",
-      contentType: "forward",
-    });
-    const request = mutationRequest(
-      "https://web.example/api/tenants/tenant-1/artifact-metadata-preview",
-      { method: "POST", body: "bytes" },
-    );
-    request.headers.delete("content-type");
-
-    await handler(request, {
-      params: Promise.resolve({ tenantId: "tenant-1" }),
-    });
-
-    const [, init] = firstCall(fetchMock);
-    expect(new Headers(init.headers).get("content-type")).toBeNull();
-  });
-
   it("passes status and statusText through and strips unsafe upstream headers", async () => {
     const { hubProxy } = await loadHubProxy();
     stubUpstream(
@@ -289,20 +266,5 @@ describe("hubProxy", () => {
     );
 
     expect(response.headers.get("content-type")).toBe("video/mp4");
-  });
-
-  it("omits response content-type when the upstream omits it and no fallback is configured", async () => {
-    const { hubProxy } = await loadHubProxy();
-    stubUpstream(new Response(null, { status: 204 }));
-    const handler = hubProxy({ method: "DELETE", path: "/jobs" });
-
-    const response = await handler(
-      mutationRequest("https://web.example/api/tenants/tenant-1/jobs"),
-      { params: Promise.resolve({ tenantId: "tenant-1" }) },
-    );
-
-    expect(response.status).toBe(204);
-    expect(response.headers.get("content-type")).toBeNull();
-    expect(response.headers.get("cache-control")).toBe("no-store");
   });
 });

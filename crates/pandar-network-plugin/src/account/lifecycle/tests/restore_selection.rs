@@ -51,12 +51,6 @@ fn without_url_environment() -> ScrubbedEnvironment {
     }
 }
 
-fn with_hub_environment(value: &str) -> ScrubbedEnvironment {
-    let scrubbed = without_url_environment();
-    unsafe { std::env::set_var("PANDAR_PLUGIN_HUB_URL", value) };
-    scrubbed
-}
-
 struct RestoreAccount {
     config_dir: String,
     hub_url: String,
@@ -184,34 +178,6 @@ fn load_persisted(account: &mut RestoreAccount) -> crate::PluginHttpResult {
 }
 
 #[test]
-fn saved_selection_restores_servers_before_same_hub_login_evaluation() {
-    let _environment = without_url_environment();
-    let directory = tempfile::tempdir().unwrap();
-    let config_dir = directory.path().to_string_lossy().into_owned();
-    store_state(
-        &config_dir,
-        Some((
-            "https://pandar-web.example.test",
-            "https://pandar-hub.example.test",
-        )),
-        "https://pandar-hub.example.test",
-    );
-    let mut account = restore_account(&config_dir);
-
-    let http = load_persisted(&mut account);
-
-    assert_eq!(http.status, 0);
-    assert_eq!(http.http_code, 200);
-    assert_eq!(
-        account.actions,
-        [MUTATION_RUNTIME_SERVERS, MUTATION_REPLACE]
-    );
-    assert_eq!(account.hub_url, "https://pandar-hub.example.test");
-    assert_eq!(account.frontend_url, "https://pandar-web.example.test");
-    assert_eq!(account.token, "restore-token");
-}
-
-#[test]
 fn tenantless_persisted_authenticated_login_is_retired_not_restored() {
     let _environment = without_url_environment();
     let directory = tempfile::tempdir().unwrap();
@@ -276,30 +242,6 @@ fn saved_selection_never_restores_a_foreign_hub_credential() {
     assert_eq!(http.http_code, 204);
     assert_eq!(account.actions, [MUTATION_RUNTIME_SERVERS]);
     assert_eq!(account.hub_url, "https://pandar-hub.example.test");
-    assert!(account.token.is_empty());
-}
-
-#[test]
-fn explicit_url_environment_outranks_the_saved_selection() {
-    let _environment = with_hub_environment("https://operator-hub.example.test");
-    let directory = tempfile::tempdir().unwrap();
-    let config_dir = directory.path().to_string_lossy().into_owned();
-    store_state(
-        &config_dir,
-        Some((
-            "https://pandar-web.example.test",
-            "https://pandar-hub.example.test",
-        )),
-        "https://pandar-hub.example.test",
-    );
-    let mut account = restore_account(&config_dir);
-
-    let http = load_persisted(&mut account);
-
-    assert_eq!(http.status, 0);
-    assert_eq!(http.http_code, 204);
-    assert!(account.actions.is_empty());
-    assert_eq!(account.hub_url, "http://127.0.0.1:8080");
     assert!(account.token.is_empty());
 }
 

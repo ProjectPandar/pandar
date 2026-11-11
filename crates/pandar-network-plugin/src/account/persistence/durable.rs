@@ -322,18 +322,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn published_write_sync_failure_is_not_reported_as_unchanged() {
-        let directory = tempfile::tempdir().unwrap();
-        let target = directory.path().join("login.json");
-        fail_next(&[FaultPoint::WritePublish]);
-
-        let outcome = write_replace(directory.path(), &target, b"new-login").unwrap();
-
-        assert!(matches!(outcome, MutationDurability::ChangedUnconfirmed(_)));
-        assert_eq!(fs::read(target).unwrap(), b"new-login");
-    }
-
-    #[test]
     fn removal_sync_failure_rolls_back_before_returning_error() {
         let directory = tempfile::tempdir().unwrap();
         let target = directory.path().join("login.json");

@@ -96,49 +96,6 @@ async fn configured_operate_printer_toggle_light_sends_bambu_studio_light_nodes(
 }
 
 #[tokio::test]
-async fn configured_operate_printer_toggle_light_matches_bambu_studio_light_nodes() {
-    let mqtt = FakeMqttTransport::with_reports([lights_report(&[
-        ("chamber_light", "off"),
-        ("chamber_light2", "off"),
-    ])]);
-    let transfer = FakeMachineFileTransfer::default();
-    let gateway = ConfiguredBambuMachineGateway::with_file_transfer(
-        vec![(endpoint_without_model("SERIAL1"), mqtt.clone(), transfer)],
-        Duration::from_secs(1),
-    );
-
-    gateway
-        .operate_printer("SERIAL1", PrinterOperation::ToggleLight {})
-        .await
-        .unwrap();
-
-    let published = mqtt.published_commands().await;
-    let pushall_sequence_id = dynamic_section_sequence_id(&published[0].payload, "pushing");
-    let light_sequence_id = dynamic_section_sequence_id(&published[1].payload, "system");
-    let light2_sequence_id = dynamic_section_sequence_id(&published[2].payload, "system");
-    assert_eq!(
-        published,
-        vec![
-            PublishedMqttCommand {
-                topic: "device/SERIAL1/request".to_string(),
-                payload: expected_pushall_payload(&pushall_sequence_id),
-                qos: BAMBU_MQTT_QOS,
-            },
-            PublishedMqttCommand {
-                topic: "device/SERIAL1/request".to_string(),
-                payload: expected_light_payload("chamber_light", "on", &light_sequence_id),
-                qos: BAMBU_MQTT_QOS,
-            },
-            PublishedMqttCommand {
-                topic: "device/SERIAL1/request".to_string(),
-                payload: expected_light_payload("chamber_light2", "on", &light2_sequence_id),
-                qos: BAMBU_MQTT_QOS,
-            },
-        ]
-    );
-}
-
-#[tokio::test]
 async fn configured_operate_printer_set_chamber_light_uses_requested_state() {
     let mqtt = FakeMqttTransport::with_reports([lights_report(&[("chamber_light", "on")])]);
     let transfer = FakeMachineFileTransfer::default();

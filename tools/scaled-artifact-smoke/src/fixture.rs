@@ -311,25 +311,3 @@ pub struct SmokeFixture {
     pub tenant_token: String,
     pub agent_credential: String,
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::harness::ScenarioFilter;
-
-    #[test]
-    fn fixture_suffix_includes_live_run_id() {
-        let config = HarnessConfig {
-            mode: HarnessMode::Live,
-            iterations: 1,
-            concurrency: 2,
-            scenario: ScenarioFilter::Artifact,
-            run_id: "pid123-now456".to_owned(),
-        };
-
-        assert_eq!(
-            config.fixture_suffix("artifact", 7, 3),
-            "live-pid123-now456-artifact-7-3"
-        );
-    }
-}

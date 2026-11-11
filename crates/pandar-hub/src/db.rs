@@ -296,18 +296,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn database_config_detects_postgres_backend() {
-        let config = DatabaseConfig::from_url("postgres://localhost/pandar").unwrap();
-
-        assert_eq!(config.backend(), DatabaseBackend::Postgres);
-    }
-
-    #[test]
-    fn database_config_rejects_unsupported_scheme() {
-        assert!(DatabaseConfig::from_url("mysql://localhost/pandar").is_err());
-    }
-
-    #[test]
     fn unique_violation_matches_sqlite_spelling() {
         let err = DbErr::Custom("UNIQUE constraint failed: tenants.slug".to_owned());
 
@@ -323,26 +311,5 @@ mod tests {
 
         assert!(is_unique_violation(&err, UniqueConstraint::TenantSlug));
         assert!(!is_unique_violation(&err, UniqueConstraint::AgentName));
-    }
-
-    #[test]
-    fn every_constraint_has_distinct_spellings() {
-        let constraints = [
-            UniqueConstraint::TenantSlug,
-            UniqueConstraint::AgentName,
-            UniqueConstraint::TenantTokenHash,
-            UniqueConstraint::PluginLoginTicketHash,
-            UniqueConstraint::JoinLinkTokenHash,
-            UniqueConstraint::UserEmail,
-            UniqueConstraint::UserIdentityExternal,
-            UniqueConstraint::UserIdentityUserProvider,
-            UniqueConstraint::JobFilamentUsageSlot,
-            UniqueConstraint::PersonalPresetName,
-            UniqueConstraint::ArtifactDeletionStoragePath,
-        ];
-        let spellings: Vec<_> = constraints.iter().map(|c| c.spellings()).collect();
-        for (index, spelling) in spellings.iter().enumerate() {
-            assert!(!spellings[..index].contains(spelling));
-        }
     }
 }

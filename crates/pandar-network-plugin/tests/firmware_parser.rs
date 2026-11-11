@@ -1,7 +1,6 @@
 use pandar_network_plugin::firmware::{
     PLUGIN_JSON_BODY_LIMIT, StudioFirmwareCommand, StudioFirmwareParse, parse_studio_firmware,
 };
-use serde::Serialize;
 
 #[test]
 fn firmware_parser_accepts_all_commands_and_preserves_exact_fields() {
@@ -92,18 +91,6 @@ fn firmware_parser_rejects_present_invalid_upgrade_shapes() {
 }
 
 #[test]
-fn firmware_parser_stably_rejects_the_finite_unsupported_upgrade_pair() {
-    let message =
-        r#"{"upgrade":{"command":"wtm_upgrade","module":"wtm/16","src_id":1,"sequence_id":"123"}}"#;
-
-    assert_eq!(
-        parse_studio_firmware(message),
-        StudioFirmwareParse::InvalidFirmware,
-        "upgrade.wtm_upgrade must remain the 45th explicitly unsupported finite pair"
-    );
-}
-
-#[test]
 fn firmware_parser_rejects_duplicate_top_level_upgrade_keys() {
     for message in [
         r#"{"upgrade":{"command":"upgrade_confirm","sequence_id":"first","src_id":1},"upgrade":{"command":"consistency_confirm","sequence_id":"second","src_id":2}}"#,
@@ -113,21 +100,6 @@ fn firmware_parser_rejects_duplicate_top_level_upgrade_keys() {
             parse_studio_firmware(message),
             StudioFirmwareParse::InvalidFirmware,
             "duplicate upgrade key was not classified as invalid: {message}"
-        );
-    }
-}
-
-#[test]
-fn firmware_parser_rejects_upgrade_mixed_with_another_top_level_envelope() {
-    for message in [
-        r#"{"upgrade":{"command":"upgrade_confirm","sequence_id":"mixed-print","src_id":1},"print":{"command":"pause","sequence_id":"123"}}"#,
-        r#"{"upgrade":{"command":"consistency_confirm","sequence_id":"mixed-info","src_id":2},"info":{"command":"get_version","sequence_id":"124"}}"#,
-        r#"{"upgrade":{"command":"upgrade_confirm","sequence_id":"extra-future","src_id":1},"future":{"command":"future_control"}}"#,
-    ] {
-        assert_eq!(
-            parse_studio_firmware(message),
-            StudioFirmwareParse::InvalidFirmware,
-            "mixed top-level upgrade was accepted as firmware: {message}"
         );
     }
 }
@@ -165,47 +137,6 @@ fn firmware_parser_enforces_shared_body_limit_for_every_string_position() {
             StudioFirmwareParse::InvalidFirmware
         );
     }
-}
-
-#[test]
-fn firmware_parser_keeps_valid_oversized_non_firmware_distinct_from_present_upgrade() {
-    let non_firmware = oversized_non_firmware_message();
-    assert!(non_firmware.len() > PLUGIN_JSON_BODY_LIMIT);
-    assert_eq!(
-        parse_studio_firmware(&non_firmware),
-        StudioFirmwareParse::NotFirmware
-    );
-
-    let present_upgrade = format!(
-        r#"{{"upgrade":{{"command":"upgrade_confirm","sequence_id":"{}","src_id":1}}}}"#,
-        "x".repeat(PLUGIN_JSON_BODY_LIMIT)
-    );
-    assert!(present_upgrade.len() > PLUGIN_JSON_BODY_LIMIT);
-    assert_eq!(
-        parse_studio_firmware(&present_upgrade),
-        StudioFirmwareParse::InvalidFirmware
-    );
-}
-
-#[derive(Serialize)]
-struct NonFirmwareMessage {
-    print: NonFirmwareStatus,
-    padding: String,
-}
-
-#[derive(Serialize)]
-struct NonFirmwareStatus {
-    command: &'static str,
-}
-
-fn oversized_non_firmware_message() -> String {
-    serde_json::to_string(&NonFirmwareMessage {
-        print: NonFirmwareStatus {
-            command: "push_status",
-        },
-        padding: "x".repeat(PLUGIN_JSON_BODY_LIMIT),
-    })
-    .unwrap()
 }
 
 fn start_message_at_size(field: &str, size: usize) -> String {

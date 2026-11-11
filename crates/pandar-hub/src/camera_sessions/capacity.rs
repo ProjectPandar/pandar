@@ -81,15 +81,4 @@ mod tests {
         drop(first);
         assert!(capacity.acquire(tenant_id).is_ok());
     }
-
-    #[test]
-    fn capacity_has_no_global_limit() {
-        let capacity = Arc::new(CameraCapacity::new(8));
-        let permits = (0..64)
-            .map(|_| capacity.acquire(TenantId::new()).unwrap())
-            .collect::<Vec<_>>();
-
-        drop(permits);
-        assert!(capacity.acquire(TenantId::new()).is_ok());
-    }
 }

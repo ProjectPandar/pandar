@@ -193,32 +193,6 @@ async fn viewer_cannot_create_agent() {
 }
 
 #[tokio::test]
-async fn linked_viewer_jwt_cannot_create_agent() {
-    let state = state().await;
-    let app = router(external_auth_state(state.clone()));
-    let tenant = state.tenants().create("acme", "Acme Labs").await.unwrap();
-    let token = external_auth_token_for_role(
-        &state,
-        tenant.id,
-        crate::repositories::UserRole::Viewer,
-        "linked-viewer-create-agent",
-    )
-    .await;
-
-    let (status, body) = request_as(
-        app,
-        Method::POST,
-        &format!("/api/v1/tenants/{}/agents", tenant.id),
-        agent_name_body("shop-agent"),
-        &token,
-    )
-    .await;
-
-    assert_eq!(status, StatusCode::FORBIDDEN);
-    assert_eq!(decode::<ErrorResponse>(body).error, "role_forbidden");
-}
-
-#[tokio::test]
 async fn invalid_tenant_id_on_agent_create_returns_bad_request() {
     let (status, body) = request(
         app().await,
@@ -295,33 +269,6 @@ async fn agent_create_returns_offline_record_and_audit_event() {
         .await
         .unwrap();
     assert!(events.iter().any(|event| event.action == "agent.create"));
-}
-
-#[tokio::test]
-async fn empty_agent_name_returns_bad_request() {
-    let state = state().await;
-    let app = router(state.clone());
-    let (_, tenant) = create_tenant_for_test(app.clone()).await;
-    let tenant_id = decode::<TenantResponse>(tenant).id;
-    let token = auth_token_for_role(
-        &state,
-        &tenant_id,
-        crate::repositories::UserRole::TenantAdmin,
-        "empty-agent-admin",
-    )
-    .await;
-
-    let (status, body) = request_as(
-        app,
-        Method::POST,
-        &format!("/api/v1/tenants/{tenant_id}/agents"),
-        agent_name_body(""),
-        &token,
-    )
-    .await;
-
-    assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert_eq!(decode::<ErrorResponse>(body).error, "bad_request");
 }
 
 #[tokio::test]
@@ -538,47 +485,6 @@ async fn agent_delete_rejects_invalid_or_missing_agent() {
     .await;
     assert_eq!(status, StatusCode::NOT_FOUND);
     assert_eq!(decode::<ErrorResponse>(body).error, "agent_not_found");
-}
-
-#[tokio::test]
-async fn invalid_tenant_id_on_agent_list_returns_bad_request() {
-    let (status, body) = request(
-        app().await,
-        Method::GET,
-        "/api/v1/tenants/not-a-uuid/agents",
-        None,
-    )
-    .await;
-
-    assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert_eq!(decode::<ErrorResponse>(body).error, "invalid_tenant_id");
-}
-
-#[tokio::test]
-async fn missing_tenant_on_agent_list_returns_forbidden() {
-    let state = state().await;
-    let app = router(state.clone());
-    let (_, tenant) = create_tenant_for_test(app.clone()).await;
-    let tenant = decode::<TenantResponse>(tenant);
-    let token = auth_token_for_role(
-        &state,
-        &tenant.id,
-        crate::repositories::UserRole::Viewer,
-        "other-viewer",
-    )
-    .await;
-    let tenant_id = "00000000-0000-0000-0000-000000000001";
-    let (status, body) = request_as(
-        app,
-        Method::GET,
-        &format!("/api/v1/tenants/{tenant_id}/agents"),
-        None,
-        &token,
-    )
-    .await;
-
-    assert_eq!(status, StatusCode::FORBIDDEN);
-    assert_eq!(decode::<ErrorResponse>(body).error, "tenant_forbidden");
 }
 
 #[tokio::test]

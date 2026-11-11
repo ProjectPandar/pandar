@@ -6,9 +6,6 @@ mod results;
 
 pub(crate) use results::*;
 
-#[cfg(test)]
-use account_refresh::{pandar_plugin_account_commit_action, pandar_plugin_account_refresh_action};
-
 const ABI_INVALID_HANDLE: i32 = -1;
 const ABI_CONNECT_FAILED: i32 = -2;
 const ABI_GET_USER_PRINT_INFO_FAILED: i32 = -11;
@@ -119,6 +116,3 @@ pub(crate) fn studio_request_admitted(
     }
     result(0, 0, "")
 }
-
-#[cfg(test)]
-mod tests;

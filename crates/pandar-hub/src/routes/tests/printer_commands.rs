@@ -14,7 +14,6 @@ mod command_routes;
 mod control_dispatch;
 mod control_validation;
 use control_validation::assert_no_printer_control_audit;
-mod models;
 mod print_error;
 mod requests;
 mod sibling_commands;

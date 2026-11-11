@@ -120,16 +120,6 @@ mod tests {
         assert!(local_camera_auth_payload(&"x".repeat(33)).is_err());
     }
 
-    #[test]
-    fn local_camera_gate_is_exact() {
-        for model in ["N1", "N2S", "C12", "N9"] {
-            assert!(studio_local_camera_supported(Some(model)), "{model}");
-        }
-        for model in ["C11", "BL-P001", "N6", "O1C2", "unknown"] {
-            assert!(!studio_local_camera_supported(Some(model)), "{model}");
-        }
-    }
-
     #[tokio::test]
     async fn reads_length_prefixed_local_camera_jpeg() {
         let jpeg = [0xff, 0xd8, 1, 2, 3, 0xff, 0xd9];

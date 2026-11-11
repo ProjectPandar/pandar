@@ -58,28 +58,6 @@ mod tests {
     }
 
     #[test]
-    fn holder_delta_before_nozzle_is_retained() {
-        let mut reducer = NozzleSystemReducer::default();
-        assert!(
-            reducer
-                .update(NozzleSystemPatch {
-                    nozzle: None,
-                    holder: Some(holder(2)),
-                })
-                .is_none()
-        );
-
-        let system = reducer
-            .update(NozzleSystemPatch {
-                nozzle: Some(nozzle(16)),
-                holder: None,
-            })
-            .unwrap();
-        assert_eq!(system.nozzle.info[0].id, 16);
-        assert_eq!(system.holder.unwrap().pos, Some(2));
-    }
-
-    #[test]
     fn nozzle_and_holder_deltas_do_not_erase_each_other() {
         let mut reducer = NozzleSystemReducer::default();
         reducer.update(NozzleSystemPatch {

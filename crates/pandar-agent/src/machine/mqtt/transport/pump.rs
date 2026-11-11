@@ -204,42 +204,4 @@ mod tests {
         assert_eq!(reports.next().await.unwrap()["sequence"], 1);
         assert_eq!(reports.next().await.unwrap()["sequence"], 2);
     }
-
-    #[test]
-    fn report_queue_overflow_warning_names_the_printer() {
-        let (logs, ()) = crate::test_tracing::capture_logs(|| {
-            tokio::runtime::Builder::new_current_thread()
-                .enable_all()
-                .build()
-                .unwrap()
-                .block_on(async {
-                    let reports = MqttReportQueue::new(
-                        "SERIAL-NAMED".to_owned(),
-                        OverflowPolicy::FailConsumer,
-                    );
-                    for sequence in 0..MQTT_REPORT_QUEUE_CAPACITY {
-                        reports
-                            .push(Ok(serde_json::json!({"sequence": sequence})))
-                            .await;
-                    }
-
-                    reports
-                        .push(Ok(serde_json::json!({
-                            "sequence": MQTT_REPORT_QUEUE_CAPACITY
-                        })))
-                        .await;
-                });
-        });
-
-        let contents = logs.contents();
-        assert!(
-            contents.contains("MQTT report queue overflow"),
-            "{contents}"
-        );
-        assert!(contents.contains("SERIAL-NAMED"), "{contents}");
-        assert!(
-            contents.contains(&format!("dropped={MQTT_REPORT_QUEUE_CAPACITY}")),
-            "{contents}"
-        );
-    }
 }

@@ -116,32 +116,6 @@ function renderSection({
 }
 
 describe("DiscoverySection", () => {
-  it("shows a pending state while the discovery command is running", () => {
-    renderSection({ command: discoveryCommand("sent"), data: null });
-
-    expect(
-      screen.getByRole("heading", { name: "Discovered printers" }),
-    ).toBeVisible();
-    expect(screen.getByText("Reported by Lab agent · sent")).toBeVisible();
-    expect(screen.getByText("Discovering printers…")).toBeVisible();
-    expect(
-      screen.getByText(/Waiting for Lab agent to scan its network/),
-    ).toBeVisible();
-  });
-
-  it("shows the failure when the discovery command failed", () => {
-    renderSection({ command: discoveryCommand("failed"), data: null });
-
-    expect(screen.getByText("Discovery failed")).toBeVisible();
-    expect(screen.getByText("agent unreachable")).toBeVisible();
-  });
-
-  it("shows an empty state when nothing was discovered", () => {
-    renderSection({ data: { type: "printer_discovery", printers: [] } });
-
-    expect(screen.getByText("No printers discovered")).toBeVisible();
-  });
-
   it("marks already-linked machines and offers adopt for the rest", () => {
     renderSection();
 

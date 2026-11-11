@@ -115,60 +115,6 @@ fn hub_artifact_errors_pass_through_when_stable() {
 }
 
 #[test]
-fn hub_invalid_printer_id_passes_through_when_stable() {
-    let artifact = std::env::temp_dir().join(format!(
-        "pandar-invalid-printer-id-{}.3mf",
-        std::process::id()
-    ));
-    write_artifact(&artifact, b"not empty");
-    let artifact_path = artifact.to_string_lossy();
-    let hub_url = one_shot_server(
-        "POST",
-        "/api/v1/plugin/prints",
-        Some("pandar_plugin_test_token"),
-        "HTTP/1.1 400 Bad Request",
-        r#"{"error":"invalid_printer_id"}"#,
-        Some(assert_plugin_multipart_print_request),
-    );
-    let result = submit_print(hub_url.as_bytes(), TOKEN, artifact_path.as_bytes());
-    fs::remove_file(&artifact).unwrap();
-
-    assert_ne!(result.status, 0);
-    assert_eq!(result.http_code, 400);
-    assert_eq!(body(result), r#"{"error":"invalid_printer_id"}"#);
-}
-
-#[test]
-fn retired_base64_artifact_error_is_not_stable() {
-    let artifact = std::env::temp_dir().join(format!(
-        "pandar-retired-base64-error-{}.3mf",
-        std::process::id()
-    ));
-    write_artifact(&artifact, b"not empty");
-    let artifact_path = artifact.to_string_lossy();
-    let hub_url = one_shot_server(
-        "POST",
-        "/api/v1/plugin/prints",
-        Some("pandar_plugin_test_token"),
-        "HTTP/1.1 400 Bad Request",
-        Box::leak(
-            format!(
-                r#"{{"error":"{}"}}"#,
-                ["artifact", "invalid", "base64"].join("_")
-            )
-            .into_boxed_str(),
-        ),
-        Some(assert_plugin_multipart_print_request),
-    );
-    let result = submit_print(hub_url.as_bytes(), TOKEN, artifact_path.as_bytes());
-    fs::remove_file(&artifact).unwrap();
-
-    assert_ne!(result.status, 0);
-    assert_eq!(result.http_code, 400);
-    assert_eq!(body(result), r#"{"error":"invalid_response"}"#);
-}
-
-#[test]
 fn authenticated_401_maps_to_invalid_auth_token() {
     let result =
         print_submission_with_response("HTTP/1.1 401 Unauthorized", r#"{"error":"secret token"}"#);

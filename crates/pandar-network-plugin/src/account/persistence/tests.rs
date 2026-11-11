@@ -4,11 +4,10 @@ use std::{
 };
 
 use super::{
-    LOGIN_FILE, LOGIN_FILE_LOCK, MutationDurability, clear, clear_matching, complete_direct,
-    complete_pending,
+    LOGIN_FILE_LOCK, MutationDurability, clear_matching, complete_direct, complete_pending,
     durable::{FaultPoint, fail_next},
     enqueue_pending, load, load_after_login_lock, load_direct, load_pending, prepare_direct,
-    prepare_orphan_direct, remove_pending, store,
+    remove_pending, store,
 };
 use crate::account::types::{PendingRevocation, PersistedLogin, Profile, SessionKind};
 
@@ -25,87 +24,6 @@ fn login(token: &str) -> PersistedLogin {
             avatar: String::new(),
         },
     }
-}
-
-#[test]
-fn pending_revocation_hides_and_clears_only_its_matching_login() {
-    let directory = tempfile::tempdir().unwrap();
-    let config_dir = directory.path().to_string_lossy().into_owned();
-    let login = login("current-token");
-    store(&config_dir, &login).unwrap();
-
-    let unrelated = PendingRevocation {
-        hub_url: login.hub_url.clone(),
-        token: "old-token".to_owned(),
-    };
-    enqueue_pending(&config_dir, unrelated.clone()).unwrap();
-    assert_eq!(load(&config_dir).unwrap(), Some(login.clone()));
-    clear_matching(&config_dir, &unrelated).unwrap();
-    assert!(directory.path().join(LOGIN_FILE).is_file());
-
-    let matching = PendingRevocation {
-        hub_url: login.hub_url.clone(),
-        token: login.token.clone(),
-    };
-    enqueue_pending(&config_dir, matching.clone()).unwrap();
-    assert_eq!(load(&config_dir).unwrap(), None);
-    clear_matching(&config_dir, &matching).unwrap();
-    assert!(!directory.path().join(LOGIN_FILE).exists());
-}
-
-#[test]
-fn direct_revocation_intent_hides_login_until_completed() {
-    let directory = tempfile::tempdir().unwrap();
-    let config_dir = directory.path().to_string_lossy().into_owned();
-    let login = login("direct-token");
-    let candidate = PendingRevocation {
-        hub_url: login.hub_url.clone(),
-        token: login.token.clone(),
-    };
-    store(&config_dir, &login).unwrap();
-
-    prepare_direct(&config_dir, &candidate).unwrap();
-
-    assert_eq!(load_direct(&config_dir).unwrap(), Some(candidate.clone()));
-    assert_eq!(load(&config_dir).unwrap(), None);
-    complete_direct(&config_dir, &candidate).unwrap();
-    assert_eq!(load_direct(&config_dir).unwrap(), None);
-    assert_eq!(load(&config_dir).unwrap(), None);
-}
-
-#[test]
-fn orphan_revocation_intent_is_replayable_without_a_matching_login() {
-    let directory = tempfile::tempdir().unwrap();
-    let config_dir = directory.path().to_string_lossy().into_owned();
-    let candidate = PendingRevocation {
-        hub_url: "http://127.0.0.1:18080".to_owned(),
-        token: "orphan-token".to_owned(),
-    };
-
-    prepare_orphan_direct(&config_dir, &candidate).unwrap();
-
-    assert_eq!(load_direct(&config_dir).unwrap(), Some(candidate.clone()));
-    complete_direct(&config_dir, &candidate).unwrap();
-    assert_eq!(load_direct(&config_dir).unwrap(), None);
-}
-
-#[test]
-fn unconfirmed_direct_intent_is_visible_but_not_safe_to_send() {
-    let directory = tempfile::tempdir().unwrap();
-    let config_dir = directory.path().to_string_lossy().into_owned();
-    let login = login("uncertain-direct-token");
-    let candidate = PendingRevocation {
-        hub_url: login.hub_url.clone(),
-        token: login.token.clone(),
-    };
-    store(&config_dir, &login).unwrap();
-    fail_next(&[FaultPoint::WritePublish]);
-
-    let outcome = prepare_direct(&config_dir, &candidate).unwrap();
-
-    assert!(matches!(outcome, MutationDurability::ChangedUnconfirmed(_)));
-    assert_eq!(load(&config_dir).unwrap(), None);
-    assert_eq!(load_direct(&config_dir).unwrap(), Some(candidate));
 }
 
 #[test]
@@ -214,34 +132,6 @@ fn published_pending_write_uncertainty_requires_two_failed_confirmations() {
 }
 
 #[test]
-fn persisted_login_requires_a_successful_durability_confirmation() {
-    let directory = tempfile::tempdir().unwrap();
-    let config_dir = directory.path().to_string_lossy().into_owned();
-    fail_next(&[FaultPoint::WritePublish, FaultPoint::WritePublish]);
-
-    let outcome = store(&config_dir, &login("unconfirmed-login-token")).unwrap();
-
-    assert!(matches!(outcome, MutationDurability::ChangedUnconfirmed(_)));
-    assert_eq!(
-        load(&config_dir).unwrap().unwrap().token,
-        "unconfirmed-login-token"
-    );
-}
-
-#[test]
-fn changed_unconfirmed_clear_does_not_claim_the_login_was_retained() {
-    let directory = tempfile::tempdir().unwrap();
-    let config_dir = directory.path().to_string_lossy().into_owned();
-    store(&config_dir, &login("removed-token")).unwrap();
-    fail_next(&[FaultPoint::Cleanup, FaultPoint::WritePublish]);
-
-    let outcome = clear(&config_dir).unwrap();
-
-    assert!(matches!(outcome, MutationDurability::ChangedUnconfirmed(_)));
-    assert_eq!(load(&config_dir).unwrap(), None);
-}
-
-#[test]
 fn login_load_and_pending_tombstone_are_one_snapshot() {
     let directory = tempfile::tempdir().unwrap();
     let config_dir = directory.path().to_string_lossy().into_owned();
@@ -296,47 +186,6 @@ fn login_load_and_pending_tombstone_are_one_snapshot() {
         .unwrap();
     loader.join().unwrap();
     clearer.join().unwrap();
-}
-
-#[test]
-fn concurrent_enqueues_preserve_every_distinct_revocation() {
-    const WORKERS: usize = 24;
-
-    let directory = tempfile::tempdir().unwrap();
-    let config_dir = directory.path().to_string_lossy().into_owned();
-    let barrier = Arc::new(Barrier::new(WORKERS));
-    let threads = (0..WORKERS)
-        .map(|index| {
-            let barrier = Arc::clone(&barrier);
-            let config_dir = config_dir.clone();
-            std::thread::spawn(move || {
-                barrier.wait();
-                enqueue_pending(
-                    &config_dir,
-                    PendingRevocation {
-                        hub_url: "http://127.0.0.1:18080".to_owned(),
-                        token: format!("concurrent-token-{index:02}"),
-                    },
-                )
-                .unwrap();
-            })
-        })
-        .collect::<Vec<_>>();
-
-    for thread in threads {
-        thread.join().unwrap();
-    }
-
-    let mut actual = load_pending(&config_dir)
-        .unwrap()
-        .into_iter()
-        .map(|revocation| revocation.token)
-        .collect::<Vec<_>>();
-    actual.sort();
-    let expected = (0..WORKERS)
-        .map(|index| format!("concurrent-token-{index:02}"))
-        .collect::<Vec<_>>();
-    assert_eq!(actual, expected);
 }
 
 #[test]

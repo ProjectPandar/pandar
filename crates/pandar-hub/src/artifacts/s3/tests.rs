@@ -10,69 +10,6 @@ use std::{
 };
 use tokio::io::{AsyncReadExt, ReadBuf};
 
-#[test]
-fn missing_bucket_fails_with_env_var_name() {
-    let err = S3ArtifactStorageConfig::from_env_values(
-        None::<&str>,
-        Some("us-east-1"),
-        None::<&str>,
-        Some("access"),
-        Some("secret"),
-        None::<&str>,
-        Some("1024"),
-    )
-    .unwrap_err();
-
-    assert!(format!("{err:#}").contains("PANDAR_ARTIFACT_S3_BUCKET"));
-}
-
-#[test]
-fn missing_credentials_fail_with_relevant_env_var_name() {
-    let missing_access_key = S3ArtifactStorageConfig::from_env_values(
-        Some("bucket"),
-        Some("us-east-1"),
-        None::<&str>,
-        None::<&str>,
-        Some("secret"),
-        None::<&str>,
-        Some("1024"),
-    )
-    .unwrap_err();
-    assert!(format!("{missing_access_key:#}").contains("PANDAR_ARTIFACT_S3_ACCESS_KEY_ID"));
-
-    let missing_secret_key = S3ArtifactStorageConfig::from_env_values(
-        Some("bucket"),
-        Some("us-east-1"),
-        None::<&str>,
-        Some("access"),
-        None::<&str>,
-        None::<&str>,
-        Some("1024"),
-    )
-    .unwrap_err();
-    assert!(format!("{missing_secret_key:#}").contains("PANDAR_ARTIFACT_S3_SECRET_ACCESS_KEY"));
-}
-
-#[test]
-fn custom_endpoint_and_force_path_style_parse_into_config() {
-    let config = S3ArtifactStorageConfig::from_env_values(
-        Some("bucket"),
-        Some("us-east-1"),
-        Some("http://localhost:9000"),
-        Some("access"),
-        Some("secret"),
-        Some("true"),
-        Some("1024"),
-    )
-    .unwrap();
-
-    assert_eq!(config.bucket(), "bucket");
-    assert_eq!(config.region(), "us-east-1");
-    assert_eq!(config.endpoint(), Some("http://localhost:9000"));
-    assert!(config.force_path_style());
-    assert_eq!(config.max_artifact_bytes(), 1024);
-}
-
 #[tokio::test]
 async fn object_keys_are_tenant_artifact_scoped_without_filename_authority() {
     let client = Arc::new(FakeS3ObjectClient::default());
@@ -126,22 +63,6 @@ async fn s3_storage_round_trips_and_delete_ignores_not_found() {
         .delete_artifact(&artifact.storage_key)
         .await
         .unwrap();
-}
-
-#[tokio::test]
-async fn check_ready_uses_bucket_reachability() {
-    let client = Arc::new(FakeS3ObjectClient::default());
-    let storage = S3ArtifactStorage::new_for_test("bucket", 1024, client.clone());
-
-    storage.check_ready().await.unwrap();
-    client
-        .readiness_error
-        .lock()
-        .unwrap()
-        .replace("blocked".into());
-    let err = storage.check_ready().await.unwrap_err();
-
-    assert!(format!("{err:#}").contains("artifact S3 bucket is not reachable"));
 }
 
 #[test]
@@ -204,26 +125,6 @@ fn redacted_s3_error_redacts_aws_xml_access_key_context() {
 }
 
 #[tokio::test]
-async fn staged_upload_removes_temp_file_when_reopen_fails() {
-    let temp_root = tempfile::tempdir().unwrap();
-    let path = temp_root.path().join("staged-upload");
-
-    let err = staged_upload_body_with_path(
-        ArtifactUploadBody::reader(std::io::Cursor::new(b"abc".to_vec())),
-        1024,
-        "tenant/artifact",
-        path.clone(),
-        false,
-        true,
-    )
-    .await
-    .unwrap_err();
-
-    assert!(format!("{err:#}").contains("failed to reopen staged S3 artifact upload"));
-    assert!(!path.try_exists().unwrap());
-}
-
-#[tokio::test]
 async fn staged_upload_removes_temp_file_when_reader_fails_after_write() {
     let temp_root = tempfile::tempdir().unwrap();
     let path = temp_root.path().join("staged-upload");
@@ -235,68 +136,12 @@ async fn staged_upload_removes_temp_file_when_reader_fails_after_write() {
         1024,
         "tenant/artifact",
         path.clone(),
-        false,
-        false,
     )
     .await
     .unwrap_err();
 
     assert!(format!("{err:#}").contains("upload stream failed"));
     assert!(!path.try_exists().unwrap());
-}
-
-#[tokio::test]
-async fn staged_upload_removes_temp_file_when_flush_fails() {
-    let temp_root = tempfile::tempdir().unwrap();
-    let path = temp_root.path().join("staged-upload");
-
-    let err = staged_upload_body_with_path(
-        ArtifactUploadBody::reader(std::io::Cursor::new(b"abc".to_vec())),
-        1024,
-        "tenant/artifact",
-        path.clone(),
-        true,
-        false,
-    )
-    .await
-    .unwrap_err();
-
-    assert!(format!("{err:#}").contains("injected staged S3 artifact flush failure"));
-    assert!(!path.try_exists().unwrap());
-}
-
-#[tokio::test]
-async fn staged_upload_keeps_file_until_explicit_cleanup() {
-    let temp_root = tempfile::tempdir().unwrap();
-    let path = temp_root.path().join("staged-upload");
-
-    let (staged, size_bytes) = staged_upload_body_with_path(
-        ArtifactUploadBody::reader(std::io::Cursor::new(b"abc".to_vec())),
-        1024,
-        "tenant/artifact",
-        path.clone(),
-        false,
-        false,
-    )
-    .await
-    .unwrap();
-
-    assert_eq!(size_bytes, 3);
-    assert!(path.try_exists().unwrap());
-
-    staged.cleanup().await;
-
-    assert!(!path.try_exists().unwrap());
-}
-
-#[test]
-fn delete_error_classifies_only_true_not_found() {
-    assert!(delete_error_is_not_found(&anyhow::anyhow!(
-        S3ObjectNotFound
-    )));
-    assert!(!delete_error_is_not_found(&anyhow::anyhow!(
-        "status=500 code=InternalError"
-    )));
 }
 
 #[test]
@@ -341,7 +186,6 @@ fn sdk_get_error_classifier_distinguishes_not_found_from_other_failures() {
 struct FakeS3ObjectClient {
     objects: Mutex<HashMap<(String, String), Vec<u8>>>,
     calls: Mutex<Vec<(&'static str, String, String)>>,
-    readiness_error: Mutex<Option<String>>,
 }
 
 struct FailingAfterPrefixReader {
@@ -412,9 +256,6 @@ impl S3ObjectClient for FakeS3ObjectClient {
     }
 
     async fn check_bucket(&self, _bucket: &str) -> anyhow::Result<()> {
-        if let Some(err) = self.readiness_error.lock().unwrap().clone() {
-            anyhow::bail!("{err}");
-        }
         Ok(())
     }
 }

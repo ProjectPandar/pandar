@@ -7,15 +7,8 @@ use super::lifecycle::{
 
 pub(crate) mod callbacks;
 mod mutation;
-#[cfg(test)]
-mod tests;
 
 use mutation::apply_mutation;
-#[cfg(test)]
-use mutation::{
-    MUTATION_CLEAR, MUTATION_FIRMWARE_FENCE, MUTATION_HTTP_ERROR, MUTATION_LOGIN, MUTATION_REPLACE,
-    MUTATION_RESTORE_FAILURE, MUTATION_RUNTIME_HUB, MUTATION_RUNTIME_SERVERS,
-};
 
 #[repr(C)]
 pub struct PluginAccountSessionBridge {

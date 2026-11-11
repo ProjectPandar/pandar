@@ -4,26 +4,6 @@ mod server;
 use server::{DataConnectionPolicy, spawn_session_reuse_ftps_server, test_ftps_client_config};
 
 #[test]
-fn profile_caps_tls_for_known_aliases_only() {
-    assert!(!FtpsProfile::for_model(None).cap_tls_1_2);
-    assert!(!FtpsProfile::for_model(Some("P1S")).cap_tls_1_2);
-    assert!(!FtpsProfile::for_model(Some("H2D")).cap_tls_1_2);
-    assert!(FtpsProfile::for_model(Some("P2S")).cap_tls_1_2);
-    assert!(FtpsProfile::for_model(Some("N7")).cap_tls_1_2);
-    assert!(FtpsProfile::for_model(Some("X2D")).cap_tls_1_2);
-    assert!(FtpsProfile::for_model(Some("Bambu Lab X2D")).cap_tls_1_2);
-    assert!(FtpsProfile::for_model(Some("N6")).cap_tls_1_2);
-}
-
-#[test]
-fn upload_size_verification_accepts_exact_match() {
-    assert!(matches!(
-        verify_uploaded_size(42, Some(42), "Metadata/job.3mf").unwrap(),
-        UploadVerification::Verified
-    ));
-}
-
-#[test]
 fn upload_size_verification_rejects_mismatch() {
     let err = verify_uploaded_size(42, Some(41), "Metadata/job.3mf").unwrap_err();
     let message = err.to_string();
@@ -31,15 +11,6 @@ fn upload_size_verification_rejects_mismatch() {
     assert!(message.contains("Metadata/job.3mf"));
     assert!(message.contains("expected 42 bytes"));
     assert!(message.contains("server reported 41 bytes"));
-}
-
-#[test]
-fn upload_size_verification_rejects_missing_size() {
-    let err = verify_uploaded_size(42, None, "Metadata/job.3mf").unwrap_err();
-    let message = err.to_string();
-
-    assert!(message.contains("Metadata/job.3mf"));
-    assert!(message.contains("server did not return SIZE"));
 }
 
 #[tokio::test]

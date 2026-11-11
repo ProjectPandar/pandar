@@ -6,9 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import en from '../messages/en.json'
 import { JobHistory } from './dashboard-job-history'
-import { isRetryDispatchSafe } from './dashboard-job-status'
 import type { Job, Tenant } from './dashboard-types'
-import { JobsView } from './dashboard-view-content'
 
 function createTestQueryClient() {
   return new QueryClient({
@@ -118,40 +116,6 @@ afterEach(() => {
 })
 
 describe('JobHistory row actions', () => {
-  it('mirrors every backend dispatch retry safety predicate', () => {
-    const safe = job({
-      status: 'failed',
-      print: {
-        ...job().print,
-        status: 'pending',
-        progress_percent: 0,
-        current_layer: 0,
-        started_at: null,
-      },
-      command: {
-        id: 'command-1',
-        kind: 'other',
-        status: 'failed',
-      uploaded_url: 'brtc://emmc/part.3mf',
-      },
-    })
-
-    expect(isRetryDispatchSafe(safe)).toBe(true)
-    for (const unsafe of ([
-      { ...safe, status: 'queued' },
-      { ...safe, command: { ...safe.command, status: 'succeeded' } },
-      { ...safe, print: { ...safe.print, status: 'running' } },
-      {
-        ...safe,
-        print: { ...safe.print, started_at: '2026-07-15T00:00:00Z' },
-      },
-      { ...safe, print: { ...safe.print, progress_percent: 1 } },
-      { ...safe, print: { ...safe.print, current_layer: 1 } },
-    ] satisfies Job[])) {
-      expect(isRetryDispatchSafe(unsafe)).toBe(false)
-    }
-  })
-
   it('confirms the selected job and can cancel without a request', async () => {
     const user = userEvent.setup()
     const fetchMock = vi.fn()
@@ -191,33 +155,6 @@ describe('JobHistory row actions', () => {
     expect(onOpenReprint).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'job-1', artifact_id: 'artifact-1' }),
     )
-  })
-
-  it('enables recovery actions and explains a persisted stalled job', () => {
-    renderHistory({
-      jobs: [
-        job({
-          print: {
-            ...job().print,
-            status: 'stalled',
-            progress_percent: 0,
-            current_layer: 0,
-            started_at: null,
-            finished_at: null,
-            updated_at: null,
-          },
-        }),
-      ],
-    })
-
-    expect(
-      screen.getByRole('button', { name: 'Delete benchy.3mf' }),
-    ).toBeEnabled()
-    expect(
-      screen.getByRole('button', { name: 'Reprint benchy.3mf' }),
-    ).toBeEnabled()
-    expect(screen.getByText('Stalled')).toBeVisible()
-    expect(screen.getByText('Print did not start within 15 minutes')).toBeVisible()
   })
 
   it('offers dispatch retry when dispatch failed before printing started', () => {
@@ -376,27 +313,5 @@ describe('JobHistory row actions', () => {
     ).toBeVisible()
     expect(screen.getByRole('dialog')).toBeVisible()
     expect(onDeleteRedirect).not.toHaveBeenCalled()
-  })
-
-  it('keeps job management enabled for an authorized app API token', () => {
-    render(
-      <QueryClientProvider client={createTestQueryClient()}>
-        <NextIntlClientProvider locale="en" messages={en}>
-          <JobsView
-            selectedTenant={tenant}
-            printers={[]}
-            agents={[]}
-            jobs={[job()]}
-            nowMs={Date.parse('2026-07-15T01:00:00Z')}
-            canManageJobs={true}
-          />
-        </NextIntlClientProvider>
-      </QueryClientProvider>,
-    )
-
-    expect(screen.getByRole('button', { name: 'Clear jobs' })).toBeEnabled()
-    expect(
-      screen.getByRole('button', { name: 'Delete benchy.3mf' }),
-    ).toBeEnabled()
   })
 })

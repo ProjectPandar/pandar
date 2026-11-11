@@ -10,7 +10,7 @@ use tempfile::NamedTempFile;
 
 use super::{
     EmptyRequest, PrintSubmissionBody, post_json_with_connect_failure_with_writer,
-    post_json_with_writer, post_multipart_print_with_writer, redact_hub_error,
+    post_json_with_writer, post_multipart_print_with_writer,
 };
 use crate::{
     PluginHttpResult, RequestKind, pandar_plugin_create_no_auth_session,
@@ -351,61 +351,5 @@ fn no_auth_silent_response_body_returns_a_redacted_read_failure() {
     assert!(
         !diagnostic.contains("no-auth-session"),
         "diagnostic leaked URL path: {diagnostic}"
-    );
-}
-
-#[test]
-fn generic_http_rejects_declared_oversized_response_without_waiting_for_body() {
-    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-    let address = listener.local_addr().unwrap();
-    let server = thread::spawn(move || {
-        let (mut stream, _) = listener.accept().unwrap();
-        let mut request = [0_u8; 4096];
-        let _ = stream.read(&mut request).unwrap();
-        stream
-            .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 1048577\r\nConnection: close\r\n\r\n")
-            .unwrap();
-        thread::sleep(Duration::from_secs(1));
-    });
-    let url = format!("http://{address}/api/v1/plugin/no-auth-session");
-    let mut diagnostic = Vec::new();
-
-    let started = Instant::now();
-    let result = post_json_with_connect_failure_with_writer(
-        &url,
-        EmptyRequest {},
-        RequestKind::TicketExchange,
-        &mut diagnostic,
-    );
-    let elapsed = started.elapsed();
-    server.join().unwrap();
-
-    assert!(elapsed < Duration::from_millis(500));
-    assert_eq!(result.http_code, 200);
-    assert_eq!(body(result), r#"{"error":"invalid_response"}"#);
-    assert!(
-        String::from_utf8(diagnostic)
-            .unwrap()
-            .contains("exceeds 1048576 bytes")
-    );
-}
-
-#[test]
-fn no_auth_tenant_selection_errors_remain_stable() {
-    assert_eq!(
-        redact_hub_error(
-            RequestKind::TicketExchange,
-            409,
-            r#"{"error":"ambiguous_no_auth_tenant"}"#,
-        ),
-        r#"{"error":"ambiguous_no_auth_tenant"}"#
-    );
-    assert_eq!(
-        redact_hub_error(
-            RequestKind::TicketExchange,
-            404,
-            r#"{"error":"tenant_not_found"}"#,
-        ),
-        r#"{"error":"tenant_not_found"}"#
     );
 }

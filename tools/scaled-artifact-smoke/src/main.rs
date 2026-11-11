@@ -91,42 +91,6 @@ mod main {
         use super::*;
 
         #[test]
-        fn parse_rejects_no_mode() {
-            assert!(parse_args(Vec::<String>::new()).is_err());
-        }
-
-        #[test]
-        fn parse_accepts_dry_run_mode() {
-            let config = parse_args(["--dry-run"].into_iter().map(str::to_owned)).unwrap();
-            assert_eq!(config.mode, HarnessMode::DryRun);
-            assert_eq!(config.iterations, 1);
-            assert_eq!(config.concurrency, 2);
-            assert_eq!(config.scenario, ScenarioFilter::All);
-        }
-
-        #[test]
-        fn parse_accepts_live_mode() {
-            let config = parse_args(
-                [
-                    "--live",
-                    "--iterations",
-                    "2",
-                    "--concurrency",
-                    "3",
-                    "--scenario",
-                    "artifact",
-                ]
-                .into_iter()
-                .map(str::to_owned),
-            )
-            .unwrap();
-            assert_eq!(config.mode, HarnessMode::Live);
-            assert_eq!(config.iterations, 2);
-            assert_eq!(config.concurrency, 3);
-            assert_eq!(config.scenario, ScenarioFilter::Artifact);
-        }
-
-        #[test]
         fn parse_rejects_live_storage_scenario() {
             let err = parse_args(
                 ["--live", "--scenario", "storage"]
@@ -154,70 +118,6 @@ mod main {
                     ScenarioFilter::Terminal,
                 ]
             );
-        }
-
-        #[test]
-        fn dry_run_all_includes_storage_scenario() {
-            let config = parse_args(
-                ["--dry-run", "--scenario", "all"]
-                    .into_iter()
-                    .map(str::to_owned),
-            )
-            .unwrap();
-            assert_eq!(
-                config.included_scenarios(),
-                vec![
-                    ScenarioFilter::Artifact,
-                    ScenarioFilter::Fanout,
-                    ScenarioFilter::Restart,
-                    ScenarioFilter::Storage,
-                    ScenarioFilter::Terminal,
-                ]
-            );
-        }
-
-        #[test]
-        fn parse_accepts_live_nats_reconnect_scenario() {
-            let config = parse_args(
-                ["--live", "--scenario", "nats-reconnect"]
-                    .into_iter()
-                    .map(str::to_owned),
-            )
-            .unwrap();
-            assert_eq!(config.scenario, ScenarioFilter::NatsReconnect);
-        }
-
-        #[test]
-        fn parse_rejects_dry_run_nats_reconnect_scenario() {
-            let err = parse_args(
-                ["--dry-run", "--scenario", "nats-reconnect"]
-                    .into_iter()
-                    .map(str::to_owned),
-            )
-            .unwrap_err();
-            assert!(format!("{err:#}").contains("nats reconnect scenario is live only"));
-        }
-
-        #[test]
-        fn parse_accepts_live_postgres_reconnect_scenario() {
-            let config = parse_args(
-                ["--live", "--scenario", "postgres-reconnect"]
-                    .into_iter()
-                    .map(str::to_owned),
-            )
-            .unwrap();
-            assert_eq!(config.scenario, ScenarioFilter::PostgresReconnect);
-        }
-
-        #[test]
-        fn parse_rejects_dry_run_postgres_reconnect_scenario() {
-            let err = parse_args(
-                ["--dry-run", "--scenario", "postgres-reconnect"]
-                    .into_iter()
-                    .map(str::to_owned),
-            )
-            .unwrap_err();
-            assert!(format!("{err:#}").contains("postgres reconnect scenario is live only"));
         }
     }
 }

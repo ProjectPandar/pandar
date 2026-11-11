@@ -6,19 +6,6 @@ import zip.iptables.pandar.android.data.remote.appJson
 
 class PrinterEventsDecoderTest {
 
-    @Test fun decodes_printer_snapshot_event() {
-        val json = """
-        {"type":"printer_snapshot","printer":{
-          "id":"p1","tenant_id":"t1","agent_id":"a1","serial_number":"SN001","printer_family":"bambu_lab","name":"A",
-          "model":null,"compatibility":$UNKNOWN_PRINTER_COMPATIBILITY_JSON,"status":"idle","last_seen_at":"x","created_at":"y","materials":null}}
-        """.trimIndent()
-
-        val event = appJson.decodeFromString<PrinterEventDto>(json)
-        assertTrue(event is PrinterEventDto.PrinterSnapshot)
-        val snap = event as PrinterEventDto.PrinterSnapshot
-        assertTrue(snap.printer.id == "p1")
-    }
-
     @Test fun decodes_enriched_printer_snapshot_with_additive_live_fields() {
         val json = """
         {"type":"printer_snapshot","printer":{

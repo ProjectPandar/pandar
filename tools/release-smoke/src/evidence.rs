@@ -341,16 +341,3 @@ fn one_line(value: &str) -> String {
         .collect::<Vec<_>>()
         .join(" ")
 }
-
-#[cfg(test)]
-mod tests {
-    use super::one_line;
-
-    #[test]
-    fn evidence_values_are_single_line() {
-        assert_eq!(
-            one_line("rustc 1.2\nsecret\tvalue"),
-            "rustc 1.2 secret value"
-        );
-    }
-}

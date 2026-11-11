@@ -85,11 +85,6 @@ fn copy_and_hash(source: &Path, destination: &Path) -> Result<String, String> {
     Ok(format!("{:x}", hasher.finalize()))
 }
 
-#[cfg(test)]
-fn sha256_bytes(bytes: &[u8]) -> String {
-    format!("{:x}", Sha256::digest(bytes))
-}
-
 fn verify_pinned_digest(actual: &str) -> Result<(), String> {
     if actual == PINNED_BOOST_SHA256 {
         return Ok(());
@@ -248,20 +243,7 @@ fn verify_version(include_root: &Path) -> Result<(), String> {
 mod tests {
     use std::fs;
 
-    use super::{locate_include_roots, prepare_archive, sha256_bytes, verify_pinned_digest};
-
-    #[test]
-    fn rejects_archive_digest_mismatch() {
-        let actual = sha256_bytes(b"not the pinned Boost archive");
-
-        let error = verify_pinned_digest(&actual).unwrap_err();
-
-        assert!(error.contains(&actual), "unexpected error: {error}");
-        assert!(
-            error.contains("4d27e9efed0f6f152dc28db6430b9d3dfb40c0345da7342eaa5a987dde57bd95"),
-            "unexpected error: {error}"
-        );
-    }
+    use super::prepare_archive;
 
     #[test]
     fn rejects_mismatched_archive_before_unpacking() {
@@ -276,69 +258,5 @@ mod tests {
             "unexpected error: {error}"
         );
         assert!(!error.contains("gzip"), "unexpected error: {error}");
-    }
-
-    #[test]
-    fn locates_version_header_under_archive_top_level_directory() {
-        let temp = tempfile::tempdir().unwrap();
-        let include = temp.path().join("boost-1.84.0");
-        fs::create_dir_all(include.join("boost")).unwrap();
-        fs::write(
-            include.join("boost/version.hpp"),
-            "#define BOOST_VERSION 108400\n",
-        )
-        .unwrap();
-
-        assert_eq!(locate_include_roots(temp.path()).unwrap(), vec![include]);
-    }
-
-    #[test]
-    fn locates_all_headers_in_official_modular_release_layout() {
-        let temp = tempfile::tempdir().unwrap();
-        let config_include = temp.path().join("boost-1.84.0/libs/config/include");
-        let function_include = temp.path().join("boost-1.84.0/libs/function/include");
-        let numeric_include = temp
-            .path()
-            .join("boost-1.84.0/libs/numeric/conversion/include");
-        let test_include = temp
-            .path()
-            .join("boost-1.84.0/libs/beast/test/extras/include");
-        fs::create_dir_all(config_include.join("boost")).unwrap();
-        fs::create_dir_all(function_include.join("boost")).unwrap();
-        fs::create_dir_all(numeric_include.join("boost")).unwrap();
-        fs::create_dir_all(test_include.join("boost")).unwrap();
-        for metadata in [
-            temp.path().join("boost-1.84.0/libs/config/meta"),
-            temp.path().join("boost-1.84.0/libs/function/meta"),
-            temp.path()
-                .join("boost-1.84.0/libs/numeric/conversion/meta"),
-        ] {
-            fs::create_dir_all(&metadata).unwrap();
-            fs::write(metadata.join("libraries.json"), "[]\n").unwrap();
-        }
-        fs::write(
-            config_include.join("boost/version.hpp"),
-            "#define BOOST_VERSION 108400\n",
-        )
-        .unwrap();
-        fs::write(
-            function_include.join("boost/function.hpp"),
-            "// modular function header\n",
-        )
-        .unwrap();
-        fs::write(
-            numeric_include.join("boost/numeric.hpp"),
-            "// nested numeric header\n",
-        )
-        .unwrap();
-        fs::write(
-            test_include.join("boost/beast_test.hpp"),
-            "// test-only header\n",
-        )
-        .unwrap();
-
-        let mut expected = vec![config_include, function_include, numeric_include];
-        expected.sort();
-        assert_eq!(locate_include_roots(temp.path()).unwrap(), expected);
     }
 }

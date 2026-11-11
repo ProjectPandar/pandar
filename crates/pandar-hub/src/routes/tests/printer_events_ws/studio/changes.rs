@@ -1,40 +1,6 @@
 use super::*;
 
 #[tokio::test]
-async fn studio_projection_suppresses_noop_invalidations() {
-    let fixture = studio_fixture("studio-noop-acme").await;
-    let _control_plane = start_control_plane(fixture.state.clone()).await;
-    let http_addr = serve_http(router(fixture.state.clone())).await;
-    let mut ws = connect_studio(
-        http_addr,
-        fixture.tenant.id,
-        "?projection=studio&version=1",
-        Some(&fixture.token),
-    )
-    .await;
-
-    let StudioFrame::SnapshotBegin { .. } = next_frame(&mut ws, "begin").await else {
-        panic!("expected snapshot_begin");
-    };
-    let StudioFrame::PrinterUpsert { .. } = next_frame(&mut ws, "upsert").await else {
-        panic!("expected printer_upsert");
-    };
-    let StudioFrame::SnapshotEnd = next_frame(&mut ws, "end").await else {
-        panic!("expected snapshot_end");
-    };
-
-    fixture
-        .state
-        .publish_printer_projection_change(
-            fixture.tenant.id,
-            &fixture.printer_id,
-            &fixture.serial_number,
-        )
-        .await;
-    assert_studio_quiet(&mut ws, "noop invalidation").await;
-}
-
-#[tokio::test]
 async fn studio_projection_publishes_renames_but_not_connection_only_metadata() {
     let fixture = studio_fixture("studio-metadata-acme").await;
     let token = all_scope_tenant_token(

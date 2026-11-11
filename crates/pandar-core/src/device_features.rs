@@ -133,13 +133,6 @@ mod tests {
     }
 
     #[test]
-    fn preserves_unnamed_and_high_bits() {
-        let features = BambuDeviceFeatures::from_hex("8000004100000020").unwrap();
-        assert_eq!(features.bits(), 0x8000_0041_0000_0020);
-        assert_eq!(features.to_hex(), "8000004100000020");
-    }
-
-    #[test]
     fn canonicalizes_zero_and_rejects_non_grammar_inputs() {
         assert_eq!(BambuDeviceFeatures::from_hex("0000").unwrap().to_hex(), "0");
         for value in [

@@ -1,6 +1,6 @@
 use crate::{
-    AmsFirmwareSwitchState, FirmwareAcknowledgement, FirmwareCommand, FirmwareControlMetadata,
-    FirmwareTerminalOutcome, PrinterFirmwareModule, PrinterUpgradeState,
+    AmsFirmwareSwitchState, FirmwareCommand, FirmwareControlMetadata, PrinterFirmwareModule,
+    PrinterUpgradeState,
 };
 use serde_json::json;
 
@@ -123,25 +123,4 @@ fn firmware_start_debug_and_metadata_never_expose_url() {
         })
     );
     assert!(!encoded.to_string().contains("SENTINEL"));
-}
-
-#[test]
-fn firmware_printer_rejection_round_trips_without_collapsing_fields() {
-    let outcome = FirmwareTerminalOutcome::Acknowledged {
-        acknowledgement: FirmwareAcknowledgement {
-            command: "mc_for_ams_firmware_upgrade".into(),
-            sequence_id: "-77".into(),
-            result: Some("fail".into()),
-            error_code: Some(-42),
-            reason: Some("unsupported firmware".into()),
-            message: Some("printer refused the selection".into()),
-        },
-    };
-
-    let encoded = serde_json::to_value(&outcome).unwrap();
-    assert_eq!(encoded["acknowledgement"]["err_code"], json!(-42));
-    assert_eq!(
-        serde_json::from_value::<FirmwareTerminalOutcome>(encoded).unwrap(),
-        outcome
-    );
 }

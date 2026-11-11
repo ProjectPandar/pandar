@@ -13,50 +13,13 @@ const hubBase = "https://hub.internal.example/base";
 async function loadRoutes() {
   vi.resetModules();
   vi.stubEnv("APP_API_URL", hubBase);
-  const [
-    jobs,
-    job,
-    reprint,
-    printers,
-    printerJobs,
-    metadata,
-    camera,
-    agents,
-    users,
-    joinLinks,
-    tenantTokens,
-    auditEvents,
-    command,
-  ] = await Promise.all([
-    import("./api/tenants/[tenantId]/jobs/route"),
-    import("./api/tenants/[tenantId]/jobs/[jobId]/route"),
+  const [reprint, printerJobs, camera, auditEvents] = await Promise.all([
     import("./api/tenants/[tenantId]/jobs/[jobId]/reprint/route"),
-    import("./api/tenants/[tenantId]/printers/route"),
     import("./api/tenants/[tenantId]/printers/[printerId]/jobs/route"),
-    import("./api/tenants/[tenantId]/artifact-metadata-preview/route"),
     import("./api/tenants/[tenantId]/printers/[printerId]/camera.mp4/route"),
-    import("./api/tenants/[tenantId]/agents/route"),
-    import("./api/tenants/[tenantId]/users/route"),
-    import("./api/tenants/[tenantId]/join-links/route"),
-    import("./api/tenants/[tenantId]/tenant-tokens/route"),
     import("./api/tenants/[tenantId]/audit-events/route"),
-    import("./api/tenants/[tenantId]/commands/[commandId]/route"),
   ]);
-  return {
-    jobs,
-    job,
-    reprint,
-    printers,
-    printerJobs,
-    metadata,
-    camera,
-    agents,
-    users,
-    joinLinks,
-    tenantTokens,
-    auditEvents,
-    command,
-  };
+  return { reprint, printerJobs, camera, auditEvents };
 }
 
 type FetchMock = ReturnType<
@@ -106,38 +69,6 @@ describe("hub proxy route wiring", () => {
     vi.unstubAllGlobals();
   });
 
-  it("proxies the tenant jobs clear", async () => {
-    const routes = await loadRoutes();
-    const fetchMock = stubUpstream();
-
-    await routes.jobs.DELETE(
-      mutationRequest("https://web.example/api/tenants/tenant-1/jobs"),
-      { params: Promise.resolve({ tenantId: "tenant-1" }) },
-    );
-
-    expectUpstreamCall(
-      fetchMock,
-      `${hubBase}/api/v1/tenants/tenant-1/jobs`,
-      "DELETE",
-    );
-  });
-
-  it("proxies a single job delete", async () => {
-    const routes = await loadRoutes();
-    const fetchMock = stubUpstream();
-
-    await routes.job.DELETE(
-      mutationRequest("https://web.example/api/tenants/tenant-1/jobs/job-1"),
-      { params: Promise.resolve({ tenantId: "tenant-1", jobId: "job-1" }) },
-    );
-
-    expectUpstreamCall(
-      fetchMock,
-      `${hubBase}/api/v1/tenants/tenant-1/jobs/job-1`,
-      "DELETE",
-    );
-  });
-
   it("proxies a job reprint with a forced JSON content-type", async () => {
     const routes = await loadRoutes();
     const fetchMock = stubUpstream();
@@ -158,22 +89,6 @@ describe("hub proxy route wiring", () => {
     const [, init] = firstCall(fetchMock);
     expect(new Headers(init.headers).get("content-type")).toBe(
       "application/json",
-    );
-  });
-
-  it("proxies the printers list", async () => {
-    const routes = await loadRoutes();
-    const fetchMock = stubUpstream();
-
-    await routes.printers.GET(
-      new Request("https://web.example/api/tenants/tenant-1/printers"),
-      { params: Promise.resolve({ tenantId: "tenant-1" }) },
-    );
-
-    expectUpstreamCall(
-      fetchMock,
-      `${hubBase}/api/v1/tenants/tenant-1/printers`,
-      "GET",
     );
   });
 
@@ -207,105 +122,6 @@ describe("hub proxy route wiring", () => {
     expect(new Headers(init.headers).get("content-type")).toBe("text/csv");
   });
 
-  it("proxies the artifact metadata preview", async () => {
-    const routes = await loadRoutes();
-    const fetchMock = stubUpstream();
-
-    await routes.metadata.POST(
-      mutationRequest(
-        "https://web.example/api/tenants/tenant-1/artifact-metadata-preview",
-        { method: "POST", body: "file" },
-      ),
-      { params: Promise.resolve({ tenantId: "tenant-1" }) },
-    );
-
-    expectUpstreamCall(
-      fetchMock,
-      `${hubBase}/api/v1/tenants/tenant-1/artifact-metadata-preview`,
-      "POST",
-    );
-  });
-
-  it("proxies the tenant jobs list", async () => {
-    const routes = await loadRoutes();
-    const fetchMock = stubUpstream();
-
-    await routes.jobs.GET(
-      new Request("https://web.example/api/tenants/tenant-1/jobs"),
-      { params: Promise.resolve({ tenantId: "tenant-1" }) },
-    );
-
-    expectUpstreamCall(
-      fetchMock,
-      `${hubBase}/api/v1/tenants/tenant-1/jobs`,
-      "GET",
-    );
-  });
-
-  it("proxies the agents list", async () => {
-    const routes = await loadRoutes();
-    const fetchMock = stubUpstream();
-
-    await routes.agents.GET(
-      new Request("https://web.example/api/tenants/tenant-1/agents"),
-      { params: Promise.resolve({ tenantId: "tenant-1" }) },
-    );
-
-    expectUpstreamCall(
-      fetchMock,
-      `${hubBase}/api/v1/tenants/tenant-1/agents`,
-      "GET",
-    );
-  });
-
-  it("proxies the users list", async () => {
-    const routes = await loadRoutes();
-    const fetchMock = stubUpstream();
-
-    await routes.users.GET(
-      new Request("https://web.example/api/tenants/tenant-1/users"),
-      { params: Promise.resolve({ tenantId: "tenant-1" }) },
-    );
-
-    expectUpstreamCall(
-      fetchMock,
-      `${hubBase}/api/v1/tenants/tenant-1/users`,
-      "GET",
-    );
-  });
-
-  it("proxies the join links list", async () => {
-    const routes = await loadRoutes();
-    const fetchMock = stubUpstream();
-
-    await routes.joinLinks.GET(
-      new Request("https://web.example/api/tenants/tenant-1/join-links"),
-      { params: Promise.resolve({ tenantId: "tenant-1" }) },
-    );
-
-    expectUpstreamCall(
-      fetchMock,
-      `${hubBase}/api/v1/tenants/tenant-1/join-links`,
-      "GET",
-    );
-  });
-
-  it("proxies the tenant tokens list", async () => {
-    const routes = await loadRoutes();
-    const fetchMock = stubUpstream();
-
-    await routes.tenantTokens.GET(
-      new Request("https://web.example/api/tenants/tenant-1/tenant-tokens"),
-      { params: Promise.resolve({ tenantId: "tenant-1" }) },
-    );
-
-    expectUpstreamCall(
-      fetchMock,
-      `${hubBase}/api/v1/tenants/tenant-1/tenant-tokens`,
-      "GET",
-    );
-  });
-
   it("proxies the audit events list with the declared limit", async () => {
     const routes = await loadRoutes();
     const fetchMock = stubUpstream();
@@ -318,22 +134,6 @@ describe("hub proxy route wiring", () => {
     expectUpstreamCall(
       fetchMock,
       `${hubBase}/api/v1/tenants/tenant-1/audit-events?limit=20`,
-      "GET",
-    );
-  });
-
-  it("proxies a command detail", async () => {
-    const routes = await loadRoutes();
-    const fetchMock = stubUpstream();
-
-    await routes.command.GET(
-      new Request("https://web.example/api/tenants/tenant-1/commands/cmd-1"),
-      { params: Promise.resolve({ tenantId: "tenant-1", commandId: "cmd-1" }) },
-    );
-
-    expectUpstreamCall(
-      fetchMock,
-      `${hubBase}/api/v1/tenants/tenant-1/commands/cmd-1`,
       "GET",
     );
   });

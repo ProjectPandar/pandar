@@ -57,38 +57,6 @@ fn task_plate_rotates_a_gone_no_auth_token_once_and_retries_with_a_fresh_snapsho
 }
 
 #[test]
-fn subtask_rotates_a_rejected_no_auth_token_once_and_retries_with_a_fresh_snapshot() {
-    let output = run_probe("subtask", |listener, deadline| {
-        let (mut stream, request) = next_request(&listener, deadline);
-        assert_request(
-            &request,
-            "GET",
-            "/api/v1/plugin/jobs/42/subtask",
-            Some("stale-token"),
-        );
-        write_response(
-            &mut stream,
-            "401 Unauthorized",
-            r#"{"error":"invalid_auth_token"}"#,
-        );
-        rotate_session(&listener, deadline, "subtask-token");
-        let (mut stream, request) = next_request(&listener, deadline);
-        assert_request(
-            &request,
-            "GET",
-            "/api/v1/plugin/jobs/42/subtask",
-            Some("subtask-token"),
-        );
-        write_response(
-            &mut stream,
-            "200 OK",
-            r##"{"content":"{\"info\":{\"plate_idx\":3}}","context":{"plates":[{"index":3,"thumbnail":{"url":""},"prediction":120,"weight":12.5,"filaments":[{"color":"#FFFFFFFF","type":"PLA","used_g":"12.5","used_m":"4.2"}]}]}}"##,
-        );
-    });
-    assert_eq!(output.trim(), r#"{"ok":true,"mode":"subtask"}"#);
-}
-
-#[test]
 fn task_read_does_not_rotate_or_retry_again_after_the_single_retry_is_rejected() {
     let output = run_probe("retry-rejected", |listener, deadline| {
         let path = "/api/v1/plugin/jobs?dev_id=&status=0&offset=0&limit=20";
