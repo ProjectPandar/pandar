@@ -12,7 +12,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "zip.iptables.pandar.android"
+        applicationId = "app.pandar.android"
         minSdk = 26
         targetSdk = 35
         versionCode = providers.gradleProperty("versionCode").getOrElse("1").toInt()
@@ -23,6 +23,15 @@ android {
 
     buildTypes {
         release {
+            // CI provides the Play upload key only when publishing; other release builds stay unsigned.
+            providers.environmentVariable("ANDROID_KEYSTORE_PATH").orNull?.let { keystore ->
+                signingConfig = signingConfigs.create("release") {
+                    storeFile = file(keystore)
+                    storePassword = providers.environmentVariable("ANDROID_KEYSTORE_PASSWORD").get()
+                    keyAlias = providers.environmentVariable("ANDROID_KEY_ALIAS").get()
+                    keyPassword = providers.environmentVariable("ANDROID_KEY_PASSWORD").get()
+                }
+            }
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
