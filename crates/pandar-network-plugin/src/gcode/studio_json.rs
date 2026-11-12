@@ -228,10 +228,12 @@ impl StudioPrint {
         let slot_id = field_u32(&self.slot_id)?;
         let target = field_u32(&self.target)?;
         let extruder_id = optional_field_u32(&self.extruder_id);
-        if target == 255 && slot_id == 255 {
+        // Unloads target 255. Studio's rack filament page (PageFilament.cpp)
+        // names the unloaded slot k as 255 - k; the legacy unload sends 255.
+        if target == 255 && slot_id >= 247 {
             return Some(PrinterOperation::AmsUnloadFilament {
                 ams_id,
-                slot_id,
+                slot_id: if slot_id == 255 { 255 } else { 255 - slot_id },
                 global_tray_id: None,
                 external_id: None,
                 extruder_id,

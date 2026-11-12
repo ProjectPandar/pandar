@@ -91,6 +91,15 @@ pub(crate) fn studio_message_parser_maps_print_commands_to_semantic_json() {
                 slot_id: 255,
             },
         ),
+        (
+            // Studio's rack filament page unloads H3C AMS 3H slot 2 as 255 - 2.
+            br#"{"print":{"command":"ams_change_filament","ams_id":32,"slot_id":253,"target":255,"curr_temp":220,"tar_temp":220,"extruder_id":0,"sequence_id":"12"}}"#
+                .as_slice(),
+            TestOperation::AmsUnloadFilament {
+                ams_id: 32,
+                slot_id: 2,
+            },
+        ),
     ] {
         let result = operation_json(message);
 

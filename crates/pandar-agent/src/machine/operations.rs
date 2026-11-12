@@ -46,6 +46,7 @@ where
             mqtt_command::mqtt_command_for_printer_operation_with_features(
                 operation,
                 observed_features,
+                endpoint.model.as_deref(),
             )
             .with_context(|| format!("select printer operation payload for {}", endpoint.serial))?,
         ],
