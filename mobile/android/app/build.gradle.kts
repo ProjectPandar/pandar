@@ -9,12 +9,12 @@ plugins {
 
 android {
     namespace = "zip.iptables.pandar.android"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "app.pandar.android"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = providers.gradleProperty("versionCode").getOrElse("1").toInt()
         versionName = "0.2.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
