@@ -7,6 +7,7 @@ COPY Cargo.toml Cargo.lock ./
 COPY crates ./crates
 COPY proto ./proto
 COPY tools/pandar-quality ./tools/pandar-quality
+COPY tools/scaled-artifact-smoke ./tools/scaled-artifact-smoke
 COPY contracts/hub-client.openapi.json ./contracts/hub-client.openapi.json
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/app/target \

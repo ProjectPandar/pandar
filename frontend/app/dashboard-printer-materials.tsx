@@ -255,7 +255,9 @@ function MaterialSlotButton({
           ) : null}
         </div>
         <SlotOperationForm action="ams_reread_rfid" icon={<RotateCwIcon />} label={t('rereadRfid')} printer={printer} slot={slot} />
-        <SlotOperationForm action="ams_load_filament" icon={<DownloadIcon />} label={t('loadFilament')} printer={printer} slot={slot} />
+        {printer.compatibility.normalized_model === 'H3C' && slot.externalId ? null : (
+          <SlotOperationForm action="ams_load_filament" icon={<DownloadIcon />} label={t('loadFilament')} printer={printer} slot={slot} />
+        )}
         <SlotOperationForm action="ams_unload_filament" icon={<UploadIcon />} label={t('unloadFilament')} printer={printer} slot={slot} />
       </PopoverContent>
     </Popover>

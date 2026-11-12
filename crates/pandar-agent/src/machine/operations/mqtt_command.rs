@@ -1,4 +1,5 @@
-use pandar_core::BambuDeviceFeatures;
+use anyhow::Context;
+use pandar_core::{BambuDeviceFeatures, compatibility::normalize_model};
 
 use super::{PrinterOperation, axis};
 use crate::machine::mqtt::{
@@ -9,14 +10,32 @@ use crate::machine::mqtt::{
 pub(in crate::machine) fn mqtt_command_for_printer_operation(
     operation: PrinterOperation,
 ) -> anyhow::Result<BambuMqttCommand> {
-    mqtt_command_for_printer_operation_with_features(operation, None)
+    mqtt_command_for_printer_operation_with_features(operation, None, None)
 }
 
 pub(super) fn mqtt_command_for_printer_operation_with_features(
     operation: PrinterOperation,
     observed_features: Option<BambuDeviceFeatures>,
+    model: Option<&str>,
 ) -> anyhow::Result<BambuMqttCommand> {
     operation.validate().map_err(anyhow::Error::new)?;
+    if model.and_then(normalize_model).as_deref() == Some("H3C") {
+        match operation {
+            PrinterOperation::AmsLoadFilament {
+                ams_id,
+                slot_id,
+                external_id,
+                ..
+            } => return h3c_load_filament(ams_id, slot_id, external_id),
+            PrinterOperation::AmsUnloadFilament {
+                ams_id,
+                slot_id,
+                external_id,
+                ..
+            } => return h3c_unload_filament(ams_id, slot_id, external_id),
+            _ => {}
+        }
+    }
     match operation {
         PrinterOperation::Pause {} => Ok(BambuMqttCommand::PausePrint),
         PrinterOperation::Resume {} => Ok(BambuMqttCommand::ResumePrint),
@@ -169,15 +188,13 @@ pub(super) fn mqtt_command_for_printer_operation_with_features(
         })),
         PrinterOperation::AmsUnloadFilament {
             ams_id,
-            slot_id,
-            global_tray_id,
             external_id,
-            extruder_id,
+            ..
         } => Ok(BambuMqttCommand::AmsUnloadFilament(AmsFilamentCommand {
             ams_id: ams_command_ams_id(ams_id, external_id.as_deref()),
-            slot_id: ams_command_slot_id(slot_id, external_id.as_deref()),
-            target: global_tray_id.unwrap_or(slot_id),
-            extruder_id,
+            slot_id: 255,
+            target: 255,
+            extruder_id: None,
         })),
         PrinterOperation::AmsStartDrying {
             ams_id,
@@ -208,6 +225,56 @@ fn movement_axes(
         }
     }
     axes
+}
+
+// The H3C feeds each of its nine hotends from its own AMS 3H slot or external
+// input, so filament commands name the hotend the way Studio's rack filament
+// page does (PageFilament.cpp), always with `extruder_id` 0.
+fn h3c_load_filament(
+    ams_id: u32,
+    slot_id: u32,
+    external_id: Option<String>,
+) -> anyhow::Result<BambuMqttCommand> {
+    // Studio's CanAutoFeed: an external input has no feeder motor of its own.
+    if let Some(external_id) = external_id {
+        anyhow::bail!(
+            "H3C external input {external_id} cannot feed filament by itself; push it into the hotend by hand"
+        );
+    }
+    Ok(BambuMqttCommand::AmsLoadFilament(AmsFilamentCommand {
+        ams_id,
+        slot_id,
+        target: if ams_id < 16 {
+            ams_id * 4 + slot_id
+        } else {
+            ams_id
+        },
+        extruder_id: Some(0),
+    }))
+}
+
+fn h3c_unload_filament(
+    ams_id: u32,
+    slot_id: u32,
+    external_id: Option<String>,
+) -> anyhow::Result<BambuMqttCommand> {
+    let (ams_id, slot_id) = match external_id {
+        Some(external_id) => (
+            external_id
+                .parse()
+                .with_context(|| format!("invalid H3C external input id {external_id:?}"))?,
+            255,
+        ),
+        // 255 is Studio's own unaddressed or external-input unload, already encoded.
+        None if slot_id == 255 => (ams_id, 255),
+        None => (ams_id, 255 - slot_id),
+    };
+    Ok(BambuMqttCommand::AmsUnloadFilament(AmsFilamentCommand {
+        ams_id,
+        slot_id,
+        target: 255,
+        extruder_id: Some(0),
+    }))
 }
 
 fn ams_command_ams_id(ams_id: u32, external_id: Option<&str>) -> u32 {

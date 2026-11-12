@@ -65,8 +65,6 @@ pub(super) fn ams_load_filament_payload(command: &AmsFilamentCommand) -> BambuMq
 }
 
 pub(super) fn ams_unload_filament_payload(command: &AmsFilamentCommand) -> BambuMqttCommandPayload {
-    let _ = command.slot_id;
-    let _ = command.target;
     let sequence_id = next_studio_sequence_id();
     BambuMqttCommandPayload::with_sequence(
         json_payload(PrintPayload {
@@ -74,11 +72,11 @@ pub(super) fn ams_unload_filament_payload(command: &AmsFilamentCommand) -> Bambu
                 command: "ams_change_filament",
                 sequence_id: sequence_id.clone(),
                 ams_id: command.ams_id,
-                slot_id: 255,
-                target: 255,
+                slot_id: command.slot_id,
+                target: command.target,
                 curr_temp: 210,
                 tar_temp: 210,
-                extruder_id: None,
+                extruder_id: command.extruder_id,
             },
         }),
         sequence_id,
