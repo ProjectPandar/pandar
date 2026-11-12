@@ -1,4 +1,7 @@
-use std::sync::Arc;
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use anyhow::Context;
 use pandar_hub::{
@@ -6,25 +9,23 @@ use pandar_hub::{
     artifacts::{ArtifactStorage, S3ArtifactStorageConfig},
     cluster::{ControlPlane, ControlPlaneConfig},
     db::{Database, DatabaseConfig},
-    repositories::{
-        ApplyPrintReport, AuditActor, PrinterSnapshotUpsert, TenantTokenScope, UserRole,
-    },
+    repositories::{AuditActor, TenantTokenScope, UserRole},
+    runtime::spawn_control_plane_ready,
 };
-use pandar_protocol::agent::v1::PrintJobReport;
-use tempfile::TempDir;
 
 use crate::{
+    agent::FakeAgent,
     harness::{HarnessConfig, HarnessMode},
-    storage::SharedObjectStorage,
+    storage::shared_object_storage,
 };
 
 pub const ARTIFACT_BYTES: &[u8] = b"scaled smoke 3mf bytes";
 
+/// Two Hub replicas sharing one database, object store, and control plane.
 pub struct SmokeWorld {
-    pub temp: TempDir,
     pub database: Database,
-    pub storage: Arc<dyn ArtifactStorage>,
-    pub control_plane: ControlPlane,
+    storage: Arc<dyn ArtifactStorage>,
+    control_plane: ControlPlane,
     pub hub_a: AppState,
     pub hub_b: AppState,
 }
@@ -32,41 +33,21 @@ pub struct SmokeWorld {
 impl SmokeWorld {
     pub async fn for_config(config: &HarnessConfig) -> anyhow::Result<Self> {
         match config.mode {
-            HarnessMode::DryRun => Self::dry_run().await,
+            HarnessMode::DryRun => {
+                let root = world_root(config)?;
+                let storage = shared_object_storage(root.join("objects"))?;
+                Self::dry_run(&root, storage).await
+            }
             HarnessMode::Live => Self::live().await,
         }
     }
 
-    pub async fn dry_run() -> anyhow::Result<Self> {
-        let temp = tempfile::tempdir().context("create smoke temp dir")?;
-        let database_url = format!("sqlite://{}", temp.path().join("hub.sqlite").display());
+    /// A SQLite and in-process control-plane world over `storage`.
+    pub async fn dry_run(root: &Path, storage: Arc<dyn ArtifactStorage>) -> anyhow::Result<Self> {
+        let database_url = format!("sqlite://{}", root.join("hub.sqlite").display());
         let database = Database::connect(&DatabaseConfig::from_url(database_url)?).await?;
         database.migrate().await?;
-
-        let storage: Arc<dyn ArtifactStorage> =
-            Arc::new(SharedObjectStorage::new(temp.path().join("objects"))?);
-        let control_plane = ControlPlane::in_process();
-        let hub_a = AppState::from_database_with_control_plane(
-            database.clone(),
-            storage.clone(),
-            control_plane.clone(),
-        )
-        .await?;
-        let hub_b = AppState::from_database_with_control_plane(
-            database.clone(),
-            storage.clone(),
-            control_plane.clone(),
-        )
-        .await?;
-
-        Ok(Self {
-            temp,
-            database,
-            storage,
-            control_plane,
-            hub_a,
-            hub_b,
-        })
+        Self::assemble(database, storage, ControlPlane::in_process()).await
     }
 
     async fn live() -> anyhow::Result<Self> {
@@ -108,21 +89,17 @@ impl SmokeWorld {
             .check_ready()
             .await
             .context("check live soak S3-compatible artifact storage readiness")?;
-        let hub_a = AppState::from_database_with_control_plane(
-            database.clone(),
-            storage.clone(),
-            control_plane.clone(),
-        )
-        .await?;
-        let hub_b = AppState::from_database_with_control_plane(
-            database.clone(),
-            storage.clone(),
-            control_plane.clone(),
-        )
-        .await?;
+        Self::assemble(database, storage, control_plane).await
+    }
 
+    async fn assemble(
+        database: Database,
+        storage: Arc<dyn ArtifactStorage>,
+        control_plane: ControlPlane,
+    ) -> anyhow::Result<Self> {
+        let hub_a = replica(&database, &storage, &control_plane).await?;
+        let hub_b = replica(&database, &storage, &control_plane).await?;
         Ok(Self {
-            temp: tempfile::tempdir().context("create live smoke temp dir")?,
             database,
             storage,
             control_plane,
@@ -131,43 +108,42 @@ impl SmokeWorld {
         })
     }
 
+    pub async fn agent(&self, hub: &AppState, fixture: &SmokeFixture) -> anyhow::Result<FakeAgent> {
+        FakeAgent::connect(hub, &self.database, fixture).await
+    }
+
+    /// A fresh replica over the shared state, as after a Hub restart.
     pub async fn restarted_state(&self) -> anyhow::Result<AppState> {
-        AppState::from_database_with_control_plane(
-            self.database.clone(),
-            self.storage.clone(),
-            self.control_plane.clone(),
-        )
-        .await
+        replica(&self.database, &self.storage, &self.control_plane).await
     }
 }
 
-pub async fn world_with_storage(storage: Arc<dyn ArtifactStorage>) -> anyhow::Result<SmokeWorld> {
-    let temp = tempfile::tempdir().context("create smoke temp dir")?;
-    let database_url = format!("sqlite://{}", temp.path().join("hub.sqlite").display());
-    let database = Database::connect(&DatabaseConfig::from_url(database_url)?).await?;
-    database.migrate().await?;
-    let control_plane = ControlPlane::in_process();
-    let hub_a = AppState::from_database_with_control_plane(
-        database.clone(),
-        storage.clone(),
-        control_plane.clone(),
-    )
-    .await?;
-    let hub_b = AppState::from_database_with_control_plane(
-        database.clone(),
-        storage.clone(),
-        control_plane.clone(),
-    )
-    .await?;
+/// A fresh directory for one dry-run world inside the run-wide scratch dir.
+pub fn world_root(config: &HarnessConfig) -> anyhow::Result<PathBuf> {
+    Ok(tempfile::tempdir_in(&config.scratch)
+        .context("create smoke world dir")?
+        .keep())
+}
 
-    Ok(SmokeWorld {
-        temp,
-        database,
-        storage,
-        control_plane,
-        hub_a,
-        hub_b,
-    })
+/// Builds a Hub replica and starts its control-plane subscription, which
+/// delivers agent wakes and printer events published by any replica.
+async fn replica(
+    database: &Database,
+    storage: &Arc<dyn ArtifactStorage>,
+    control_plane: &ControlPlane,
+) -> anyhow::Result<AppState> {
+    let state = AppState::from_database_with_control_plane(
+        database.clone(),
+        storage.clone(),
+        control_plane.clone(),
+    )
+    .await?;
+    let (_, ready) = spawn_control_plane_ready(state.clone());
+    ready
+        .await
+        .context("control plane readiness channel closed")?
+        .context("hub control plane failed to start")?;
+    Ok(state)
 }
 
 pub async fn seed_fixture(state: &AppState, suffix: &str) -> anyhow::Result<SmokeFixture> {
@@ -201,21 +177,6 @@ pub async fn seed_fixture(state: &AppState, suffix: &str) -> anyhow::Result<Smok
             AuditActor::user(admin.id.clone()),
         )
         .await?;
-    let printer = state
-        .printers()
-        .upsert_snapshot(
-            tenant.id,
-            agent.id,
-            PrinterSnapshotUpsert {
-                printer_family: pandar_core::PrinterFamily::BambuLab,
-                serial_number: format!("scaled-smoke-serial-{suffix}"),
-                name: format!("Scaled Smoke Printer {suffix}"),
-                model: Some("X1C".to_owned()),
-                status: "online".to_owned(),
-                observed_at: pandar_core::created_at_now(),
-            },
-        )
-        .await?;
     let plugin_token = state
         .auth()
         .create_tenant_token_with_audit(
@@ -240,72 +201,16 @@ pub async fn seed_fixture(state: &AppState, suffix: &str) -> anyhow::Result<Smok
     Ok(SmokeFixture {
         tenant_id: tenant.id,
         agent_id: agent.id,
-        printer_id: printer.id,
-        printer_serial: printer.serial_number,
+        printer_serial: format!("scaled-smoke-serial-{suffix}"),
         plugin_token: plugin_token.plaintext_token,
         tenant_token: tenant_token.plaintext_token,
         agent_credential,
     })
 }
 
-pub fn report_input(
-    fixture: &SmokeFixture,
-    job_id: Option<pandar_core::JobId>,
-    artifact_id: Option<String>,
-    gcode_state: &str,
-) -> ApplyPrintReport {
-    ApplyPrintReport {
-        tenant_id: fixture.tenant_id,
-        agent_id: fixture.agent_id,
-        serial: fixture.printer_serial.clone(),
-        job_id,
-        artifact_id,
-        subtask_id: None,
-        gcode_file: None,
-        subtask_name: None,
-        gcode_state: Some(gcode_state.to_owned()),
-        percent: Some(if gcode_state == "FINISH" { 100 } else { 42 }),
-        remaining_time_minutes: Some(if gcode_state == "FINISH" { 0 } else { 60 }),
-        current_layer: Some(3),
-        total_layers: Some(9),
-        diagnostics: Vec::new(),
-        printer_materials_json: String::new(),
-        observed_at: "2026-06-24T00:00:00Z".to_owned(),
-    }
-}
-
-pub fn report(
-    fixture: &SmokeFixture,
-    job_id: Option<pandar_core::JobId>,
-    artifact_id: Option<String>,
-    gcode_state: &str,
-) -> PrintJobReport {
-    PrintJobReport {
-        job_id: job_id.map(|id| id.to_string()).unwrap_or_default(),
-        artifact_id: artifact_id.unwrap_or_default(),
-        subtask_id: String::new(),
-        serial: fixture.printer_serial.clone(),
-        gcode_file: String::new(),
-        subtask_name: String::new(),
-        gcode_state: gcode_state.to_owned(),
-        percent: if gcode_state == "FINISH" { 100 } else { 42 },
-        has_percent: true,
-        remaining_time_minutes: if gcode_state == "FINISH" { 0 } else { 60 },
-        has_remaining_time_minutes: true,
-        current_layer: 3,
-        has_current_layer: true,
-        total_layers: 9,
-        has_total_layers: true,
-        diagnostics: Vec::new(),
-        printer_materials_json: String::new(),
-        observed_at: "2026-06-24T00:00:00Z".to_owned(),
-    }
-}
-
 pub struct SmokeFixture {
     pub tenant_id: pandar_core::TenantId,
     pub agent_id: pandar_core::AgentId,
-    pub printer_id: String,
     pub printer_serial: String,
     pub plugin_token: String,
     pub tenant_token: String,

@@ -3,32 +3,23 @@ use std::{collections::HashSet, sync::Arc, time::Duration};
 use anyhow::{Context, ensure};
 use axum::http::StatusCode;
 use pandar_core::{CommandStatus, PrintStatus};
-use pandar_hub::{
-    AppState,
-    artifacts::ArtifactStorage,
-    db::Database,
-    grpc::print_reports::handle_print_report,
-    printer_events::PrinterEvent,
-    repositories::CreatePrintJob,
-    runtime::spawn_control_plane_ready,
-    sessions::{AgentSession, SessionToken},
-};
-use tokio::sync::mpsc;
+use pandar_hub::{AppState, db::Database, entities::machine_events};
+use pandar_protocol::agent::v1::PrintProjectFile;
+use sea_orm::{EntityTrait, PaginatorTrait};
 
 use crate::{
-    fixture::{
-        ARTIFACT_BYTES, SmokeFixture, SmokeWorld, report, report_input, seed_fixture,
-        world_with_storage,
-    },
+    agent::FakeAgent,
+    fixture::{SmokeFixture, SmokeWorld, seed_fixture, world_root},
     harness::HarnessConfig,
     http::{
-        connect_ws_with_ticket, create_print_expect_status, create_print_through_multipart_route,
-        create_ws_ticket, dequeue_print_command, download_artifact, download_artifact_route,
-        next_ws_event_type, serve_hub,
+        connect_ws_with_ticket, create_print, create_print_through_multipart_route,
+        create_ws_ticket, download_artifact, download_artifact_route, next_ws_event_type,
+        serve_hub,
     },
-    storage::{FailingObjectStorage, FailureMode, SharedObjectStorage},
+    storage::{FailingObjectStorage, FailureMode, shared_object_storage},
 };
-use sea_orm::{ConnectionTrait, Statement};
+
+const COMMAND_TIMEOUT: Duration = Duration::from_secs(10);
 
 pub async fn artifact_dispatch_download(
     iteration: usize,
@@ -40,26 +31,10 @@ pub async fn artifact_dispatch_download(
         &config.fixture_suffix("artifact", iteration, 0),
     )
     .await?;
-    let (_control_plane, ready) = spawn_control_plane_ready(world.hub_b.clone());
-    ready
-        .await
-        .context("control plane readiness channel closed")?
-        .context("hub B control plane failed to start")?;
-    let (wake_sender, mut wake_receiver) = mpsc::channel(1);
-    let (close_sender, _) = mpsc::channel(1);
-    world
-        .hub_b
-        .sessions()
-        .register(agent_session(&fixture, wake_sender, close_sender))
-        .await;
+    let mut agent = world.agent(&world.hub_b, &fixture).await?;
 
-    create_print_through_multipart_route(&world.hub_a, &fixture).await?;
-    tokio::time::timeout(Duration::from_secs(1), wake_receiver.recv())
-        .await
-        .context("agent wake did not converge to hub B")?
-        .context("agent wake channel closed")?;
-
-    let (command_id, print) = dequeue_print_command(&world.hub_b, &fixture).await?;
+    create_print_through_multipart_route(&world.hub_a, &fixture, &agent.printer_id).await?;
+    let print = receive_sent_print(&world.hub_b, &fixture, &mut agent).await?;
     ensure!(
         !print.artifact_download_path.trim().is_empty(),
         "PrintProjectFile is missing artifact_download_path"
@@ -68,46 +43,27 @@ pub async fn artifact_dispatch_download(
         !print.storage_path.contains("pandar-spool"),
         "smoke command used a shared spool path"
     );
-    let persisted = world
-        .hub_b
-        .commands()
-        .get_for_tenant(fixture.tenant_id, command_id)
-        .await?
-        .context("expected persisted command after dispatch")?;
-    ensure!(
-        persisted.status == CommandStatus::Sent,
-        "command was not marked sent"
-    );
 
     download_artifact(&world.hub_b, &fixture, &print.artifact_download_path).await?;
     concurrent_plugin_pressure(iteration, config).await?;
-    Ok(())
+    agent.disconnect(&world.hub_b).await
 }
 
 pub async fn websocket_fanout(iteration: usize, config: &HarnessConfig) -> anyhow::Result<()> {
     let world = SmokeWorld::for_config(config).await?;
     let fixture =
         seed_fixture(&world.hub_a, &config.fixture_suffix("fanout", iteration, 0)).await?;
-    create_print_through_multipart_route(&world.hub_a, &fixture).await?;
-    let created_job = world
-        .hub_a
-        .jobs()
-        .list_for_tenant(fixture.tenant_id)
-        .await?
-        .into_iter()
-        .next()
-        .context("expected created job")?;
+    let mut agent = world.agent(&world.hub_a, &fixture).await?;
+    create_print_through_multipart_route(&world.hub_a, &fixture, &agent.printer_id).await?;
+    let (command_id, print) = agent.next_print_command(COMMAND_TIMEOUT).await?;
+    agent.acknowledge(command_id).await?;
+    agent.settle().await?;
+
     let tickets = futures_util::future::try_join_all(
         (0..config.concurrency)
             .map(|_| create_ws_ticket(&world.hub_a, fixture.tenant_id, &fixture.tenant_token)),
     )
     .await?;
-
-    let (_control_plane, ready) = spawn_control_plane_ready(world.hub_b.clone());
-    ready
-        .await
-        .context("control plane readiness channel closed")?
-        .context("hub B control plane failed to start")?;
     let base_url = serve_hub(world.hub_b.clone()).await?;
     let mut sockets = futures_util::future::try_join_all(
         tickets
@@ -116,40 +72,19 @@ pub async fn websocket_fanout(iteration: usize, config: &HarnessConfig) -> anyho
     )
     .await?;
 
-    let printer = world
-        .hub_a
-        .printers()
-        .get_for_tenant(fixture.tenant_id, &fixture.printer_id)
-        .await?
-        .context("expected printer")?;
-    world
-        .hub_a
-        .publish_printer_event(fixture.tenant_id, PrinterEvent::PrinterSnapshot { printer })
-        .await;
-    handle_print_report(
-        &world.hub_a,
-        fixture.tenant_id,
-        fixture.agent_id,
-        report(
-            &fixture,
-            Some(created_job.job.id),
-            Some(created_job.artifact.id),
-            "RUNNING",
-        ),
-    )
-    .await
-    .map_err(|status| anyhow::anyhow!("print report failed: {status}"))?;
+    agent.send_snapshot("running").await?;
+    agent.report(&print, "RUNNING").await?;
 
     for socket in &mut sockets {
         let mut seen = HashSet::new();
-        seen.insert(next_ws_event_type(socket).await?);
-        seen.insert(next_ws_event_type(socket).await?);
-        ensure!(
-            seen.contains("printer_snapshot") && seen.contains("job_progress"),
-            "websocket subscriber did not receive both event types: {seen:?}"
-        );
+        while !(seen.contains("printer_snapshot") && seen.contains("job_progress")) {
+            let event_type = next_ws_event_type(socket)
+                .await
+                .with_context(|| format!("websocket subscriber only received {seen:?}"))?;
+            seen.insert(event_type);
+        }
     }
-    Ok(())
+    agent.disconnect(&world.hub_a).await
 }
 
 pub async fn restart_convergence(iteration: usize, config: &HarnessConfig) -> anyhow::Result<()> {
@@ -159,52 +94,46 @@ pub async fn restart_convergence(iteration: usize, config: &HarnessConfig) -> an
         &config.fixture_suffix("restart", iteration, 0),
     )
     .await?;
-    create_print_through_multipart_route(&world.hub_a, &fixture).await?;
+    // The print is queued while its agent is disconnected, so only a replica
+    // that reloads the shared database can deliver it.
+    let agent = world.agent(&world.hub_a, &fixture).await?;
+    let printer_id = agent.printer_id.clone();
+    agent.disconnect(&world.hub_a).await?;
+    create_print_through_multipart_route(&world.hub_a, &fixture, &printer_id).await?;
+
     let restarted = world.restarted_state().await?;
-    let (command_id, _print) = dequeue_print_command(&restarted, &fixture).await?;
-    let persisted = restarted
-        .commands()
-        .get_for_tenant(fixture.tenant_id, command_id)
-        .await?
-        .context("expected persisted command after restart dequeue")?;
-    ensure!(
-        persisted.status == CommandStatus::Sent,
-        "restarted state did not mark command sent"
-    );
+    let mut agent = world.agent(&restarted, &fixture).await?;
+    receive_sent_print(&restarted, &fixture, &mut agent).await?;
 
     let ticket = create_ws_ticket(&world.hub_a, fixture.tenant_id, &fixture.tenant_token).await?;
-    let base_url = serve_hub(restarted.clone()).await?;
+    let base_url = serve_hub(world.hub_a.clone()).await?;
     let mut socket = connect_ws_with_ticket(&base_url, fixture.tenant_id, &ticket).await?;
-    let (_control_plane, ready) = spawn_control_plane_ready(restarted.clone());
-    ready
-        .await
-        .context("control plane readiness channel closed")?
-        .context("restarted control plane failed to start")?;
-    let printer = restarted
-        .printers()
-        .get_for_tenant(fixture.tenant_id, &fixture.printer_id)
-        .await?
-        .context("expected printer after restart")?;
-    world
-        .hub_a
-        .publish_printer_event(fixture.tenant_id, PrinterEvent::PrinterSnapshot { printer })
-        .await;
-    ensure!(
-        next_ws_event_type(&mut socket).await? == "printer_snapshot",
-        "restarted websocket did not receive printer snapshot"
-    );
-    Ok(())
+    // Both directions must converge: a print accepted by the surviving replica
+    // wakes the agent on the restarted one, and a snapshot the restarted
+    // replica applies reaches subscribers of the surviving one.
+    create_print_through_multipart_route(&world.hub_a, &fixture, &agent.printer_id).await?;
+    receive_sent_print(&restarted, &fixture, &mut agent).await?;
+    agent.send_snapshot("running").await?;
+    loop {
+        let event_type = next_ws_event_type(&mut socket)
+            .await
+            .context("surviving replica websocket did not receive printer snapshot")?;
+        if event_type == "printer_snapshot" {
+            break;
+        }
+    }
+    agent.disconnect(&restarted).await
 }
 
-pub async fn storage_failures(iteration: usize, _config: &HarnessConfig) -> anyhow::Result<()> {
-    let temp = tempfile::tempdir().context("create storage failure temp dir")?;
-    let storage = FailingObjectStorage::new(SharedObjectStorage::new(temp.path().join("objects"))?);
-    let shared_storage: Arc<dyn ArtifactStorage> = Arc::new(storage.clone());
-    let world = world_with_storage(shared_storage).await?;
+pub async fn storage_failures(iteration: usize, config: &HarnessConfig) -> anyhow::Result<()> {
+    let root = world_root(config)?;
+    let storage = FailingObjectStorage::new(shared_object_storage(root.join("objects"))?);
+    let world = SmokeWorld::dry_run(&root, Arc::new(storage.clone())).await?;
     let fixture = seed_fixture(&world.hub_a, &format!("storage-{iteration}")).await?;
+    let mut agent = world.agent(&world.hub_b, &fixture).await?;
 
     storage.set_mode(FailureMode::Put);
-    let status = create_print_expect_status(&world.hub_a, &fixture).await?;
+    let (status, _) = create_print(&world.hub_a, &fixture, &agent.printer_id).await?;
     ensure!(
         status != StatusCode::CREATED,
         "put failure unexpectedly created print"
@@ -214,13 +143,18 @@ pub async fn storage_failures(iteration: usize, _config: &HarnessConfig) -> anyh
         "put failure created command row"
     );
     ensure!(
-        table_count(&world.database, "jobs").await? == 0,
+        world
+            .hub_a
+            .jobs()
+            .list_for_tenant(fixture.tenant_id)
+            .await?
+            .is_empty(),
         "put failure created job row"
     );
 
     storage.set_mode(FailureMode::None);
-    create_print_through_multipart_route(&world.hub_a, &fixture).await?;
-    let (_, print) = dequeue_print_command(&world.hub_b, &fixture).await?;
+    create_print_through_multipart_route(&world.hub_a, &fixture, &agent.printer_id).await?;
+    let (_, print) = agent.next_print_command(COMMAND_TIMEOUT).await?;
     storage.set_mode(FailureMode::Open);
     let (status, body) =
         download_artifact_route(&world.hub_b, &fixture, &print.artifact_download_path).await?;
@@ -242,7 +176,7 @@ pub async fn storage_failures(iteration: usize, _config: &HarnessConfig) -> anyh
         format!("{delete_err:#}").contains("injected artifact delete failure"),
         "delete failure did not preserve context: {delete_err:#}"
     );
-    Ok(())
+    agent.disconnect(&world.hub_b).await
 }
 
 async fn concurrent_plugin_pressure(
@@ -250,47 +184,43 @@ async fn concurrent_plugin_pressure(
     config: &HarnessConfig,
 ) -> anyhow::Result<()> {
     let world = SmokeWorld::for_config(config).await?;
-    let mut fixtures = Vec::with_capacity(config.concurrency);
+    let mut clients = Vec::with_capacity(config.concurrency);
     for index in 0..config.concurrency {
-        fixtures.push(
-            seed_fixture(
-                &world.hub_a,
-                &config.fixture_suffix("pressure", iteration, index),
-            )
-            .await?,
-        );
+        let fixture = seed_fixture(
+            &world.hub_a,
+            &config.fixture_suffix("pressure", iteration, index),
+        )
+        .await?;
+        let agent = world.agent(&world.hub_b, &fixture).await?;
+        clients.push((fixture, agent));
     }
-    let limiter = Arc::new(tokio::sync::Semaphore::new(config.concurrency));
-    futures_util::future::try_join_all(fixtures.iter().map(|fixture| {
-        let limiter = limiter.clone();
-        let hub = world.hub_a.clone();
-        async move {
-            let _permit = limiter.acquire_owned().await?;
-            create_print_through_multipart_route(&hub, fixture).await
-        }
+    futures_util::future::try_join_all(clients.iter().map(|(fixture, agent)| {
+        create_print_through_multipart_route(&world.hub_a, fixture, &agent.printer_id)
     }))
     .await?;
-    ensure!(
-        queued_print_commands_for_fixtures(&world, &fixtures).await? == config.concurrency as i64,
-        "expected one command per concurrent plugin client"
-    );
-    let mut prints = Vec::new();
-    for fixture in &fixtures {
-        prints.push(dequeue_print_command(&world.hub_b, fixture).await?.1);
+
+    let mut prints = Vec::with_capacity(clients.len());
+    for (_, agent) in &mut clients {
+        prints.push(agent.next_print_command(COMMAND_TIMEOUT).await?.1);
     }
+    let artifacts = prints
+        .iter()
+        .map(|print| print.artifact_id.as_str())
+        .collect::<HashSet<_>>();
     ensure!(
-        prints.len() == config.concurrency,
-        "drained {} commands, expected {}",
-        prints.len(),
-        config.concurrency
+        artifacts.len() == config.concurrency,
+        "concurrent plugin clients did not each receive their own artifact"
     );
-    if let Some(first) = prints.first() {
-        let fixture = fixtures.first().context("expected first fixture")?;
-        download_artifact(&world.hub_b, fixture, &first.artifact_download_path).await?;
+    for index in [0, clients.len() - 1] {
+        download_artifact(
+            &world.hub_b,
+            &clients[index].0,
+            &prints[index].artifact_download_path,
+        )
+        .await?;
     }
-    if let Some(last) = prints.last() {
-        let fixture = fixtures.last().context("expected last fixture")?;
-        download_artifact(&world.hub_b, fixture, &last.artifact_download_path).await?;
+    for (_, agent) in clients {
+        agent.disconnect(&world.hub_b).await?;
     }
     Ok(())
 }
@@ -305,50 +235,37 @@ pub async fn terminal_report_idempotence(
         &config.fixture_suffix("terminal", iteration, 0),
     )
     .await?;
-    let created = create_print_job(&world.hub_a, &fixture).await?;
-    let terminal = apply_report(
-        &world.hub_a,
-        &fixture,
-        Some(created.job.id),
-        Some(created.artifact.id.clone()),
-        "FINISH",
-    )
-    .await?;
-    let terminal_event_count = table_count(&world.database, "machine_events").await?;
-    let replay = apply_report(
-        &world.hub_a,
-        &fixture,
-        Some(created.job.id),
-        Some(created.artifact.id.clone()),
-        "FINISH",
-    )
-    .await?;
-    ensure!(terminal.changed, "first terminal report did not change job");
-    ensure!(!replay.changed, "terminal replay was not idempotent");
+    let mut agent = world.agent(&world.hub_a, &fixture).await?;
+    create_print_through_multipart_route(&world.hub_a, &fixture, &agent.printer_id).await?;
+    let (command_id, print) = agent.next_print_command(COMMAND_TIMEOUT).await?;
+    agent.acknowledge(command_id).await?;
+
+    agent.report(&print, "FINISH").await?;
+    agent.settle().await?;
     ensure!(
-        table_count(&world.database, "machine_events").await? == terminal_event_count,
+        print_status(&world.hub_a, &fixture, &print).await? == PrintStatus::Completed,
+        "terminal report did not complete the print"
+    );
+    let terminal_event_count = machine_event_count(&world.database).await?;
+    ensure!(
+        terminal_event_count > 0,
+        "terminal report recorded no machine event"
+    );
+
+    agent.report(&print, "FINISH").await?;
+    agent.settle().await?;
+    ensure!(
+        machine_event_count(&world.database).await? == terminal_event_count,
         "terminal replay inserted another machine event"
     );
 
-    apply_report(
-        &world.hub_a,
-        &fixture,
-        Some(created.job.id),
-        Some(created.artifact.id),
-        "RUNNING",
-    )
-    .await?;
-    let persisted = world
-        .hub_a
-        .jobs()
-        .get_for_tenant(fixture.tenant_id, created.job.id)
-        .await?
-        .context("expected terminal job")?;
+    agent.report(&print, "RUNNING").await?;
+    agent.settle().await?;
     ensure!(
-        persisted.job.print.status == PrintStatus::Completed,
+        print_status(&world.hub_a, &fixture, &print).await? == PrintStatus::Completed,
         "stale RUNNING report regressed terminal print status"
     );
-    Ok(())
+    agent.disconnect(&world.hub_a).await
 }
 
 pub async fn nats_reconnect(iteration: usize, config: &HarnessConfig) -> anyhow::Result<()> {
@@ -358,39 +275,14 @@ pub async fn nats_reconnect(iteration: usize, config: &HarnessConfig) -> anyhow:
         &config.fixture_suffix("nats-reconnect", iteration, 0),
     )
     .await?;
-    let (_control_plane, ready) = spawn_control_plane_ready(world.hub_b.clone());
-    ready
-        .await
-        .context("control plane readiness channel closed")?
-        .context("hub B control plane failed to start")?;
-    let (wake_sender, mut wake_receiver) = mpsc::channel(1);
-    let (close_sender, _) = mpsc::channel(1);
-    world
-        .hub_b
-        .sessions()
-        .register(agent_session(&fixture, wake_sender, close_sender))
-        .await;
+    let mut agent = world.agent(&world.hub_b, &fixture).await?;
 
     println!("WAIT scenario=nats-reconnect iteration={iteration} stop-restart-nats-now");
-    tokio::time::sleep(nats_reconnect_pause()).await;
+    tokio::time::sleep(reconnect_pause("PANDAR_SOAK_NATS_RECONNECT_PAUSE_SECS")).await;
 
-    create_print_through_multipart_route(&world.hub_a, &fixture).await?;
-    tokio::time::timeout(Duration::from_secs(10), wake_receiver.recv())
-        .await
-        .context("agent wake did not arrive after NATS interruption")?
-        .context("agent wake channel closed after NATS interruption")?;
-    let (command_id, _print) = dequeue_print_command(&world.hub_b, &fixture).await?;
-    let persisted = world
-        .hub_b
-        .commands()
-        .get_for_tenant(fixture.tenant_id, command_id)
-        .await?
-        .context("expected persisted command after NATS reconnect dequeue")?;
-    ensure!(
-        persisted.status == CommandStatus::Sent,
-        "NATS reconnect command was not marked sent"
-    );
-    Ok(())
+    create_print_through_multipart_route(&world.hub_a, &fixture, &agent.printer_id).await?;
+    receive_sent_print(&world.hub_b, &fixture, &mut agent).await?;
+    agent.disconnect(&world.hub_b).await
 }
 
 pub async fn postgres_reconnect(iteration: usize, config: &HarnessConfig) -> anyhow::Result<()> {
@@ -400,174 +292,70 @@ pub async fn postgres_reconnect(iteration: usize, config: &HarnessConfig) -> any
         &config.fixture_suffix("postgres-reconnect", iteration, 0),
     )
     .await?;
+    let mut agent = world.agent(&world.hub_b, &fixture).await?;
 
     println!("WAIT scenario=postgres-reconnect iteration={iteration} stop-restart-postgres-now");
-    tokio::time::sleep(postgres_reconnect_pause()).await;
+    tokio::time::sleep(reconnect_pause("PANDAR_SOAK_POSTGRES_RECONNECT_PAUSE_SECS")).await;
 
-    create_print_through_multipart_route(&world.hub_a, &fixture).await?;
-    let (command_id, _print) = dequeue_print_command(&world.hub_b, &fixture).await?;
-    let persisted = world
-        .hub_b
+    create_print_through_multipart_route(&world.hub_a, &fixture, &agent.printer_id).await?;
+    let print = receive_sent_print(&world.hub_b, &fixture, &mut agent).await?;
+    agent.report(&print, "FINISH").await?;
+    agent.settle().await?;
+    ensure!(
+        print_status(&world.hub_b, &fixture, &print).await? == PrintStatus::Completed,
+        "PostgreSQL reconnect terminal report did not complete the print"
+    );
+    agent.disconnect(&world.hub_b).await
+}
+
+fn reconnect_pause(variable: &str) -> Duration {
+    std::env::var(variable)
+        .ok()
+        .and_then(|value| value.parse::<u64>().ok())
+        .filter(|seconds| *seconds > 0)
+        .map(Duration::from_secs)
+        .unwrap_or(Duration::from_secs(10))
+}
+
+/// Receives the next print command, checks that the delivering replica
+/// persisted it as sent, and acknowledges it.
+async fn receive_sent_print(
+    state: &AppState,
+    fixture: &SmokeFixture,
+    agent: &mut FakeAgent,
+) -> anyhow::Result<PrintProjectFile> {
+    let (command_id, print) = agent.next_print_command(COMMAND_TIMEOUT).await?;
+    let persisted = state
         .commands()
         .get_for_tenant(fixture.tenant_id, command_id)
         .await?
-        .context("expected persisted command after PostgreSQL reconnect dequeue")?;
+        .context("expected persisted command after dispatch")?;
     ensure!(
         persisted.status == CommandStatus::Sent,
-        "PostgreSQL reconnect command was not marked sent"
+        "delivered command is {:?}, expected sent",
+        persisted.status
     );
-
-    let created = create_print_job(&world.hub_a, &fixture).await?;
-    let terminal = apply_report(
-        &world.hub_a,
-        &fixture,
-        Some(created.job.id),
-        Some(created.artifact.id.clone()),
-        "FINISH",
-    )
-    .await?;
-    ensure!(
-        terminal.changed,
-        "PostgreSQL reconnect terminal report did not change job"
-    );
-    Ok(())
+    agent.acknowledge(command_id).await?;
+    agent.settle().await?;
+    Ok(print)
 }
 
-fn nats_reconnect_pause() -> Duration {
-    std::env::var("PANDAR_SOAK_NATS_RECONNECT_PAUSE_SECS")
-        .ok()
-        .and_then(|value| value.parse::<u64>().ok())
-        .filter(|seconds| *seconds > 0)
-        .map(Duration::from_secs)
-        .unwrap_or(Duration::from_secs(10))
-}
-
-fn postgres_reconnect_pause() -> Duration {
-    std::env::var("PANDAR_SOAK_POSTGRES_RECONNECT_PAUSE_SECS")
-        .ok()
-        .and_then(|value| value.parse::<u64>().ok())
-        .filter(|seconds| *seconds > 0)
-        .map(Duration::from_secs)
-        .unwrap_or(Duration::from_secs(10))
-}
-
-fn agent_session(
-    fixture: &SmokeFixture,
-    wake_sender: mpsc::Sender<()>,
-    close_sender: mpsc::Sender<()>,
-) -> AgentSession {
-    let now = pandar_core::created_at_now();
-    AgentSession {
-        token: SessionToken::new(),
-        tenant_id: fixture.tenant_id,
-        agent_id: fixture.agent_id,
-        name: "scaled-smoke-agent".to_owned(),
-        version: "scaled-smoke".to_owned(),
-        connected_at: now.clone(),
-        last_heartbeat_at: now,
-        wake_sender,
-        close_sender,
-    }
-}
-
-async fn create_print_job(
+async fn print_status(
     state: &AppState,
     fixture: &SmokeFixture,
-) -> anyhow::Result<pandar_hub::repositories::JobWithArtifact> {
-    state
+    print: &PrintProjectFile,
+) -> anyhow::Result<PrintStatus> {
+    let job = state
         .jobs()
-        .create_print_job(CreatePrintJob {
-            tenant_id: fixture.tenant_id,
-            printer_id: fixture.printer_id.clone(),
-            agent_id: fixture.agent_id,
-            artifact_id: pandar_core::JobId::new().to_string(),
-            artifact_filename: "terminal.3mf".to_owned(),
-            artifact_content_type: "model/3mf".to_owned(),
-            artifact_size_bytes: ARTIFACT_BYTES.len() as u64,
-            artifact_storage_path: format!(
-                "{}/{}/terminal.3mf",
-                fixture.tenant_id,
-                pandar_core::JobId::new()
-            ),
-            artifact_metadata_json: None,
-            plate_id: 1,
-            use_ams: true,
-            flow_cali: false,
-            timelapse: false,
-            ams_mapping_json: None,
-            ams_mapping2_json: None,
-        })
-        .await
-        .map_err(anyhow::Error::from)
-        .context("failed to create terminal print job")
-}
-
-async fn apply_report(
-    state: &AppState,
-    fixture: &SmokeFixture,
-    job_id: Option<pandar_core::JobId>,
-    artifact_id: Option<String>,
-    gcode_state: &str,
-) -> anyhow::Result<pandar_hub::repositories::AppliedPrintReport> {
-    state
-        .jobs()
-        .apply_print_report(report_input(fixture, job_id, artifact_id, gcode_state))
-        .await
-        .map_err(anyhow::Error::from)
-        .context("failed to apply print report")
-}
-
-async fn table_count(database: &Database, table: &'static str) -> anyhow::Result<i64> {
-    let sql = format!("SELECT COUNT(*) AS count FROM {table}");
-    let statement = Statement::from_string(
-        match database.backend() {
-            pandar_hub::db::DatabaseBackend::Sqlite => sea_orm::DatabaseBackend::Sqlite,
-            pandar_hub::db::DatabaseBackend::Postgres => sea_orm::DatabaseBackend::Postgres,
-        },
-        sql,
-    );
-    let row = database
-        .sea_orm_connection()
-        .query_one_raw(statement)
+        .get_for_tenant(fixture.tenant_id, pandar_core::JobId::parse(&print.job_id)?)
         .await?
-        .context("count query returned no row")?;
-    row.try_get("", "count").map_err(anyhow::Error::from)
+        .context("expected print job")?;
+    Ok(job.job.print.status)
 }
 
-async fn queued_print_commands_for_fixtures(
-    world: &SmokeWorld,
-    fixtures: &[SmokeFixture],
-) -> anyhow::Result<i64> {
-    let mut total = 0;
-    for fixture in fixtures {
-        let sql = "SELECT COUNT(*) AS count FROM commands \
-            WHERE tenant_id = $1 AND agent_id = $2 AND kind = 'print_project_file' \
-            AND status = 'queued'";
-        let statement = match world.database.backend() {
-            pandar_hub::db::DatabaseBackend::Sqlite => Statement::from_sql_and_values(
-                sea_orm::DatabaseBackend::Sqlite,
-                sql.replace("$1", "?").replace("$2", "?"),
-                [
-                    fixture.tenant_id.to_string().into(),
-                    fixture.agent_id.to_string().into(),
-                ],
-            ),
-            pandar_hub::db::DatabaseBackend::Postgres => Statement::from_sql_and_values(
-                sea_orm::DatabaseBackend::Postgres,
-                sql,
-                [
-                    fixture.tenant_id.to_string().into(),
-                    fixture.agent_id.to_string().into(),
-                ],
-            ),
-        };
-        let row = world
-            .database
-            .sea_orm_connection()
-            .query_one_raw(statement)
-            .await?
-            .context("fixture command count query returned no row")?;
-        total += row.try_get::<i64>("", "count")?;
-    }
-    Ok(total)
+async fn machine_event_count(database: &Database) -> anyhow::Result<u64> {
+    machine_events::Entity::find()
+        .count(&database.sea_orm_connection())
+        .await
+        .context("count machine events")
 }

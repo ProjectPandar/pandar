@@ -11,44 +11,14 @@ use pandar_hub::artifacts::{
     StoreArtifactInput, StoredArtifact,
 };
 
-#[derive(Clone)]
-pub struct SharedObjectStorage {
-    inner: Arc<FilesystemArtifactStorage>,
-}
-
-impl SharedObjectStorage {
-    pub fn new(root: impl Into<PathBuf>) -> anyhow::Result<Self> {
-        Ok(Self {
-            inner: Arc::new(FilesystemArtifactStorage::new(root.into(), 1024 * 1024)?),
-        })
-    }
-}
-
-#[async_trait::async_trait]
-impl ArtifactStorage for SharedObjectStorage {
-    async fn put_artifact(&self, input: StoreArtifactInput<'_>) -> anyhow::Result<StoredArtifact> {
-        self.inner.put_artifact(input).await
-    }
-
-    async fn open_artifact(&self, storage_key: &str) -> anyhow::Result<ArtifactBody> {
-        self.inner.open_artifact(storage_key).await
-    }
-
-    async fn delete_artifact(&self, storage_key: &str) -> anyhow::Result<()> {
-        self.inner.delete_artifact(storage_key).await
-    }
-
-    async fn check_ready(&self) -> anyhow::Result<()> {
-        self.inner.check_ready().await
-    }
-
-    fn max_artifact_bytes(&self) -> usize {
-        self.inner.max_artifact_bytes()
-    }
-
-    fn backend(&self) -> ArtifactStorageBackend {
-        ArtifactStorageBackend::S3
-    }
+/// Object storage both smoke Hub replicas read and write.
+pub fn shared_object_storage(
+    root: impl Into<PathBuf>,
+) -> anyhow::Result<Arc<FilesystemArtifactStorage>> {
+    Ok(Arc::new(FilesystemArtifactStorage::new(
+        root.into(),
+        1024 * 1024,
+    )?))
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -81,12 +51,12 @@ impl FailureMode {
 
 #[derive(Clone)]
 pub struct FailingObjectStorage {
-    inner: SharedObjectStorage,
+    inner: Arc<FilesystemArtifactStorage>,
     mode: Arc<AtomicU8>,
 }
 
 impl FailingObjectStorage {
-    pub fn new(inner: SharedObjectStorage) -> Self {
+    pub fn new(inner: Arc<FilesystemArtifactStorage>) -> Self {
         Self {
             inner,
             mode: Arc::new(AtomicU8::new(FailureMode::None.as_u8())),

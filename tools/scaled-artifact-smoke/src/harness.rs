@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use anyhow::{Context, ensure};
 
 #[derive(Debug, Clone)]
@@ -7,6 +9,9 @@ pub struct HarnessConfig {
     pub concurrency: usize,
     pub scenario: ScenarioFilter,
     pub run_id: String,
+    /// Directory holding every dry-run world; it must outlive the runtime so
+    /// Hub tasks still closing agent sessions never lose their database.
+    pub scratch: PathBuf,
 }
 
 impl Default for HarnessConfig {
@@ -17,6 +22,7 @@ impl Default for HarnessConfig {
             concurrency: 2,
             scenario: ScenarioFilter::All,
             run_id: default_run_id(),
+            scratch: std::env::temp_dir(),
         }
     }
 }

@@ -1,3 +1,4 @@
+mod agent;
 mod fixture;
 mod harness;
 mod http;
@@ -7,12 +8,11 @@ mod storage;
 
 use std::{env, process::ExitCode};
 
-use anyhow::bail;
+use anyhow::{Context, bail};
 use harness::{HarnessConfig, HarnessMode, ScenarioFilter};
 
-#[tokio::main]
-async fn main() -> ExitCode {
-    match run().await {
+fn main() -> ExitCode {
+    match run() {
         Ok(()) => ExitCode::SUCCESS,
         Err(err) => {
             eprintln!("scaled artifact smoke failed: {err:#}");
@@ -21,7 +21,7 @@ async fn main() -> ExitCode {
     }
 }
 
-async fn run() -> anyhow::Result<()> {
+fn run() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
     let args = env::args().skip(1).collect::<Vec<_>>();
     if args.first().is_some_and(|mode| mode == "--live-preflight") {
@@ -30,8 +30,17 @@ async fn run() -> anyhow::Result<()> {
         }
         return live::run_preflight();
     }
-    let config = parse_args(args)?;
-    harness::run(config).await
+    let mut config = parse_args(args)?;
+    let scratch = tempfile::tempdir().context("create smoke scratch dir")?;
+    config.scratch = scratch.path().to_owned();
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .context("build smoke runtime")?;
+    let result = runtime.block_on(harness::run(config));
+    // Stop every Hub task before `scratch` removes their databases.
+    drop(runtime);
+    result
 }
 
 fn parse_args(args: impl IntoIterator<Item = String>) -> anyhow::Result<HarnessConfig> {

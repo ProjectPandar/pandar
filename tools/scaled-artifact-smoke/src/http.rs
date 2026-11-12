@@ -11,28 +11,43 @@ use pandar_agent::{
     AgentConfig,
     commands::{ArtifactReader, HubArtifactReader},
 };
-use pandar_hub::grpc::commands::next_hub_command_for_agent;
 use pandar_hub::{AppState, router};
-use serde_json::Value;
+use serde::Deserialize;
 use tokio_tungstenite::{connect_async, tungstenite::client::IntoClientRequest};
 use tower::ServiceExt;
 
 use crate::fixture::{ARTIFACT_BYTES, SmokeFixture};
 
+#[derive(Deserialize)]
+struct PrinterEventTicket {
+    ticket: String,
+}
+
+#[derive(Deserialize)]
+struct PrinterEventEnvelope {
+    r#type: String,
+}
+
 pub async fn create_print_through_multipart_route(
     state: &AppState,
     fixture: &SmokeFixture,
-) -> anyhow::Result<StatusCode> {
-    let (status, body) = create_print_raw(state, fixture).await?;
-    ensure_created(status, &body)?;
-    Ok(status)
+    printer_id: &str,
+) -> anyhow::Result<()> {
+    let (status, body) = create_print(state, fixture, printer_id).await?;
+    ensure!(
+        status == StatusCode::CREATED,
+        "multipart print route returned {status}: {}",
+        String::from_utf8_lossy(&body)
+    );
+    Ok(())
 }
 
-async fn create_print_raw(
+pub async fn create_print(
     state: &AppState,
     fixture: &SmokeFixture,
+    printer_id: &str,
 ) -> anyhow::Result<(StatusCode, Vec<u8>)> {
-    let body = multipart_print_body(&fixture.printer_id, "scaled-smoke.3mf");
+    let body = multipart_print_body(printer_id, "scaled-smoke.3mf");
     let request = Request::builder()
         .method("POST")
         .uri("/api/v1/plugin/prints")
@@ -53,40 +68,6 @@ async fn create_print_raw(
     let status = response.status();
     let body = response.into_body().collect().await?.to_bytes();
     Ok((status, body.to_vec()))
-}
-
-fn ensure_created(status: StatusCode, body: &[u8]) -> anyhow::Result<()> {
-    ensure!(
-        status == StatusCode::CREATED,
-        "multipart print route returned {status}: {}",
-        String::from_utf8_lossy(body)
-    );
-    Ok(())
-}
-
-pub async fn create_print_expect_status(
-    state: &AppState,
-    fixture: &SmokeFixture,
-) -> anyhow::Result<StatusCode> {
-    let body = multipart_print_body(&fixture.printer_id, "scaled-smoke.3mf");
-    let request = Request::builder()
-        .method("POST")
-        .uri("/api/v1/plugin/prints")
-        .header(
-            header::AUTHORIZATION,
-            format!("Bearer {}", fixture.plugin_token),
-        )
-        .header(
-            header::CONTENT_TYPE,
-            format!("multipart/form-data; boundary={}", body.boundary),
-        )
-        .body(Body::from(body.body))
-        .context("build multipart print request")?;
-    let response = router(state.clone())
-        .oneshot(request)
-        .await
-        .context("send multipart print request")?;
-    Ok(response.status())
 }
 
 pub async fn create_ws_ticket(
@@ -113,11 +94,9 @@ pub async fn create_ws_ticket(
         "printer event ticket route returned {status}: {}",
         String::from_utf8_lossy(&body)
     );
-    let json: Value = serde_json::from_slice(&body).context("decode printer event ticket body")?;
-    json["ticket"]
-        .as_str()
-        .map(str::to_owned)
-        .context("printer event ticket response missing ticket")
+    let ticket: PrinterEventTicket =
+        serde_json::from_slice(&body).context("decode printer event ticket body")?;
+    Ok(ticket.ticket)
 }
 
 pub async fn download_artifact_route(
@@ -169,30 +148,6 @@ pub async fn download_artifact(
     Ok(())
 }
 
-pub async fn dequeue_print_command(
-    state: &AppState,
-    fixture: &SmokeFixture,
-) -> anyhow::Result<(
-    pandar_core::CommandId,
-    pandar_protocol::agent::v1::PrintProjectFile,
-)> {
-    ensure!(
-        state.commands().count().await? >= 1,
-        "Hub B did not see the queued command in the shared database"
-    );
-    let command = next_hub_command_for_agent(state, fixture.tenant_id, fixture.agent_id)
-        .await
-        .map_err(|status| anyhow::anyhow!("command conversion failed: {status}"))?
-        .context("expected queued command")?;
-    let command_id = pandar_core::CommandId::parse(&command.command_id)?;
-    match command.command.context("expected hub command payload")? {
-        pandar_protocol::agent::v1::hub_command::Command::PrintProjectFile(print) => {
-            Ok((command_id, print))
-        }
-        _ => anyhow::bail!("expected PrintProjectFile command"),
-    }
-}
-
 pub async fn connect_ws_with_ticket(
     base_url: &str,
     tenant_id: pandar_core::TenantId,
@@ -214,17 +169,15 @@ pub async fn next_ws_event_type(
         tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>,
     >,
 ) -> anyhow::Result<String> {
-    let message = tokio::time::timeout(std::time::Duration::from_secs(1), ws.next())
+    let message = tokio::time::timeout(std::time::Duration::from_secs(10), ws.next())
         .await
         .context("websocket event timed out")?
         .context("websocket closed before event")?
         .context("websocket read failed")?;
     let text = message.into_text().context("expected websocket text")?;
-    let json: Value = serde_json::from_str(&text).context("decode websocket event")?;
-    json["type"]
-        .as_str()
-        .map(str::to_owned)
-        .context("websocket event missing type")
+    let event: PrinterEventEnvelope =
+        serde_json::from_str(&text).context("decode websocket event")?;
+    Ok(event.r#type)
 }
 
 pub async fn serve_hub(state: AppState) -> anyhow::Result<String> {
@@ -246,15 +199,43 @@ struct MultipartBody {
 fn multipart_print_body(printer_id: &str, filename: &str) -> MultipartBody {
     let boundary = "pandar-scaled-smoke-boundary";
     let mut body = Vec::new();
+    // The complete field set Bambu Studio submits for a cloud print.
     for (name, value) in [
         ("printer_id", printer_id),
         ("filename", filename),
         ("content_type", "model/3mf"),
         ("plate_id", "1"),
         ("use_ams", "true"),
+        ("bed_leveling", "false"),
+        ("auto_bed_leveling", "0"),
         ("flow_cali", "false"),
+        ("auto_flow_cali", "0"),
+        ("auto_offset_cali", "0"),
         ("timelapse", "true"),
+        ("task_name", filename),
+        ("project_name", "Scaled smoke project"),
+        ("preset_name", "Scaled smoke preset"),
+        ("config_plate_index", "1"),
+        ("nozzle_mapping", "[]"),
         ("ams_mapping", "[]"),
+        ("ams_mapping2", "[]"),
+        ("ams_mapping_info", "[]"),
+        ("nozzles_info", "[]"),
+        ("connection_type", "cloud"),
+        ("comments", ""),
+        ("origin_profile_id", "0"),
+        ("stl_design_id", "0"),
+        ("origin_model_id", ""),
+        ("print_type", "from_normal"),
+        ("dev_name", "Scaled Smoke Printer"),
+        ("vibration_cali", "false"),
+        ("layer_inspect", "false"),
+        ("timelapse_use_internal", "false"),
+        ("bed_type", "auto"),
+        ("extruder_cali_manual_mode", "-1"),
+        ("try_emmc_print", "false"),
+        ("svc_context", ""),
+        ("slicer_uid", "scaled-smoke"),
     ] {
         body.extend_from_slice(format!("--{boundary}\r\n").as_bytes());
         body.extend_from_slice(

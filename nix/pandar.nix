@@ -75,7 +75,9 @@
           || lib.hasPrefix "proto/" rel
           || rel == "tools"
           || rel == "tools/pandar-quality"
-          || lib.hasPrefix "tools/pandar-quality/" rel;
+          || lib.hasPrefix "tools/pandar-quality/" rel
+          || rel == "tools/scaled-artifact-smoke"
+          || lib.hasPrefix "tools/scaled-artifact-smoke/" rel;
       };
 
       moduleSizeSrc = lib.cleanSourceWith {

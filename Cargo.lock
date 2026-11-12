@@ -3103,6 +3103,31 @@ name = "pandar-quality"
 version = "0.2.2"
 
 [[package]]
+name = "pandar-scaled-artifact-smoke"
+version = "0.2.2"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "axum",
+ "futures-util",
+ "http-body-util",
+ "pandar-agent",
+ "pandar-core",
+ "pandar-hub",
+ "pandar-protocol",
+ "sea-orm",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tokio-stream",
+ "tokio-tungstenite 0.30.0",
+ "tonic",
+ "tower",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "pandar-studio-hook"
 version = "0.2.2"
 dependencies = [

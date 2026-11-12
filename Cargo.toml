@@ -10,10 +10,10 @@ members = [
     "crates/pandar-studio-profile",
     "crates/pandar-studio-hook",
     "tools/pandar-quality",
+    "tools/scaled-artifact-smoke",
 ]
 exclude = [
     "tools/release-smoke",
-    "tools/scaled-artifact-smoke",
 ]
 resolver = "2"
 

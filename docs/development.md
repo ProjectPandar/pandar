@@ -629,7 +629,9 @@ cargo run --manifest-path tools/scaled-artifact-smoke/Cargo.toml -- --live-prefl
 cargo run --manifest-path tools/scaled-artifact-smoke/Cargo.toml -- --live --iterations 1 --concurrency 2
 ```
 
-`--dry-run` uses local process fixtures, a shared SQLite database, shared fake object storage, and loopback HTTP/WebSocket only. Treat it as local convergence evidence for command wakeups, WebSocket fanout, plugin calls, storage failures, restart simulation, and terminal report idempotence. It is not live PostgreSQL/NATS/object-storage soak evidence.
+`--dry-run` runs two in-process Hub replicas over a shared SQLite database, a shared filesystem object store, and the in-process control plane. A fake agent speaks the real `ReverseConnect` gRPC stream to one replica while prints are submitted through the other replica's `/api/v1/plugin/prints` route, so the harness only touches the Hub through its HTTP, WebSocket, and gRPC boundaries. Treat it as local convergence evidence for command wakeups, WebSocket fanout, plugin calls, storage failures, restart simulation, and terminal report idempotence. It is not live PostgreSQL/NATS/object-storage soak evidence.
+
+The harness is a workspace member, and its `dry_run_scenarios_pass` test runs every dry-run scenario through the CLI as part of `cargo nextest run --workspace`, so Hub API or behavior drift fails the normal test suite.
 
 `--live-preflight` checks only the disposable live soak environment contract; it does not connect to PostgreSQL, NATS, or object storage and is not live soak evidence. It verifies that the PostgreSQL URL uses a PostgreSQL scheme, contains a disposable marker (`soak`, `disposable`, `ephemeral`, or `test`), and does not contain production markers (`prod` or `production`). It also checks that the NATS URL uses `nats://`, the S3 endpoint uses HTTP(S), and bucket/region/access-key/secret values are not blank or placeholder-looking.
 
