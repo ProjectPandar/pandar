@@ -6,7 +6,7 @@ use tokio::{
 
 use crate::{
     AgentConfig,
-    machine::BambuPrinterEndpoint,
+    machine::{BambuPrinterEndpoint, moonraker::MoonrakerEndpoint},
     startup::{fetch_saved_printer_connections, startup_printers},
 };
 
@@ -69,6 +69,57 @@ async fn startup_printers_prefers_saved_hub_connection_for_same_serial() {
             access_code: "new-code".to_owned(),
             model: Some("X1 Carbon".to_owned()),
             name: Some("Office X1C".to_owned()),
+        }]
+    );
+    server.request().await;
+}
+
+#[tokio::test]
+async fn startup_printers_defaults_missing_printer_family_and_keeps_explicit_families() {
+    let server = TestHubPrinterServer::start(
+        "agent-id",
+        "pandar_ac_test",
+        r#"{"printers":[
+            {"serial":"OLD-SERIAL","host":"192.0.2.10","access_code":"12345678","name":"Office X1C","model":"X1 Carbon"},
+            {"serial":"NEW-SERIAL","host":"192.0.2.11","printer_family":"bambu_lab","access_code":"87654321","name":"Lab P1S","model":"P1S"},
+            {"serial":"KLIPPER-SERIAL","host":"192.0.2.12:7125","printer_family":"moonraker","access_code":"moon-key","name":"U1","model":"Klipper"}
+        ]}"#,
+    )
+    .await;
+    let config = AgentConfig {
+        hub_api_url: Some(server.base_url()),
+        ..super::test_config()
+    };
+
+    let printers = startup_printers(&config).await.unwrap();
+
+    assert_eq!(
+        printers.bambu,
+        vec![
+            BambuPrinterEndpoint {
+                host: "192.0.2.10".to_owned(),
+                serial: "OLD-SERIAL".to_owned(),
+                access_code: "12345678".to_owned(),
+                model: Some("X1 Carbon".to_owned()),
+                name: Some("Office X1C".to_owned()),
+            },
+            BambuPrinterEndpoint {
+                host: "192.0.2.11".to_owned(),
+                serial: "NEW-SERIAL".to_owned(),
+                access_code: "87654321".to_owned(),
+                model: Some("P1S".to_owned()),
+                name: Some("Lab P1S".to_owned()),
+            },
+        ]
+    );
+    assert_eq!(
+        printers.moonraker,
+        vec![MoonrakerEndpoint {
+            host: "192.0.2.12:7125".to_owned(),
+            serial: "KLIPPER-SERIAL".to_owned(),
+            api_key: Some("moon-key".to_owned()),
+            model: Some("Klipper".to_owned()),
+            name: Some("U1".to_owned()),
         }]
     );
     server.request().await;
