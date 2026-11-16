@@ -129,6 +129,9 @@ struct SavedPrinterConnectionsResponse {
 struct SavedPrinterConnection {
     serial: String,
     host: String,
+    // Hubs from before printer_family omit this key. Those printers are Bambu Lab,
+    // the same value the hub migration backfills with DEFAULT 'bambu_lab'.
+    #[serde(default)]
     printer_family: PrinterFamily,
     access_code: Option<String>,
     name: String,
