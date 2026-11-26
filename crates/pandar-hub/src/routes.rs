@@ -306,7 +306,13 @@ fn client_api_router(cors_allowed_origins: Vec<HeaderValue>) -> Router<AppState>
     router.layer(
         CorsLayer::new()
             .allow_origin(cors_allowed_origins)
-            .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
+            .allow_methods([
+                Method::GET,
+                Method::POST,
+                Method::PATCH,
+                Method::DELETE,
+                Method::OPTIONS,
+            ])
             .allow_headers([header::AUTHORIZATION, header::CONTENT_TYPE]),
     )
 }
