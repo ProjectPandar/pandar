@@ -286,13 +286,24 @@ export async function createPluginTicket(formData: FormData) {
 }
 
 export async function createMobileTicket(formData: FormData) {
+  await createSessionTicket(formData, "mobile");
+}
+
+export async function createWebTicket(formData: FormData) {
+  await createSessionTicket(formData, "web");
+}
+
+async function createSessionTicket(
+  formData: FormData,
+  client: "mobile" | "web",
+) {
   await requireAuth();
   const tenantId = stringField(formData, "tenant_id");
   const redirectUrl = stringField(formData, "redirect_url");
   const codeChallenge = stringField(formData, "code_challenge");
   const state = stringField(formData, "state");
   const response = await postJson(
-    `/api/v1/tenants/${apiIdSegment(tenantId, "tenant_id")}/mobile/login-tickets`,
+    `/api/v1/tenants/${apiIdSegment(tenantId, "tenant_id")}/${client}/login-tickets`,
     {
       redirect_url: redirectUrl,
       code_challenge: codeChallenge,

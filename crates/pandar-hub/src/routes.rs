@@ -141,11 +141,16 @@ pub fn router(state: AppState) -> Router {
         .with_state(state)
 }
 
-/// Bearer-token client API (`/api/v1/me`, `/api/v1/tenants/...`), the only surface
-/// exposed to the browser origins listed in `PANDAR_CORS_ALLOWED_ORIGINS`.
+/// Bearer-token client API (`/api/v1/me`, `/api/v1/tenants/...`) plus the web login-ticket
+/// exchange, the only surface exposed to the browser origins listed in
+/// `PANDAR_CORS_ALLOWED_ORIGINS`.
 fn client_api_router(cors_allowed_origins: Vec<HeaderValue>) -> Router<AppState> {
     let router = Router::new()
         .route("/api/v1/me", get(onboarding::me))
+        .route(
+            "/api/v1/web/login-tickets/exchange",
+            post(plugin::exchange_web_login_ticket),
+        )
         .route(
             "/api/v1/tenants",
             get(admin::list_tenants).post(admin::create_tenant),
@@ -205,6 +210,10 @@ fn client_api_router(cors_allowed_origins: Vec<HeaderValue>) -> Router<AppState>
         .route(
             "/api/v1/tenants/{tenant_id}/mobile/login-tickets",
             post(plugin::create_mobile_login_ticket),
+        )
+        .route(
+            "/api/v1/tenants/{tenant_id}/web/login-tickets",
+            post(plugin::create_web_login_ticket),
         )
         .route(
             "/api/v1/tenants/{tenant_id}/audit-events",

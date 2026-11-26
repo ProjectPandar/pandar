@@ -12,6 +12,7 @@ use time::{Duration, OffsetDateTime, format_description::well_known::Rfc3339};
 
 mod mobile;
 mod types;
+mod web;
 
 pub use types::{
     LoginTicketKind, PluginLoginTicket, PluginLoginTicketExchange, PluginLoginTicketWithPlaintext,
@@ -29,8 +30,10 @@ use crate::{
 
 const PLUGIN_LOGIN_TICKET_PREFIX: &str = "pandar_plugin_ticket_";
 const MOBILE_LOGIN_TICKET_PREFIX: &str = "pandar_mobile_ticket_";
+const WEB_LOGIN_TICKET_PREFIX: &str = "pandar_web_ticket_";
 const PLUGIN_TOKEN_SCOPE: &str = "plugin:studio";
 const MOBILE_TOKEN_SCOPE: &str = "mobile:session";
+const WEB_TOKEN_SCOPE: &str = "web:session";
 const PLUGIN_TOKEN_TTL_DAYS: i64 = 30;
 
 #[derive(Serialize)]
@@ -133,8 +136,8 @@ impl AuthRepository {
         if plugin_login_ticket_expired(&ticket)? {
             return Ok(None);
         }
-        if expected_kind == LoginTicketKind::Mobile
-            && !mobile_pkce_matches(&ticket, code_verifier.unwrap_or_default())
+        if expected_kind != LoginTicketKind::Plugin
+            && !pkce_matches(&ticket, code_verifier.unwrap_or_default())
         {
             return Ok(None);
         }
@@ -181,6 +184,16 @@ impl AuthRepository {
                 )
                 .await?
             }
+            LoginTicketKind::Web => {
+                AuthRepository::create_web_token_from_ticket_tx(
+                    &tx,
+                    used_ticket.tenant_id,
+                    "Ares web",
+                    used_ticket.user_id.clone(),
+                    token_expires_at,
+                )
+                .await?
+            }
         };
         let (event_name, actor) = match expected_kind {
             LoginTicketKind::Plugin => (
@@ -197,6 +210,14 @@ impl AuthRepository {
                     used_ticket.user_id.clone(),
                     tenant_token.token.id.clone(),
                     vec![MOBILE_TOKEN_SCOPE],
+                ),
+            ),
+            LoginTicketKind::Web => (
+                "web_login_ticket.exchange",
+                AuditActor::tenant_token(
+                    used_ticket.user_id.clone(),
+                    tenant_token.token.id.clone(),
+                    vec![WEB_TOKEN_SCOPE],
                 ),
             ),
         };
@@ -325,7 +346,7 @@ fn plugin_login_ticket_model(
     }
 }
 
-fn mobile_pkce_matches(ticket: &PluginLoginTicket, code_verifier: &str) -> bool {
+fn pkce_matches(ticket: &PluginLoginTicket, code_verifier: &str) -> bool {
     if !(43..=128).contains(&code_verifier.len())
         || !code_verifier
             .bytes()

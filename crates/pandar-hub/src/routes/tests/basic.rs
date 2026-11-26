@@ -59,6 +59,7 @@ async fn public_openapi_contract_exposes_generated_client_schemas() {
         "/api/v1/tenants/{tenant_id}/agent-pairings",
         "/api/v1/tenants/{tenant_id}/plugin/login-tickets",
         "/api/v1/tenants/{tenant_id}/mobile/login-tickets",
+        "/api/v1/tenants/{tenant_id}/web/login-tickets",
         "/api/v1/tenants/{tenant_id}/jobs/{job_id}/retry-dispatch",
         "/api/v1/tenants/{tenant_id}/jobs/{job_id}/reprint",
     ] {

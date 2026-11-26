@@ -61,6 +61,7 @@ async fn preflight_from_allowed_origin_is_answered_without_auth() {
             format!("/api/v1/tenants/{tenant_id}/jobs/{job_id}"),
             "DELETE",
         ),
+        ("/api/v1/web/login-tickets/exchange".to_owned(), "POST"),
     ] {
         let (status, headers) = preflight(app.clone(), &uri, ARES_ORIGIN, method).await;
 

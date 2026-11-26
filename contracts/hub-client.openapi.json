@@ -630,6 +630,47 @@
         }
       }
     },
+    "/api/v1/tenants/{tenant_id}/web/login-tickets": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/TenantId"
+        }
+      ],
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebLoginTicketRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created web ticket",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TicketResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Hub API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/tenants/{tenant_id}/artifact-metadata-preview": {
       "parameters": [
         {
@@ -898,6 +939,42 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MobileTicketExchangeResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Hub API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/web/login-tickets/exchange": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebTicketExchangeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Exchanged web login ticket",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebTicketExchangeResponse"
                 }
               }
             }
@@ -3612,6 +3689,58 @@
           }
         },
         "x-kotlin-name": "MobileTicketExchangeResponse",
+        "x-typescript-group": "core"
+      },
+      "WebLoginTicketRequest": {
+        "type": "object",
+        "required": [
+          "redirect_url",
+          "code_challenge"
+        ],
+        "properties": {
+          "redirect_url": {
+            "type": "string"
+          },
+          "code_challenge": {
+            "type": "string"
+          }
+        },
+        "x-typescript-group": "core"
+      },
+      "WebTicketExchangeRequest": {
+        "type": "object",
+        "required": [
+          "ticket",
+          "code_verifier"
+        ],
+        "properties": {
+          "ticket": {
+            "type": "string"
+          },
+          "code_verifier": {
+            "type": "string"
+          }
+        },
+        "x-typescript-group": "core"
+      },
+      "WebTicketExchangeResponse": {
+        "type": "object",
+        "required": [
+          "token",
+          "expires_at",
+          "profile"
+        ],
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": "string"
+          },
+          "profile": {
+            "$ref": "#/components/schemas/MobileAuthProfile"
+          }
+        },
         "x-typescript-group": "core"
       },
       "PrinterAxis": {

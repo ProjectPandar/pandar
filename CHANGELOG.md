@@ -8,6 +8,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Added
 
+- Added Hub web sign-in for browser apps on `PANDAR_CORS_ALLOWED_ORIGINS` origins: the `/web-sign-in` page, `POST /api/v1/tenants/{tenant_id}/web/login-tickets`, and the CORS-enabled `POST /api/v1/web/login-tickets/exchange`, which trades a one-use PKCE ticket for a 30-day `web:session` tenant token. Callbacks must be `http(s)` URLs without userinfo, query, or fragment on an allowlisted origin; with no allowlist, web sign-in is refused.
 - Added an opt-in Hub CORS allowlist, `PANDAR_CORS_ALLOWED_ORIGINS`, so browser apps on listed origins (for example the Ares slicer web app) can call the Bearer-token client API under `/api/v1/me` and `/api/v1/tenants/...`. Only exact `http(s)` origins are accepted, wildcards and paths fail startup, credentials are never allowed, and unset keeps the previous no-CORS behavior.
 
 ## [0.2.2] - 2026-09-07

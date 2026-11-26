@@ -31,6 +31,7 @@ mod provisioning;
 mod readiness_metrics;
 mod tenant_tokens;
 mod tenants;
+mod web_sign_in;
 
 use auth_support::*;
 use multipart::{

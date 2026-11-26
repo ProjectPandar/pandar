@@ -21,6 +21,7 @@ pub struct PluginLoginTicket {
 pub enum LoginTicketKind {
     Plugin,
     Mobile,
+    Web,
 }
 
 impl LoginTicketKind {
@@ -28,6 +29,7 @@ impl LoginTicketKind {
         match self {
             Self::Plugin => "plugin",
             Self::Mobile => "mobile",
+            Self::Web => "web",
         }
     }
 
@@ -35,6 +37,7 @@ impl LoginTicketKind {
         match value {
             "plugin" => Ok(Self::Plugin),
             "mobile" => Ok(Self::Mobile),
+            "web" => Ok(Self::Web),
             other => Err(anyhow::anyhow!("invalid persisted login ticket kind {other}").into()),
         }
     }
