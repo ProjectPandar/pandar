@@ -3,11 +3,13 @@ use axum::http::StatusCode;
 use axum::{
     Router,
     extract::DefaultBodyLimit,
+    http::{HeaderValue, Method, header},
     routing::{delete, get, post},
 };
 #[cfg(test)]
 use pandar_core::TenantId;
 use serde::Serialize;
+use tower_http::cors::CorsLayer;
 
 pub(crate) use error::{ApiError, parse_tenant_id};
 
@@ -37,12 +39,12 @@ mod tenants;
 
 pub fn router(state: AppState) -> Router {
     let default_body_limit = 64 * 1024;
+    let cors_allowed_origins = state.cors_allowed_origins().to_vec();
 
     Router::new()
         .route("/healthz", get(status::healthz))
         .route("/api/v1/auth/status", get(status::auth_status))
         .route("/api/v1/openapi.json", get(openapi::hub_client_contract))
-        .route("/api/v1/me", get(onboarding::me))
         .route(
             "/api/v1/onboarding/tenants",
             post(onboarding::create_tenant),
@@ -53,68 +55,8 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/api/v1/summary", get(admin::summary))
         .route(
-            "/api/v1/tenants",
-            get(admin::list_tenants).post(admin::create_tenant),
-        )
-        .route(
-            "/api/v1/tenants/{tenant_id}",
-            axum::routing::patch(tenants::update_tenant),
-        )
-        .route(
             "/api/v1/bootstrap/tenant-admin",
             post(bootstrap::create_tenant_admin),
-        )
-        .route(
-            "/api/v1/tenants/{tenant_id}/agents",
-            get(agents::list_agents).post(agents::create_agent),
-        )
-        .route(
-            "/api/v1/tenants/{tenant_id}/agents/{agent_id}",
-            delete(agents::delete_agent),
-        )
-        .route(
-            "/api/v1/tenants/{tenant_id}/users",
-            get(provisioning::list_users),
-        )
-        .route(
-            "/api/v1/tenants/{tenant_id}/users/{user_id}",
-            axum::routing::delete(provisioning::remove_user),
-        )
-        .route(
-            "/api/v1/tenants/{tenant_id}/users/{user_id}/role",
-            axum::routing::patch(provisioning::update_user_role),
-        )
-        .route(
-            "/api/v1/tenants/{tenant_id}/users/{user_id}/identities",
-            get(provisioning::list_user_identities),
-        )
-        .route(
-            "/api/v1/tenants/{tenant_id}/tenant-tokens",
-            get(tenant_tokens::list_tenant_tokens).post(tenant_tokens::create_tenant_token),
-        )
-        .route(
-            "/api/v1/tenants/{tenant_id}/tenant-tokens/{token_id}",
-            axum::routing::delete(tenant_tokens::revoke_tenant_token),
-        )
-        .route(
-            "/api/v1/tenants/{tenant_id}/tenant-tokens/{token_id}/rotate",
-            post(tenant_tokens::rotate_tenant_token),
-        )
-        .route(
-            "/api/v1/tenants/{tenant_id}/join-links",
-            get(join_links::list_join_links).post(join_links::create_join_link),
-        )
-        .route(
-            "/api/v1/tenants/{tenant_id}/join-links/{join_link_id}",
-            axum::routing::delete(join_links::revoke_join_link),
-        )
-        .route(
-            "/api/v1/tenants/{tenant_id}/plugin/login-tickets",
-            post(plugin::create_login_ticket),
-        )
-        .route(
-            "/api/v1/tenants/{tenant_id}/mobile/login-tickets",
-            post(plugin::create_mobile_login_ticket),
         )
         .route(
             "/api/v1/plugin/login-tickets/exchange",
@@ -193,6 +135,76 @@ pub fn router(state: AppState) -> Router {
         .route(
             "/api/v1/agents/{agent_id}/printers",
             get(agent_printers::list_agent_printers),
+        )
+        .merge(client_api_router(cors_allowed_origins))
+        .layer(DefaultBodyLimit::max(default_body_limit))
+        .with_state(state)
+}
+
+/// Bearer-token client API (`/api/v1/me`, `/api/v1/tenants/...`), the only surface
+/// exposed to the browser origins listed in `PANDAR_CORS_ALLOWED_ORIGINS`.
+fn client_api_router(cors_allowed_origins: Vec<HeaderValue>) -> Router<AppState> {
+    let router = Router::new()
+        .route("/api/v1/me", get(onboarding::me))
+        .route(
+            "/api/v1/tenants",
+            get(admin::list_tenants).post(admin::create_tenant),
+        )
+        .route(
+            "/api/v1/tenants/{tenant_id}",
+            axum::routing::patch(tenants::update_tenant),
+        )
+        .route(
+            "/api/v1/tenants/{tenant_id}/agents",
+            get(agents::list_agents).post(agents::create_agent),
+        )
+        .route(
+            "/api/v1/tenants/{tenant_id}/agents/{agent_id}",
+            delete(agents::delete_agent),
+        )
+        .route(
+            "/api/v1/tenants/{tenant_id}/users",
+            get(provisioning::list_users),
+        )
+        .route(
+            "/api/v1/tenants/{tenant_id}/users/{user_id}",
+            axum::routing::delete(provisioning::remove_user),
+        )
+        .route(
+            "/api/v1/tenants/{tenant_id}/users/{user_id}/role",
+            axum::routing::patch(provisioning::update_user_role),
+        )
+        .route(
+            "/api/v1/tenants/{tenant_id}/users/{user_id}/identities",
+            get(provisioning::list_user_identities),
+        )
+        .route(
+            "/api/v1/tenants/{tenant_id}/tenant-tokens",
+            get(tenant_tokens::list_tenant_tokens).post(tenant_tokens::create_tenant_token),
+        )
+        .route(
+            "/api/v1/tenants/{tenant_id}/tenant-tokens/{token_id}",
+            axum::routing::delete(tenant_tokens::revoke_tenant_token),
+        )
+        .route(
+            "/api/v1/tenants/{tenant_id}/tenant-tokens/{token_id}/rotate",
+            post(tenant_tokens::rotate_tenant_token),
+        )
+        .route(
+            "/api/v1/tenants/{tenant_id}/join-links",
+            get(join_links::list_join_links).post(join_links::create_join_link),
+        )
+        .route(
+            "/api/v1/tenants/{tenant_id}/join-links/{join_link_id}",
+            axum::routing::delete(join_links::revoke_join_link),
+        )
+        .route(
+            "/api/v1/tenants/{tenant_id}/plugin/login-tickets",
+            post(plugin::create_login_ticket),
+        )
+        .route(
+            "/api/v1/tenants/{tenant_id}/mobile/login-tickets",
+            post(plugin::create_mobile_login_ticket),
         )
         .route(
             "/api/v1/tenants/{tenant_id}/audit-events",
@@ -287,9 +299,22 @@ pub fn router(state: AppState) -> Router {
         .route(
             "/api/v1/tenants/{tenant_id}/printer-events/tickets",
             post(printer_events::create_printer_event_ticket),
-        )
-        .layer(DefaultBodyLimit::max(default_body_limit))
-        .with_state(state)
+        );
+    if cors_allowed_origins.is_empty() {
+        return router;
+    }
+    router.layer(
+        CorsLayer::new()
+            .allow_origin(cors_allowed_origins)
+            .allow_methods([
+                Method::GET,
+                Method::POST,
+                Method::PATCH,
+                Method::DELETE,
+                Method::OPTIONS,
+            ])
+            .allow_headers([header::AUTHORIZATION, header::CONTENT_TYPE]),
+    )
 }
 
 pub fn observability_router(state: AppState) -> Router {

@@ -209,6 +209,10 @@ impl AppState {
         self.with_no_auth(enabled)
     }
 
+    pub(crate) fn with_cors_allowed_origins_for_tests(self, origins: &str) -> Self {
+        self.with_cors_allowed_origins(crate::config::parse_cors_allowed_origins(origins).unwrap())
+    }
+
     pub(crate) fn with_tenant_self_create_for_tests(self, allowed: bool) -> Self {
         self.with_tenant_self_create_allowed(allowed)
     }

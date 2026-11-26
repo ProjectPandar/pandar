@@ -39,6 +39,7 @@ Remaining acceptance work:
 
 ## Recently Completed
 
+- Added the opt-in `PANDAR_CORS_ALLOWED_ORIGINS` Hub allowlist so a browser app on another origin, such as the Ares slicer web app, can call the Bearer-token client API (`/api/v1/me`, `/api/v1/tenants/...`) with `GET`, `POST`, `PATCH`, `DELETE`, and `OPTIONS`. Exact `http(s)` origins only, no credentials, preflight without auth; unset sends no CORS headers. Route tests cover allowed (`POST`, `PATCH`, `DELETE`) and unlisted origin preflights, the unset default, out-of-scope routes, and a Bearer `GET` from an allowed origin. Also bumped transitive `url` to 2.5.9 (`form_urlencoded` 1.2.3) so `cargo audit` clears `RUSTSEC-2026-0592`.
 - A current Agent can start against a Hub that predates `printer_family`. `GET /api/v1/agents/{agent_id}/printers` objects that omit the field decode as Bambu Lab, matching the hub migration default, while explicit `bambu_lab` and `moonraker` values are unchanged. A payload that still cannot be decoded fails startup instead of dropping every saved printer. The Hub response is unchanged.
 - Bumped transitive `quinn-udp` from 0.5.15 to 0.5.16 so `cargo audit` clears `RUSTSEC-2026-0538` (a receive loop that can spin after a truncated datagram). The rest of the lockfile, including the `windows-sys` 0.61.2 pins, is unchanged. The Studio contract jobs allow 45 minutes so a cold Nix rebuild after that lockfile change can finish the probe binaries; warm runs still finish in about ten minutes.
 

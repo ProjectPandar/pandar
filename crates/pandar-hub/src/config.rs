@@ -1,4 +1,5 @@
 use anyhow::Context;
+use axum::http::{HeaderValue, uri::Authority};
 
 use crate::camera_sessions::DEFAULT_MAX_CAMERA_STREAMS_PER_TENANT;
 
@@ -42,4 +43,36 @@ fn env_bool(name: &str, default: bool) -> anyhow::Result<bool> {
         "false" => Ok(false),
         _ => anyhow::bail!("{name} must be true or false"),
     }
+}
+
+const CORS_ALLOWED_ORIGINS: &str = "PANDAR_CORS_ALLOWED_ORIGINS";
+
+pub(crate) fn cors_allowed_origins_from_env() -> anyhow::Result<Vec<HeaderValue>> {
+    let value = std::env::var(CORS_ALLOWED_ORIGINS).ok();
+    parse_cors_allowed_origins(value.as_deref().unwrap_or_default())
+}
+
+pub(crate) fn parse_cors_allowed_origins(value: &str) -> anyhow::Result<Vec<HeaderValue>> {
+    value
+        .split(',')
+        .map(str::trim)
+        .filter(|origin| !origin.is_empty())
+        .map(parse_cors_origin)
+        .collect()
+}
+
+fn parse_cors_origin(origin: &str) -> anyhow::Result<HeaderValue> {
+    let exact_origin = origin.split_once("://").is_some_and(|(scheme, authority)| {
+        matches!(scheme, "http" | "https")
+            && !authority.contains(['*', '@'])
+            && authority.parse::<Authority>().is_ok()
+    });
+    if !exact_origin {
+        anyhow::bail!(
+            "{CORS_ALLOWED_ORIGINS} entry {origin:?} must be an exact http(s) origin such as https://app.example.com, without wildcard, path, or userinfo"
+        );
+    }
+    HeaderValue::from_str(origin).with_context(|| {
+        format!("{CORS_ALLOWED_ORIGINS} entry {origin:?} is not a valid header value")
+    })
 }

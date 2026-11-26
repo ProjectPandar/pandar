@@ -77,6 +77,7 @@ tonic = "0.14.6"
 tonic-prost = "0.14.6"
 tonic-prost-build = "0.14.6"
 tower = "0.5.2"
+tower-http = { version = "0.6.11", features = ["cors"] }
 tracing = "0.1.43"
 tracing-core = "0.1.36"
 tracing-subscriber = { version = "0.3.22", features = ["env-filter", "fmt"] }

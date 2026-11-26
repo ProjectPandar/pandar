@@ -6,6 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- Added an opt-in Hub CORS allowlist, `PANDAR_CORS_ALLOWED_ORIGINS`, so browser apps on listed origins (for example the Ares slicer web app) can call the Bearer-token client API under `/api/v1/me` and `/api/v1/tenants/...`. Only exact `http(s)` origins are accepted, wildcards and paths fail startup, credentials are never allowed, and unset keeps the previous no-CORS behavior.
+
 ## [0.2.2] - 2026-09-07
 
 ### Fixed
