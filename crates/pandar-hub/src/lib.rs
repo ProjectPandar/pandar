@@ -33,7 +33,7 @@ use crate::{
     artifacts::{ArtifactStorage, ArtifactStorageConfig, IntoArtifactStorage},
     camera_sessions::CameraSessionRegistry,
     config::{
-        camera_max_streams_per_tenant_from_env, no_auth_from_env,
+        camera_max_streams_per_tenant_from_env, cors_allowed_origins_from_env, no_auth_from_env,
         tenant_self_create_allowed_from_env,
     },
     db::{Database, DatabaseConfig},
@@ -70,6 +70,7 @@ pub struct AppState {
     no_auth: bool,
     tenant_self_create_allowed: bool,
     bootstrap_token: Option<String>,
+    cors_allowed_origins: Arc<[axum::http::HeaderValue]>,
     printer_events: PrinterEventHub,
     sessions: SessionRegistry,
     camera_sessions: CameraSessionRegistry,
@@ -135,6 +136,7 @@ impl AppState {
         let tenant_self_create_allowed = tenant_self_create_allowed_from_env()?;
         let no_auth = no_auth_from_env()?;
         let camera_max_streams_per_tenant = camera_max_streams_per_tenant_from_env()?;
+        let cors_allowed_origins = cors_allowed_origins_from_env()?;
 
         Ok(Self::from_database_with_control_plane_and_cipher(
             database,
@@ -146,6 +148,7 @@ impl AppState {
         .with_no_auth(no_auth)
         .with_tenant_self_create_allowed(tenant_self_create_allowed)
         .with_camera_max_streams_per_tenant(camera_max_streams_per_tenant)
+        .with_cors_allowed_origins(cors_allowed_origins)
         .with_bootstrap_token_option(bootstrap_token))
     }
 
@@ -203,6 +206,7 @@ impl AppState {
             no_auth: false,
             tenant_self_create_allowed: true,
             bootstrap_token: None,
+            cors_allowed_origins: Arc::new([]),
             printer_events: PrinterEventHub::with_metrics(metrics.clone()),
             sessions: SessionRegistry::new(),
             camera_sessions: CameraSessionRegistry::new(),
@@ -253,6 +257,15 @@ impl AppState {
     fn with_camera_max_streams_per_tenant(mut self, max_streams_per_tenant: usize) -> Self {
         self.camera_sessions =
             CameraSessionRegistry::with_max_streams_per_tenant(max_streams_per_tenant);
+        self
+    }
+
+    pub(crate) fn cors_allowed_origins(&self) -> &[axum::http::HeaderValue] {
+        &self.cors_allowed_origins
+    }
+
+    fn with_cors_allowed_origins(mut self, origins: Vec<axum::http::HeaderValue>) -> Self {
+        self.cors_allowed_origins = origins.into();
         self
     }
 
