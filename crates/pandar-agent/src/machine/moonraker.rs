@@ -5,6 +5,8 @@
 
 mod camera;
 mod client;
+mod diagnostics;
+mod http_error;
 mod identity;
 mod operations;
 mod print;
@@ -14,8 +16,11 @@ mod runtime;
 mod status;
 #[cfg(test)]
 mod tests;
+mod websocket;
 
-pub use client::{MoonrakerClient, MoonrakerHttpError};
+pub use client::MoonrakerClient;
+pub use http_error::MoonrakerHttpError;
+pub(in crate::machine) use identity::KLIPPER_MODEL;
 pub use runtime::MoonrakerRuntime;
 
 /// A linked Moonraker printer. `host` may carry an explicit `:port`; without
@@ -39,10 +44,12 @@ pub struct MoonrakerLinkRequest {
     pub expected_serial: Option<String>,
 }
 
-/// A Moonraker printer camera, resolved from `server.webcams.list`. Frames are
-/// polled from the snapshot URL, which every Moonraker webcam service exposes.
+/// A Moonraker printer camera, resolved from `server.webcams.list`. URLs stay as
+/// Moonraker reports them; `client` is the host that actually serves the camera,
+/// which is the port-80 nginx rather than Moonraker's own port on many installs.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MoonrakerCameraSource {
     pub client: MoonrakerClient,
     pub snapshot_url: String,
+    pub stream_url: Option<String>,
 }

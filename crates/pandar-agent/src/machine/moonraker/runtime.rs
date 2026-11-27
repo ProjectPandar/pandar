@@ -8,6 +8,7 @@ use tokio::{sync::mpsc, task::JoinHandle};
 use super::{
     MoonrakerCameraSource, MoonrakerClient, MoonrakerEndpoint, MoonrakerLinkRequest,
     camera::resolve_camera,
+    diagnostics::diagnose,
     identity::resolve_printer,
     operations::operate,
     print::print_gcode,
@@ -133,6 +134,24 @@ impl MoonrakerRuntime {
 
     pub async fn validate(&self, serial: &str) -> anyhow::Result<()> {
         self.printer(serial).await.map(drop)
+    }
+
+    pub async fn diagnose(
+        &self,
+        serial: &str,
+    ) -> crate::machine::diagnostics::PrinterDiagnosticResult {
+        let printer = match self.printer(serial).await {
+            Ok(printer) => printer,
+            Err(_) => {
+                return crate::machine::diagnostics::unconfigured_printer(serial);
+            }
+        };
+        diagnose(
+            &printer.client,
+            &printer.endpoint,
+            &self.config.agent_version,
+        )
+        .await
     }
 
     pub async fn refresh(&self) -> Vec<PrinterRefreshResult> {

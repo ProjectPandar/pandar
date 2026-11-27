@@ -1,9 +1,15 @@
 use std::{collections::BTreeMap, time::Duration};
 
-use anyhow::{Context, bail};
+mod control;
+
+use anyhow::Context;
+
+pub(super) use control::PrintAction;
 use reqwest::{Method, RequestBuilder, multipart};
 use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::{Map, Value};
+
+use super::http_error::MoonrakerHttpError;
 
 const API_KEY_HEADER: &str = "X-Api-Key";
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(15);
@@ -13,6 +19,8 @@ const UPLOAD_TIMEOUT: Duration = Duration::from_secs(600);
 #[derive(Debug, Clone)]
 pub struct MoonrakerClient {
     http: reqwest::Client,
+    /// Printer host as configured, possibly with an explicit `:port`.
+    host: String,
     base_url: String,
     api_key: Option<String>,
 }
@@ -52,6 +60,18 @@ pub(super) struct SystemInfo {
     pub(super) cpu_info: CpuInfo,
     #[serde(default)]
     pub(super) network: BTreeMap<String, NetworkInterface>,
+    /// Firmware such as Snapmaker's describes the machine itself here; stock
+    /// Moonraker has no `product_info`.
+    #[serde(default)]
+    pub(super) product_info: ProductInfo,
+}
+
+#[derive(Debug, Default, Deserialize)]
+pub(super) struct ProductInfo {
+    #[serde(default)]
+    pub(super) machine_type: String,
+    #[serde(default)]
+    pub(super) device_name: String,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -87,10 +107,32 @@ pub(super) struct Webcam {
     pub(super) enabled: bool,
     #[serde(default)]
     pub(super) snapshot_url: String,
+    #[serde(default)]
+    pub(super) stream_url: String,
+}
+
+#[derive(Debug, Default, Deserialize)]
+pub(super) struct FileMetadata {
+    #[serde(default)]
+    pub(super) estimated_time: Option<f64>,
 }
 
 fn enabled_by_default() -> bool {
     true
+}
+
+async fn send_resource(builder: RequestBuilder) -> anyhow::Result<reqwest::Response> {
+    let response = builder.send().await.map_err(reqwest::Error::without_url)?;
+    let status = response.status();
+    if !status.is_success() {
+        return Err(MoonrakerHttpError {
+            what: "camera resource".to_owned(),
+            status,
+            body: String::new(),
+        }
+        .into());
+    }
+    Ok(response)
 }
 
 #[derive(Debug, Deserialize)]
@@ -103,27 +145,6 @@ pub(super) struct UploadedItem {
     pub(super) path: String,
 }
 
-/// A non-success Moonraker HTTP response, kept typed so link failures can
-/// distinguish rejected API keys from other errors.
-#[derive(Debug)]
-pub struct MoonrakerHttpError {
-    what: String,
-    pub status: reqwest::StatusCode,
-    body: String,
-}
-
-impl std::fmt::Display for MoonrakerHttpError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Moonraker {} failed with HTTP {}: {}",
-            self.what, self.status, self.body
-        )
-    }
-}
-
-impl std::error::Error for MoonrakerHttpError {}
-
 impl MoonrakerClient {
     pub fn new(host: &str, api_key: Option<String>) -> Self {
         Self {
@@ -132,6 +153,7 @@ impl MoonrakerClient {
                 .redirect(reqwest::redirect::Policy::none())
                 .build()
                 .expect("Moonraker HTTP client configuration is valid"),
+            host: host.to_owned(),
             base_url: format!("http://{host}"),
             api_key: api_key.filter(|key| !key.trim().is_empty()),
         }
@@ -141,12 +163,25 @@ impl MoonrakerClient {
         self.api_key.as_deref()
     }
 
-    /// The WebSocket JSON-RPC endpoint on the same host.
-    pub(super) fn websocket_url(&self) -> String {
-        format!(
-            "ws://{}/websocket",
-            self.base_url.trim_start_matches("http://")
-        )
+    /// A client for the same host on the default HTTP port, where the
+    /// Fluidd/Mainsail nginx proxies webcam streams. `None` when the configured
+    /// host already omits the port.
+    pub(super) fn default_port_client(&self) -> Option<Self> {
+        self.host
+            .contains(':')
+            .then(|| Self::new(self.bare_host(), self.api_key.clone()))
+    }
+
+    /// The configured printer host, without any explicit port.
+    fn bare_host(&self) -> &str {
+        self.host
+            .split_once(':')
+            .map_or(&self.host, |(host, _)| host)
+    }
+
+    /// The base URL camera resources resolve against.
+    pub(super) fn base_url(&self) -> &str {
+        &self.base_url
     }
 
     /// Resolves a Moonraker-relative URL (as returned by `server.webcams.list`)
@@ -159,6 +194,14 @@ impl MoonrakerClient {
         } else {
             format!("{}/{url}", self.base_url)
         }
+    }
+
+    /// The WebSocket JSON-RPC endpoint on the same host.
+    pub(super) fn websocket_url(&self) -> String {
+        format!(
+            "ws://{}/websocket",
+            self.base_url.trim_start_matches("http://")
+        )
     }
 
     fn request(&self, method: Method, path: &str) -> RequestBuilder {
@@ -245,6 +288,24 @@ impl MoonrakerClient {
         .map(|list| list.webcams)
     }
 
+    /// The G-code commands Klipper currently registers, keyed by command.
+    pub(super) async fn gcode_help(&self) -> anyhow::Result<BTreeMap<String, String>> {
+        self.send(
+            self.request(Method::GET, "/printer/gcode/help"),
+            "G-code help",
+        )
+        .await
+    }
+
+    pub(super) async fn file_metadata(&self, path: &str) -> anyhow::Result<FileMetadata> {
+        self.send(
+            self.request(Method::POST, "/server/files/metadata")
+                .json(&serde_json::json!({ "filename": path })),
+            "file metadata",
+        )
+        .await
+    }
+
     /// Uploads into the `gcodes` root under `directory`.
     pub(super) async fn upload_gcode(
         &self,
@@ -271,51 +332,11 @@ impl MoonrakerClient {
         .await
     }
 
-    pub(super) async fn start_print(&self, filename: &str) -> anyhow::Result<()> {
-        self.send::<Value>(
-            self.request(Method::POST, "/printer/print/start")
-                .json(&serde_json::json!({ "filename": filename })),
-            "print start",
-        )
-        .await
-        .map(drop)
-    }
-
-    pub(super) async fn print_action(&self, action: PrintAction) -> anyhow::Result<()> {
-        self.send::<Value>(self.request(Method::POST, action.path()), action.as_str())
-            .await
-            .map(drop)
-    }
-
-    pub(super) async fn run_gcode(&self, script: &str) -> anyhow::Result<()> {
-        self.send::<Value>(
-            self.request(Method::POST, "/printer/gcode/script")
-                .json(&serde_json::json!({ "script": script })),
-            "G-code script",
-        )
-        .await
-        .map(drop)
-    }
-
     /// Fetches a raw resource (camera snapshot) relative to the printer host.
     pub(super) async fn get_bytes(&self, url: &str) -> anyhow::Result<Vec<u8>> {
-        let builder = self
-            .http
-            .get(self.resolve_url(url))
-            .timeout(REQUEST_TIMEOUT);
-        let builder = match &self.api_key {
-            Some(key) => builder.header(API_KEY_HEADER, key),
-            None => builder,
-        };
-        let response = builder
-            .send()
+        let response = send_resource(self.get(url).timeout(REQUEST_TIMEOUT))
             .await
-            .map_err(reqwest::Error::without_url)
             .context("request Moonraker camera snapshot")?;
-        let status = response.status();
-        if !status.is_success() {
-            bail!("Moonraker camera snapshot failed with HTTP {status}");
-        }
         Ok(response
             .bytes()
             .await
@@ -323,29 +344,21 @@ impl MoonrakerClient {
             .context("read Moonraker camera snapshot")?
             .to_vec())
     }
-}
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum PrintAction {
-    Pause,
-    Resume,
-    Cancel,
-}
-
-impl PrintAction {
-    fn path(self) -> &'static str {
-        match self {
-            Self::Pause => "/printer/print/pause",
-            Self::Resume => "/printer/print/resume",
-            Self::Cancel => "/printer/print/cancel",
-        }
+    /// Opens a long-lived GET on a printer-relative resource such as an MJPEG
+    /// webcam stream. Without a total timeout, the response stays open for as
+    /// long as the camera session runs.
+    pub(super) async fn open_stream(&self, url: &str) -> anyhow::Result<reqwest::Response> {
+        send_resource(self.get(url))
+            .await
+            .context("open Moonraker camera stream")
     }
 
-    fn as_str(self) -> &'static str {
-        match self {
-            Self::Pause => "print pause",
-            Self::Resume => "print resume",
-            Self::Cancel => "print cancel",
+    fn get(&self, url: &str) -> RequestBuilder {
+        let builder = self.http.get(self.resolve_url(url));
+        match &self.api_key {
+            Some(key) => builder.header(API_KEY_HEADER, key),
+            None => builder,
         }
     }
 }

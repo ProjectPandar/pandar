@@ -1,24 +1,17 @@
 use std::time::Duration;
 
 use anyhow::{Context, bail};
-use futures_util::{SinkExt, StreamExt};
-use serde::{Deserialize, Serialize};
-use serde_json::value::RawValue;
 use tokio::{
-    net::TcpStream,
     sync::mpsc,
     time::{Instant, interval_at, sleep, timeout},
-};
-use tokio_tungstenite::{
-    MaybeTlsStream, WebSocketStream, connect_async,
-    tungstenite::{Message, client::IntoClientRequest, http::HeaderValue},
 };
 
 use super::{
     MoonrakerClient, MoonrakerEndpoint,
     client::KlipperObjects,
     projection::{endpoint_snapshot, gcode_state, machine_snapshot, materials_json, print_report},
-    status::{KlipperStatus, ObjectSelection},
+    status::{KlipperStatus, ObjectSelection, PrintStats},
+    websocket::{IDENTIFY_ID, SubscribeResult, connect, decode, identify, read_rpc, subscribe},
 };
 use crate::{
     AgentConfig,
@@ -34,10 +27,6 @@ const EMIT_INTERVAL: Duration = Duration::from_secs(3);
 /// this long is treated as dead.
 const IDLE_TIMEOUT: Duration = Duration::from_secs(60);
 const RETRY_DELAY: Duration = Duration::from_secs(5);
-
-const IDENTIFY_ID: u64 = 1;
-
-type Socket = WebSocketStream<MaybeTlsStream<TcpStream>>;
 
 /// Forwards Moonraker status for one printer until the session sender closes,
 /// reconnecting after failures and reporting the printer offline meanwhile.
@@ -98,19 +87,7 @@ async fn forward_reports(
         &client.object_list().await.context("list Klipper objects")?,
     );
     let mut socket = connect(client).await?;
-    send_request(
-        &mut socket,
-        IDENTIFY_ID,
-        "server.connection.identify",
-        IdentifyParams {
-            client_name: "pandar-agent",
-            version: &config.agent_version,
-            client_type: "other",
-            url: "https://github.com/ProjectPandar/pandar",
-            api_key: client.api_key(),
-        },
-    )
-    .await?;
+    identify(&mut socket, client, &config.agent_version).await?;
     let mut next_id = IDENTIFY_ID + 1;
     let mut subscribe_id = subscribe(&mut socket, &selection, &mut next_id).await?;
 
@@ -119,6 +96,7 @@ async fn forward_reports(
     let mut dirty = false;
     let mut last_state = None;
     let mut last_materials = None;
+    let mut estimate = PrintEstimate::default();
     let mut ticker = interval_at(Instant::now() + EMIT_INTERVAL, EMIT_INTERVAL);
 
     loop {
@@ -126,22 +104,14 @@ async fn forward_reports(
             _ = sender.closed() => return Ok(()),
             _ = ticker.tick() => {
                 if subscribed && dirty {
-                    emit(config, endpoint, &selection, &status, sender, &mut last_materials).await?;
+                    estimate.refresh(client, endpoint, &status).await;
+                    emit(config, endpoint, &selection, &status, estimate.estimated_time_seconds, sender, &mut last_materials).await?;
                     dirty = false;
                 }
             }
-            message = timeout(IDLE_TIMEOUT, socket.next()) => {
+            message = timeout(IDLE_TIMEOUT, read_rpc(&mut socket)) => {
                 let message = message
-                    .context("Moonraker WebSocket went silent")?
-                    .context("Moonraker WebSocket closed")?
-                    .context("read Moonraker WebSocket message")?;
-                let text = match message {
-                    Message::Text(text) => text,
-                    Message::Close(frame) => bail!("Moonraker closed the WebSocket: {frame:?}"),
-                    _ => continue,
-                };
-                let message: RpcMessage = serde_json::from_str(&text)
-                    .context("decode Moonraker JSON-RPC message")?;
+                    .context("Moonraker WebSocket went silent")??;
                 if let Some(error) = message.error {
                     bail!("Moonraker JSON-RPC request {:?} failed: {}", message.id, error.message);
                 }
@@ -159,6 +129,14 @@ async fn forward_reports(
                         dirty = true;
                     }
                     // Klipper restarts drop the subscription; re-subscribe for a fresh status.
+                    // Scripts dispatched in the background report through these responses.
+                    (_, Some("notify_gcode_response")) => {
+                        if let Ok(([response],)) =
+                            decode::<([String; 1],)>(message.params.as_deref(), "G-code response")
+                        {
+                            tracing::info!(serial = %endpoint.serial, response, "Moonraker G-code response");
+                        }
+                    }
                     (_, Some("notify_klippy_ready")) => {
                         subscribe_id = subscribe(&mut socket, &selection, &mut next_id).await?;
                     }
@@ -179,7 +157,8 @@ async fn forward_reports(
                     let state = gcode_state(&status);
                     if last_state != Some(state) {
                         last_state = Some(state);
-                        emit(config, endpoint, &selection, &status, sender, &mut last_materials).await?;
+                        estimate.refresh(client, endpoint, &status).await;
+                        emit(config, endpoint, &selection, &status, estimate.estimated_time_seconds, sender, &mut last_materials).await?;
                         dirty = false;
                     }
                 }
@@ -188,11 +167,51 @@ async fn forward_reports(
     }
 }
 
+/// The slicer's `estimated_time` for the file being printed, fetched once per
+/// print so the remaining time does not rely on progress extrapolation alone.
+#[derive(Default)]
+struct PrintEstimate {
+    filename: String,
+    estimated_time_seconds: Option<f64>,
+}
+
+impl PrintEstimate {
+    async fn refresh(
+        &mut self,
+        client: &MoonrakerClient,
+        endpoint: &MoonrakerEndpoint,
+        status: &KlipperStatus,
+    ) {
+        let print_stats: PrintStats = status.object("print_stats");
+        let filename = print_stats.filename.trim().to_owned();
+        if filename == self.filename {
+            return;
+        }
+        self.filename = filename.clone();
+        self.estimated_time_seconds = if filename.is_empty() {
+            None
+        } else {
+            match client.file_metadata(&filename).await {
+                Ok(metadata) => metadata.estimated_time,
+                Err(error) => {
+                    tracing::warn!(
+                        serial = %endpoint.serial,
+                        error = %redact(&format!("{error:#}"), endpoint),
+                        "Moonraker file metadata unavailable; remaining time falls back to progress"
+                    );
+                    None
+                }
+            }
+        };
+    }
+}
+
 async fn emit(
     config: &AgentConfig,
     endpoint: &MoonrakerEndpoint,
     selection: &ObjectSelection,
     status: &KlipperStatus,
+    estimated_time_seconds: Option<f64>,
     sender: &mpsc::Sender<AgentEvent>,
     last_materials: &mut Option<String>,
 ) -> anyhow::Result<()> {
@@ -224,115 +243,14 @@ async fn emit(
     sender
         .send(print_job_report_event(
             config,
-            print_report(endpoint, status, observed_at, String::new()),
+            print_report(
+                endpoint,
+                status,
+                observed_at,
+                String::new(),
+                estimated_time_seconds,
+            ),
         ))
         .await
         .context("queue Moonraker print report")
-}
-
-async fn connect(client: &MoonrakerClient) -> anyhow::Result<Socket> {
-    let mut request = client
-        .websocket_url()
-        .into_client_request()
-        .context("build Moonraker WebSocket request")?;
-    if let Some(key) = client.api_key() {
-        request.headers_mut().insert(
-            "X-Api-Key",
-            HeaderValue::from_str(key).context("encode Moonraker API key header")?,
-        );
-    }
-    let (socket, _) = connect_async(request)
-        .await
-        .context("connect Moonraker WebSocket")?;
-    Ok(socket)
-}
-
-async fn subscribe(
-    socket: &mut Socket,
-    selection: &ObjectSelection,
-    next_id: &mut u64,
-) -> anyhow::Result<u64> {
-    let id = *next_id;
-    *next_id += 1;
-    send_request(
-        socket,
-        id,
-        "printer.objects.subscribe",
-        SubscribeParams {
-            objects: selection
-                .subscribed
-                .iter()
-                .map(|name| (name.as_str(), None))
-                .collect(),
-        },
-    )
-    .await?;
-    Ok(id)
-}
-
-async fn send_request<P: Serialize>(
-    socket: &mut Socket,
-    id: u64,
-    method: &str,
-    params: P,
-) -> anyhow::Result<()> {
-    let request = serde_json::to_string(&RpcRequest {
-        jsonrpc: "2.0",
-        method,
-        params,
-        id,
-    })
-    .expect("Moonraker JSON-RPC request is serializable");
-    socket
-        .send(Message::text(request))
-        .await
-        .with_context(|| format!("send Moonraker {method} request"))
-}
-
-fn decode<T: for<'de> Deserialize<'de>>(raw: Option<&RawValue>, what: &str) -> anyhow::Result<T> {
-    let raw = raw.with_context(|| format!("Moonraker {what} is missing"))?;
-    serde_json::from_str(raw.get()).with_context(|| format!("decode Moonraker {what}"))
-}
-
-#[derive(Serialize)]
-struct RpcRequest<'a, P> {
-    jsonrpc: &'static str,
-    method: &'a str,
-    params: P,
-    id: u64,
-}
-
-#[derive(Serialize)]
-struct IdentifyParams<'a> {
-    client_name: &'static str,
-    version: &'a str,
-    #[serde(rename = "type")]
-    client_type: &'static str,
-    url: &'static str,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    api_key: Option<&'a str>,
-}
-
-#[derive(Serialize)]
-struct SubscribeParams<'a> {
-    objects: std::collections::BTreeMap<&'a str, Option<()>>,
-}
-
-#[derive(Deserialize)]
-struct RpcMessage {
-    id: Option<u64>,
-    method: Option<String>,
-    params: Option<Box<RawValue>>,
-    result: Option<Box<RawValue>>,
-    error: Option<RpcError>,
-}
-
-#[derive(Deserialize)]
-struct RpcError {
-    message: String,
-}
-
-#[derive(Deserialize)]
-struct SubscribeResult {
-    status: KlipperObjects,
 }

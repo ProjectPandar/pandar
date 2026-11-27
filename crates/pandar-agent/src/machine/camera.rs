@@ -268,7 +268,7 @@ fn percent_encode_userinfo(value: &str) -> String {
         .collect()
 }
 
-fn take_jpeg_frame(buffer: &mut Vec<u8>) -> Option<Vec<u8>> {
+pub(crate) fn take_jpeg_frame(buffer: &mut Vec<u8>) -> Option<Vec<u8>> {
     let start = buffer.windows(2).position(|bytes| bytes == [0xff, 0xd8])?;
     if start > 0 {
         buffer.drain(..start);

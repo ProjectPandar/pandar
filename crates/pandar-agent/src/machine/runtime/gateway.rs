@@ -46,6 +46,9 @@ impl BambuMachineGateway for RuntimeBambuMachineGateway {
         &self,
         serial_number: &str,
     ) -> anyhow::Result<crate::machine::diagnostics::PrinterDiagnosticResult> {
+        if self.moonraker.contains(serial_number).await {
+            return Ok(self.moonraker.diagnose(serial_number).await);
+        }
         self.inner
             .lock()
             .await

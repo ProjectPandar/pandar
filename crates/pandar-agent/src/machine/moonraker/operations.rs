@@ -5,11 +5,10 @@ use super::{
     MoonrakerClient,
     client::PrintAction,
     projection::speed_factor_percent,
-    status::{KlipperStatus, Led, ObjectSelection},
+    status::{KlipperStatus, Led, ObjectSelection, extruder_index},
 };
 
 const DEFAULT_MOVE_FEEDRATE_MM_PER_MIN: u32 = 3000;
-const PART_COOLING_FAN_INDEX: u8 = 1;
 
 pub(super) async fn operate(
     client: &MoonrakerClient,
@@ -17,6 +16,12 @@ pub(super) async fn operate(
     operation: PrinterOperation,
 ) -> anyhow::Result<()> {
     let action = operation.action();
+    if let Some(command) = material_command(&operation) {
+        if !selection.filament_channels {
+            bail!("printer operation {action} is not supported on Moonraker printers");
+        }
+        ensure_firmware_supports(client, selection, command, action).await?;
+    }
     let script = match operation {
         PrinterOperation::Pause {} => return client.print_action(PrintAction::Pause).await,
         PrinterOperation::Resume {} => return client.print_action(PrintAction::Resume).await,
@@ -33,13 +38,15 @@ pub(super) async fn operate(
             format!("M220 S{percent}")
         }
         PrinterOperation::SetFanSpeed {
-            fan_index: PART_COOLING_FAN_INDEX,
+            fan_index,
             speed_percent,
             ..
-        } => format!(
-            "M106 S{}",
-            (u32::from(speed_percent.min(100)) * 255 + 50) / 100
-        ),
+        } => selection
+            .fans
+            .iter()
+            .find(|fan| fan.control_index() == Some(fan_index))
+            .with_context(|| format!("printer has no controllable fan {fan_index}"))?
+            .speed_script(speed_percent),
         PrinterOperation::SelectExtruder { extruder_id } => format!("T{extruder_id}"),
         PrinterOperation::Home { axes, .. } => home_script(&axes),
         PrinterOperation::MoveAxes {
@@ -55,49 +62,43 @@ pub(super) async fn operate(
             let feedrate = feedrate_mm_per_min.unwrap_or(DEFAULT_MOVE_FEEDRATE_MM_PER_MIN);
             format!("G91\nG1 {axes} F{feedrate}\nG90")
         }
+        // Heating commands only set targets: Klipper's blocking `M109`/`M190`/`TEMPERATURE_WAIT`
+        // would stall the G-code queue for minutes, so the Hub follows progress in telemetry.
         PrinterOperation::SetHotendTemperature {
             temperature_celsius,
-            wait,
             extruder_id,
-        } => {
-            let command = if wait { "M109" } else { "M104" };
-            match extruder_id {
-                Some(index) => format!("{command} T{index} S{temperature_celsius}"),
-                None => format!("{command} S{temperature_celsius}"),
+            ..
+        } => match extruder_id {
+            // Without a tool the active extruder is heated, which is what `M104` does natively.
+            None => format!("M104 S{temperature_celsius}"),
+            // `M104 T<n>` is remapped by some firmware; the Klipper command addresses the heater directly.
+            Some(index) => {
+                let heater = extruder_name(selection, index)?;
+                format!("SET_HEATER_TEMPERATURE HEATER={heater} TARGET={temperature_celsius}")
             }
-        }
+        },
         PrinterOperation::SetBedTemperature {
             temperature_celsius,
-            wait,
-        } => format!(
-            "{} S{temperature_celsius}",
-            if wait { "M190" } else { "M140" }
-        ),
+            ..
+        } => format!("M140 S{temperature_celsius}"),
         PrinterOperation::SetChamberTemperature {
             temperature_celsius,
-            wait,
+            ..
         } => {
             let heater = selection
                 .chamber
                 .as_deref()
                 .and_then(|name| name.strip_prefix("heater_generic "))
                 .context("printer has no controllable chamber heater")?;
-            let mut script =
-                format!("SET_HEATER_TEMPERATURE HEATER={heater} TARGET={temperature_celsius}");
-            if wait {
-                script.push_str(&format!(
-                    "\nTEMPERATURE_WAIT SENSOR=\"heater_generic {heater}\" MINIMUM={temperature_celsius}"
-                ));
-            }
-            script
+            format!("SET_HEATER_TEMPERATURE HEATER={heater} TARGET={temperature_celsius}")
         }
-        PrinterOperation::AmsLoadFilament { slot_id, .. } if selection.filament_channels => {
+        PrinterOperation::AmsLoadFilament { slot_id, .. } => {
             format!("AUTO_FEEDING EXTRUDER={slot_id} LOAD=1")
         }
-        PrinterOperation::AmsUnloadFilament { slot_id, .. } if selection.filament_channels => {
+        PrinterOperation::AmsUnloadFilament { slot_id, .. } => {
             format!("AUTO_FEEDING EXTRUDER={slot_id} UNLOAD=1")
         }
-        PrinterOperation::AmsRereadRfid { slot_id, .. } if selection.filament_channels => {
+        PrinterOperation::AmsRereadRfid { slot_id, .. } => {
             format!("FILAMENT_DT_UPDATE CHANNEL={slot_id}")
         }
         _ => bail!("printer operation {action} is not supported on Moonraker printers"),
@@ -106,6 +107,53 @@ pub(super) async fn operate(
         .run_gcode(&script)
         .await
         .with_context(|| format!("run Moonraker {action} G-code"))
+}
+
+/// The firmware-extension G-code a filament channel operation depends on.
+fn material_command(operation: &PrinterOperation) -> Option<&'static str> {
+    match operation {
+        PrinterOperation::AmsLoadFilament { .. } | PrinterOperation::AmsUnloadFilament { .. } => {
+            Some("AUTO_FEEDING")
+        }
+        PrinterOperation::AmsRereadRfid { .. } => Some("FILAMENT_DT_UPDATE"),
+        _ => None,
+    }
+}
+
+/// Firmware extensions register their commands dynamically, and only described
+/// commands reach the G-code help dictionary (Snapmaker's `FILAMENT_DT_UPDATE`
+/// has no description), so presence is any of: the help entry, a `gcode_macro`
+/// section, or the extension's status object.
+async fn ensure_firmware_supports(
+    client: &MoonrakerClient,
+    selection: &ObjectSelection,
+    command: &str,
+    action: &str,
+) -> anyhow::Result<()> {
+    let object = match command {
+        "AUTO_FEEDING" => "gcode_macro AUTO_FEEDING",
+        "FILAMENT_DT_UPDATE" => "filament_detect",
+        _ => unreachable!("material commands are known"),
+    };
+    if !selection.has_object(object)
+        && !client
+            .gcode_help()
+            .await
+            .context("list Moonraker G-code commands")?
+            .contains_key(command)
+    {
+        bail!("printer operation {action} is not supported: firmware has no {command} command");
+    }
+    Ok(())
+}
+
+fn extruder_name(selection: &ObjectSelection, index: u32) -> anyhow::Result<&str> {
+    selection
+        .extruders
+        .iter()
+        .map(String::as_str)
+        .find(|name| extruder_index(name) == Some(index))
+        .with_context(|| format!("printer has no extruder {index}"))
 }
 
 fn home_script(axes: &[PrinterAxis]) -> String {

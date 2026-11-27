@@ -1,10 +1,12 @@
-use pandar_core::AmsUnitKind;
+use std::collections::BTreeMap;
+
+use pandar_core::{AmsUnitKind, PrinterCoolingFan, PrinterCoolingSystem};
 
 use super::{
     MoonrakerEndpoint,
     status::{
-        DisplayStatus, GcodeMove, Heater, KlipperStatus, Led, ObjectSelection, PrintStats,
-        PrintTaskConfig, Toolhead, VirtualSdcard, Webhooks, extruder_index,
+        DisplayStatus, Extruder, Fan, GcodeMove, Heater, KlipperStatus, Led, ObjectSelection,
+        PrintStats, PrintTaskConfig, Toolhead, VirtualSdcard, Webhooks, extruder_index,
     },
 };
 use crate::machine::{
@@ -64,14 +66,14 @@ pub(super) fn machine_snapshot(
         .extruders
         .iter()
         .map(|name| {
-            let heater: Heater = status.object(name);
+            let extruder: Extruder = status.object(name);
             MachineNozzleTemperature {
                 label: multi_tool
                     .then(|| extruder_index(name).map(tool_label))
                     .flatten(),
-                current_celsius: heater.temperature.and_then(temperature_string),
-                target_celsius: heater.target.and_then(temperature_string),
-                diameter_mm: None,
+                current_celsius: extruder.temperature.and_then(temperature_string),
+                target_celsius: extruder.target.and_then(temperature_string),
+                diameter_mm: extruder.nozzle_diameter.and_then(diameter_string),
                 nozzle_type: None,
                 snow: None,
                 hnow: None,
@@ -92,6 +94,17 @@ pub(super) fn machine_snapshot(
                 .flatten()
                 .any(|channel| *channel > 0.0)
         });
+    let fans = selection
+        .fans
+        .iter()
+        .filter_map(|fan| {
+            let state: Fan = status.object(&fan.object);
+            Some((
+                fan.kind,
+                fan_speed_percent(state.speed.filter(|speed| speed.is_finite())?),
+            ))
+        })
+        .collect::<BTreeMap<_, _>>();
 
     MachineSnapshot {
         serial: endpoint.serial.clone(),
@@ -115,7 +128,16 @@ pub(super) fn machine_snapshot(
             .and_then(|heater| heater.target)
             .and_then(temperature_string),
         chamber_light_on,
-        cooling_system: None,
+        cooling_system: (!fans.is_empty()).then(|| PrinterCoolingSystem {
+            mode: None,
+            fans: fans
+                .into_iter()
+                .map(|(kind, speed_percent)| PrinterCoolingFan {
+                    kind,
+                    speed_percent,
+                })
+                .collect(),
+        }),
         device_features: None,
         device_features2: None,
         nozzle_system: None,
@@ -165,6 +187,7 @@ pub(super) fn print_report(
     status: &KlipperStatus,
     observed_at: String,
     printer_materials_json: String,
+    estimated_time_seconds: Option<f64>,
 ) -> PrintReportProgress {
     let print_stats: PrintStats = status.object("print_stats");
     let sdcard: VirtualSdcard = status.object("virtual_sdcard");
@@ -174,10 +197,10 @@ pub(super) fn print_report(
     let job_id = filename.as_deref().and_then(job_id_from_path);
     let progress = display.progress.unwrap_or(sdcard.progress).clamp(0.0, 1.0);
     let active = matches!(print_stats.state.as_str(), "printing" | "paused");
-    let remaining_time_minutes = (active && progress > 0.01).then(|| {
-        let remaining_seconds = print_stats.print_duration / progress - print_stats.print_duration;
-        ((remaining_seconds / 60.0).round().max(0.0) as u32).min(4320)
-    });
+    let remaining_time_minutes = active
+        .then(|| remaining_seconds(&print_stats, progress, estimated_time_seconds))
+        .flatten()
+        .map(|seconds| ((seconds / 60.0).round().max(0.0) as u32).min(4320));
     let mut diagnostics = Vec::new();
     if print_stats.state == "error" && !print_stats.message.trim().is_empty() {
         diagnostics.push(MachineReportDiagnostic {
@@ -319,8 +342,35 @@ fn speed_level(factor: f64) -> Option<u8> {
         .map(|(level, _)| *level)
 }
 
+fn remaining_seconds(
+    print_stats: &PrintStats,
+    progress: f64,
+    estimated_time_seconds: Option<f64>,
+) -> Option<f64> {
+    match estimated_time_seconds {
+        Some(estimated) if estimated.is_finite() && estimated > 0.0 => {
+            Some(estimated * (1.0 - progress))
+        }
+        _ if progress > 0.01 => {
+            Some(print_stats.print_duration / progress - print_stats.print_duration)
+        }
+        _ => None,
+    }
+}
+
 fn temperature_string(value: f64) -> Option<String> {
     (value.is_finite() && value >= 0.0).then(|| format!("{value:.1}"))
+}
+
+fn diameter_string(value: f64) -> Option<String> {
+    (value.is_finite() && value > 0.0).then(|| {
+        let text = value.to_string();
+        text.strip_suffix(".0").unwrap_or(&text).to_owned()
+    })
+}
+
+fn fan_speed_percent(speed: f64) -> u8 {
+    (speed.clamp(0.0, 1.0) * 100.0).round() as u8
 }
 
 fn file_stem(path: &str) -> String {

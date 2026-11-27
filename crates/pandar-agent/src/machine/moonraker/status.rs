@@ -1,3 +1,4 @@
+use pandar_core::PrinterCoolingFanKind;
 use serde::{Deserialize, de::DeserializeOwned};
 use serde_json::{Map, Value};
 
@@ -16,13 +17,60 @@ const FIXED_OBJECTS: &[&str] = &[
 ];
 
 /// The Klipper objects this printer exposes that Pandar projects.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(super) struct ObjectSelection {
+    /// Every object Klipper reported, projected or not.
+    pub(super) available: Vec<String>,
     pub(super) subscribed: Vec<String>,
     pub(super) extruders: Vec<String>,
     pub(super) chamber: Option<String>,
     pub(super) light: Option<String>,
+    pub(super) fans: Vec<CoolingFan>,
     pub(super) filament_channels: bool,
+}
+
+impl ObjectSelection {
+    pub(super) fn has_object(&self, name: &str) -> bool {
+        self.available.iter().any(|object| object == name)
+    }
+}
+
+/// A Klipper fan object projected onto one of Pandar's cooling-fan kinds. The
+/// dashboard keys fans by kind, so each kind is assigned at most once.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) struct CoolingFan {
+    /// Full Klipper object name, e.g. `fan` or `fan_generic exhaust_fan`.
+    pub(super) object: String,
+    pub(super) kind: PrinterCoolingFanKind,
+}
+
+impl CoolingFan {
+    /// Pandar's 1-based `SetFanSpeed` index, matching the Bambu airduct fan ids.
+    pub(super) fn control_index(&self) -> Option<u8> {
+        match self.kind {
+            PrinterCoolingFanKind::PartCooling => Some(1),
+            PrinterCoolingFanKind::Auxiliary => Some(2),
+            PrinterCoolingFanKind::Chamber => Some(3),
+            _ => None,
+        }
+    }
+
+    /// G-code that drives this fan at `speed_percent`. `[fan]` only exposes
+    /// `M106`; every other fan object answers the `SET_FAN_SPEED FAN=<name>` mux
+    /// that `fan_generic` and `temperature_fan` share.
+    pub(super) fn speed_script(&self, speed_percent: u8) -> String {
+        let speed_percent = speed_percent.min(100);
+        if self.object != "fan" {
+            let name = self
+                .object
+                .as_str()
+                .split_once(' ')
+                .map_or(self.object.as_str(), |(_, name)| name);
+            let speed = f64::from(speed_percent) / 100.0;
+            return format!("SET_FAN_SPEED FAN={name} SPEED={speed}");
+        }
+        format!("M106 S{}", (u32::from(speed_percent) * 255 + 50) / 100)
+    }
 }
 
 impl ObjectSelection {
@@ -51,6 +99,7 @@ impl ObjectSelection {
             .find(|name| is_chamber_name(name))
             .or_else(|| available.iter().find(is_light))
             .cloned();
+        let fans = select_fans(available);
         let filament_channels = has("print_task_config");
 
         let mut subscribed: Vec<String> = FIXED_OBJECTS
@@ -61,12 +110,15 @@ impl ObjectSelection {
         subscribed.extend(extruders.iter().cloned());
         subscribed.extend(chamber.iter().cloned());
         subscribed.extend(light.iter().cloned());
+        subscribed.extend(fans.iter().map(|fan| fan.object.clone()));
 
         Self {
+            available: available.to_vec(),
             subscribed,
             extruders,
             chamber,
             light,
+            fans,
             filament_channels,
         }
     }
@@ -86,6 +138,76 @@ fn is_chamber_name(name: &str) -> bool {
     ["chamber", "cavity", "enclosure"]
         .iter()
         .any(|keyword| name.contains(keyword))
+}
+
+/// Maps Klipper fan objects onto Pandar's cooling-fan kinds. `[fan]` is the
+/// part-cooling fan; `heater_fan` and `controller_fan` are read-only; other
+/// fans (`fan_generic`, `temperature_fan`, or firmware-specific `*_fan`
+/// sections) are classified by name so per-tool part-cooling fans and other
+/// unmatched fans are not mislabelled. Each kind is assigned at most once.
+fn select_fans(available: &[String]) -> Vec<CoolingFan> {
+    // Snapmaker's `[purifier]` module drives the exhaust and circulation fans
+    // itself and refuses manual speeds while no purifier is attached, so those
+    // fans are not offered as controllable.
+    let module_owned_exhaust = available.iter().any(|object| object == "purifier");
+    let mut fans: Vec<CoolingFan> = Vec::new();
+    for name in available {
+        let Some(mut kind) = fan_kind(name, module_owned_exhaust) else {
+            continue;
+        };
+        if fans.iter().any(|fan| fan.kind == kind) {
+            if kind != PrinterCoolingFanKind::Hotend {
+                continue;
+            }
+            kind = PrinterCoolingFanKind::HotendSecond;
+        }
+        if fans.iter().any(|fan| fan.kind == kind) {
+            continue;
+        }
+        fans.push(CoolingFan {
+            object: name.clone(),
+            kind,
+        });
+    }
+    fans
+}
+
+fn fan_kind(name: &str, module_owned_exhaust: bool) -> Option<PrinterCoolingFanKind> {
+    match name.split_once(' ') {
+        Some(("heater_fan", suffix)) => heater_fan_kind(suffix),
+        Some(("controller_fan", _)) => Some(PrinterCoolingFanKind::Controller),
+        Some(("fan_generic" | "temperature_fan", suffix)) => {
+            named_fan_kind(suffix, module_owned_exhaust)
+        }
+        None if name == "fan" => Some(PrinterCoolingFanKind::PartCooling),
+        None if name.ends_with("_fan") => named_fan_kind(name, module_owned_exhaust),
+        _ => None,
+    }
+}
+
+/// `heater_fan` sections cool either a hotend or the electronics; the Snapmaker
+/// U1, for example, declares `heater_fan power_fan` next to `heater_fan e0_nozzle_fan`.
+fn heater_fan_kind(name: &str) -> Option<PrinterCoolingFanKind> {
+    let name = name.to_ascii_lowercase();
+    let contains = |keywords: &[&str]| keywords.iter().any(|keyword| name.contains(keyword));
+    if contains(&["nozzle", "hotend", "extruder", "tool"]) {
+        Some(PrinterCoolingFanKind::Hotend)
+    } else if contains(&["power", "board", "mcu", "electronic", "cpu", "controller"]) {
+        Some(PrinterCoolingFanKind::Controller)
+    } else {
+        None
+    }
+}
+
+fn named_fan_kind(name: &str, module_owned_exhaust: bool) -> Option<PrinterCoolingFanKind> {
+    let name = name.to_ascii_lowercase();
+    if is_chamber_name(&name) {
+        Some(PrinterCoolingFanKind::Chamber)
+    } else if name.contains("aux") || (name.contains("exhaust") && !module_owned_exhaust) {
+        Some(PrinterCoolingFanKind::Auxiliary)
+    } else {
+        None
+    }
 }
 
 /// Merged Klipper object state. Moonraker status notifications carry only the
@@ -173,6 +295,18 @@ pub(super) struct GcodeMove {
 pub(super) struct Heater {
     pub(super) temperature: Option<f64>,
     pub(super) target: Option<f64>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+pub(super) struct Extruder {
+    pub(super) temperature: Option<f64>,
+    pub(super) target: Option<f64>,
+    pub(super) nozzle_diameter: Option<f64>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+pub(super) struct Fan {
+    pub(super) speed: Option<f64>,
 }
 
 #[derive(Debug, Default, Deserialize)]

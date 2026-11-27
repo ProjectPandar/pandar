@@ -54,7 +54,7 @@ pub struct PrinterDiagnosticResult {
 }
 
 impl PrinterDiagnosticResult {
-    fn new(
+    pub(super) fn new(
         serial_number: String,
         host: Option<String>,
         model: Option<String>,
@@ -74,6 +74,21 @@ impl PrinterDiagnosticResult {
     }
 }
 
+pub(super) fn unconfigured_printer(serial_number: &str) -> PrinterDiagnosticResult {
+    PrinterDiagnosticResult::new(
+        serial_number.to_owned(),
+        None,
+        None,
+        vec![check(
+            "configured_printer",
+            DiagnosticStatus::Problem,
+            "No configured printer matches the requested serial number.",
+            None,
+        )],
+        None,
+    )
+}
+
 pub async fn diagnose_printer<T, F>(
     printers: &[(BambuPrinterEndpoint, T, F)],
     report_timeout: Duration,
@@ -87,18 +102,7 @@ where
         .iter()
         .find(|(endpoint, _, _)| endpoint.serial == serial_number)
     else {
-        return PrinterDiagnosticResult::new(
-            serial_number.to_owned(),
-            None,
-            None,
-            vec![check(
-                "configured_printer",
-                DiagnosticStatus::Problem,
-                "No configured printer matches the requested serial number.",
-                None,
-            )],
-            None,
-        );
+        return unconfigured_printer(serial_number);
     };
 
     let compatibility = compatibility_for_model(endpoint.model.as_deref());
