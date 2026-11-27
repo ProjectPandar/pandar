@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState, type ReactNode } from 'react'
-import { useFormatter, useTranslations } from 'next-intl'
+import { useTranslations } from 'next-intl'
 import { PlusIcon, PrinterIcon } from 'lucide-react'
 
 import {
@@ -12,42 +12,49 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty'
-import { OFFLINE_PRINTER_STATUSES } from './dashboard-attention'
-import type { Agent, Printer, Tenant } from './dashboard-types'
-import { formatPrinterMaterials } from './dashboard-runtime-helpers'
 import { Button } from '@/components/ui/button'
+import { OFFLINE_PRINTER_STATUSES, statusMeta } from './dashboard-attention'
+import type { Agent, Job, Printer, Tenant } from './dashboard-types'
+import { PrinterDetail } from './dashboard-printer-detail'
+import { PrinterLastSeen } from './printer-last-seen'
 import { FilterBar } from './dashboard-filter-bar'
-import { PrinterCard } from './dashboard-printer-card'
+import type { Translator } from './dashboard-runtime-helpers'
+import { StatusBadge } from './dashboard-ui'
+import { formatRemaining } from './job-format'
+import { useIsMobile } from '../hooks/use-mobile'
 import { LinkPrinterDialog } from './link-printer-dialog'
 
 export { JobHistory } from './dashboard-job-history'
 
-function useLocaleDate() {
-  const format = useFormatter()
-  return (value: string) => {
-    const d = new Date(value)
-    if (Number.isNaN(d.getTime())) return value
-    return format.dateTime(d, { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' })
-  }
-}
+export type PrinterFilterStatus = 'all' | 'online' | 'attention'
 
-type PrinterFilterStatus = 'all' | 'online' | 'attention'
+const ACTIVE_GCODE_STATES = new Set(['RUNNING', 'PRINTING', 'PAUSE', 'PAUSED', 'PREPARE', 'SLICING'])
 
+/** Printer console: a searchable list on the left and the selected printer's live detail on the right. */
 export function PrinterInventory({
   selectedTenant,
   printers,
   agents,
+  jobs,
   nowMs,
+  selectedPrinterId,
+  onSelectPrinter,
+  onOpenReprint,
 }: {
   selectedTenant: Tenant | null
   printers: Printer[]
   agents: Agent[]
+  jobs: Job[]
   nowMs: number
+  selectedPrinterId: string | null
+  onSelectPrinter: (printerId: string | null) => void
+  onOpenReprint: (job: Job) => void
 }) {
   const t = useTranslations('inventory')
   const tLink = useTranslations('linkPrinter')
-  const tMat = useTranslations('material')
-  const formatDate = useLocaleDate()
+  const tJob = useTranslations('jobFormat')
+  const tTokens = useTranslations('tokens')
+  const isMobile = useIsMobile()
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState<PrinterFilterStatus>('all')
   const normalizedQuery = query.trim().toLowerCase()
@@ -75,12 +82,22 @@ export function PrinterInventory({
     () => new Map(agents.map((agent) => [agent.id, agent.name])),
     [agents],
   )
+  const selected =
+    printers.find((printer) => printer.id === selectedPrinterId) ??
+    (isMobile ? null : filtered[0]) ??
+    null
+  const onlineCount = printers.filter(
+    (printer) => !OFFLINE_PRINTER_STATUSES.has(printer.status.toLowerCase()),
+  ).length
+  const tokenTranslator = (k: string) => (tTokens.has(k) ? tTokens(k) : undefined)
 
-  return (
-    <section id="printers" className="scroll-mt-20 space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-base font-semibold text-foreground">{t('printersTitle')}</h2>
-        {selectedTenant && printers.length > 0 ? (
+  if (!selectedTenant) {
+    return <PrinterEmptyState title={t('noTenantTitle')} message={t('noTenantMessage')} />
+  }
+  if (printers.length === 0) {
+    return (
+      <PrinterEmptyState
+        action={
           <LinkPrinterDialog
             agents={agents}
             mode="add"
@@ -92,36 +109,50 @@ export function PrinterInventory({
               </Button>
             }
           />
-        ) : null}
-      </div>
-      {!selectedTenant ? (
-        <PrinterEmptyState title={t('noTenantTitle')} message={t('noTenantMessage')} />
-      ) : printers.length === 0 ? (
-        <PrinterEmptyState
-          action={
-            <LinkPrinterDialog
-              agents={agents}
-              mode="add"
-              selectedTenant={selectedTenant}
-              trigger={
-                <Button type="button">
-                  <PlusIcon />
-                  {tLink('submit')}
-                </Button>
-              }
-            />
-          }
-          message={t('noPrintersMessage')}
-          title={t('noPrintersTitle')}
-        />
-      ) : (
-        <>
+        }
+        message={t('noPrintersMessage')}
+        title={t('noPrintersTitle')}
+      />
+    )
+  }
+
+  const showList = !isMobile || !selected
+  const showDetail = !isMobile || Boolean(selected)
+
+  return (
+    <div id="printers" className="grid gap-4 scroll-mt-20 lg:grid-cols-[24rem_minmax(0,1fr)]">
+      {showList ? (
+        <section
+          aria-label={t('printersTitle')}
+          className="overflow-hidden rounded-md border border-border bg-card"
+        >
+          <div className="flex flex-col gap-2 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-base font-semibold">{t('printersTitle')}</h2>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                {t('listSummary', { total: printers.length, online: onlineCount })}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <LinkPrinterDialog
+                agents={agents}
+                mode="add"
+                selectedTenant={selectedTenant}
+                trigger={
+                  <Button type="button">
+                    <PlusIcon />
+                    {tLink('submit')}
+                  </Button>
+                }
+              />
+            </div>
+          </div>
           <FilterBar
-            query={query}
             onQueryChange={setQuery}
+            onStatusChange={setStatus}
+            query={query}
             queryPlaceholder={t('searchName')}
             status={status}
-            onStatusChange={setStatus}
             statusOptions={[
               { value: 'all', label: t('filterAll') },
               { value: 'online', label: t('filterOnline') },
@@ -131,27 +162,89 @@ export function PrinterInventory({
           {filtered.length === 0 ? (
             <PrinterEmptyState title={t('noMatchesTitle')} message={t('noMatchesMessage')} />
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <ul className="divide-y divide-border">
               {filtered.map((printer) => {
-                const material = formatPrinterMaterials(printer, tMat, formatDate)
-                const agentName = agentNames.get(printer.agent_id)
+                const isSelected = printer.id === selected?.id
+                const row = printerRow(printer, nowMs, tJob, tokenTranslator)
                 return (
-                  <div key={printer.id} className="content-visibility-auto">
-                    <PrinterCard
-                      agentName={agentName ?? t('unknownAgent')}
-                      materialDetail={material.detail}
-                      nowMs={nowMs}
-                      printer={printer}
-                    />
-                  </div>
+                  <li key={printer.id}>
+                    <button
+                      aria-pressed={isSelected}
+                      className={`flex w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-150 ease-out hover:bg-muted/40 ${
+                        isSelected ? 'bg-muted/60' : ''
+                      }`}
+                      onClick={() => onSelectPrinter(printer.id)}
+                      type="button"
+                    >
+                      <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                        <PrinterIcon className="size-5" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="flex min-w-0 items-center gap-2">
+                          <span className="min-w-0 truncate text-sm font-medium text-foreground">
+                            {printer.name}
+                          </span>
+                          <span className="shrink-0">
+                            <StatusBadge value={printer.status} />
+                          </span>
+                        </span>
+                        <span className="mt-1 block truncate text-xs text-muted-foreground">
+                          {row.summary} · {agentNames.get(printer.agent_id) ?? t('unknownAgent')}
+                        </span>
+                      </span>
+                      <span className="w-28 shrink-0 text-right text-xs text-muted-foreground">
+                        <span className="block text-sm font-medium text-foreground">
+                          {row.primary}
+                        </span>
+                        {row.secondary}
+                      </span>
+                    </button>
+                  </li>
                 )
               })}
-            </div>
+            </ul>
           )}
-        </>
-      )}
-    </section>
+        </section>
+      ) : null}
+      {showDetail && selected ? (
+        <PrinterDetail
+          agentName={agentNames.get(selected.agent_id) ?? t('unknownAgent')}
+          jobs={jobs}
+          nowMs={nowMs}
+          onOpenReprint={onOpenReprint}
+          printer={selected}
+          selectedTenant={selectedTenant}
+        />
+      ) : null}
+    </div>
   )
+}
+
+function printerRow(
+  printer: Printer,
+  nowMs: number,
+  tJob: Translator,
+  tokenTranslator: (token: string) => string | undefined,
+) {
+  const print = printer.print
+  const gcodeState = print?.gcode_state?.trim().toUpperCase() || null
+  const active = print && (!gcodeState || ACTIVE_GCODE_STATES.has(gcodeState))
+  const progress = print?.progress_percent ?? null
+  if (active && print) {
+    return {
+      summary:
+        print.subtask_name?.trim() ||
+        print.gcode_file?.split(/[\\/]/).at(-1) ||
+        statusMeta(printer.status, tokenTranslator).label,
+      primary: progress !== null ? `${Math.min(100, Math.max(0, progress))}%` : '—',
+      secondary: formatRemaining(print.remaining_time_minutes, tJob),
+    }
+  }
+  return {
+    summary: statusMeta(printer.status, tokenTranslator).label,
+    primary: '—',
+    secondary: <PrinterLastSeen nowMs={nowMs} value={printer.last_seen_at} />,
+  }
 }
 
 function PrinterEmptyState({

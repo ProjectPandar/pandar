@@ -146,12 +146,7 @@ export function FilterRouteHarness() {
         Switch route
       </button>
       {view === "devices" ? (
-        <PrinterInventory
-          selectedTenant={tenant}
-          printers={printers}
-          agents={[agent]}
-          nowMs={0}
-        />
+        <PrinterInventory jobs={[]} onOpenReprint={() => {}} onSelectPrinter={() => {}} printers={printers} agents={[agent]} nowMs={0} selectedPrinterId={null} selectedTenant={tenant} />
       ) : (
         <div>Jobs route</div>
       )}

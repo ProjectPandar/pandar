@@ -31,7 +31,7 @@ describe("PrinterInventory", () => {
     };
 
     renderWithMessages(
-      <PrinterInventory selectedTenant={tenant} printers={[fourToolPrinter]} agents={[agent]} nowMs={0} />,
+      <PrinterInventory jobs={[]} onOpenReprint={() => {}} onSelectPrinter={() => {}} printers={[fourToolPrinter]} agents={[agent]} nowMs={0} selectedPrinterId={null} selectedTenant={tenant} />,
     );
 
     await user.click(await screen.findByRole("button", { name: "Set nozzle temperatures" }));
@@ -78,7 +78,7 @@ describe("PrinterInventory", () => {
     };
 
     renderWithMessages(
-      <PrinterInventory selectedTenant={tenant} printers={[dualNozzlePrinter]} agents={[agent]} nowMs={0} />,
+      <PrinterInventory jobs={[]} onOpenReprint={() => {}} onSelectPrinter={() => {}} printers={[dualNozzlePrinter]} agents={[agent]} nowMs={0} selectedPrinterId={null} selectedTenant={tenant} />,
     );
 
     const switchButton = await screen.findByRole("button", { name: "Switch to nozzle L" });
@@ -96,7 +96,7 @@ describe("PrinterInventory", () => {
     };
 
     renderWithMessages(
-      <PrinterInventory selectedTenant={tenant} printers={[heatingPrinter]} agents={[agent]} nowMs={0} />,
+      <PrinterInventory jobs={[]} onOpenReprint={() => {}} onSelectPrinter={() => {}} printers={[heatingPrinter]} agents={[agent]} nowMs={0} selectedPrinterId={null} selectedTenant={tenant} />,
     );
 
     await user.click(await screen.findByRole("button", { name: "Set nozzle temperature" }));
@@ -124,7 +124,7 @@ describe("PrinterInventory", () => {
     };
 
     renderWithMessages(
-      <PrinterInventory selectedTenant={tenant} printers={[dualNozzlePrinter]} agents={[agent]} nowMs={0} />,
+      <PrinterInventory jobs={[]} onOpenReprint={() => {}} onSelectPrinter={() => {}} printers={[dualNozzlePrinter]} agents={[agent]} nowMs={0} selectedPrinterId={null} selectedTenant={tenant} />,
     );
 
     await user.click(await screen.findByRole("button", { name: "Set nozzle temperatures" }));
@@ -160,7 +160,7 @@ describe("PrinterInventory", () => {
     };
 
     renderWithMessages(
-      <PrinterInventory selectedTenant={tenant} printers={[heatingPrinter]} agents={[agent]} nowMs={0} />,
+      <PrinterInventory jobs={[]} onOpenReprint={() => {}} onSelectPrinter={() => {}} printers={[heatingPrinter]} agents={[agent]} nowMs={0} selectedPrinterId={null} selectedTenant={tenant} />,
     );
 
     await user.click(await screen.findByRole("button", { name: "Set bed temperature" }));

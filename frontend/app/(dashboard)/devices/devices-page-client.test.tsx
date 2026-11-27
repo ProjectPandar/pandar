@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import en from "../../../messages/en.json";
 import type { Printer, Tenant } from "../../dashboard-types";
+import { DashboardCameraProvider } from "../../dashboard-printer-camera-control";
 import { printerCompatibility } from "../../printer-compatibility.test-utils";
 import { DevicesPageClient } from "./devices-page-client";
 
@@ -57,7 +58,9 @@ describe("DevicesPageClient", () => {
     render(
       <QueryClientProvider client={queryClient}>
         <NextIntlClientProvider locale="en" messages={en}>
-          <DevicesPageClient selectedTenant={tenant} />
+          <DashboardCameraProvider>
+            <DevicesPageClient selectedTenant={tenant} />
+          </DashboardCameraProvider>
         </NextIntlClientProvider>
       </QueryClientProvider>,
     );

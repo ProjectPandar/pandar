@@ -19,28 +19,22 @@ describe("PrinterInventory", () => {
       screen.getByRole("searchbox", { name: "Search name or serial" }),
       "Office",
     );
+    expect(screen.getByRole("button", { name: /^Office A1/ })).toBeVisible();
     expect(
-      screen.getByRole("article", { name: "Office A1" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("article", { name: "Workshop X1" }),
+      screen.queryByRole("button", { name: /^Workshop X1/ }),
     ).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Switch route" }));
     await user.click(screen.getByRole("button", { name: "Switch route" }));
 
-    expect(
-      screen.getByRole("article", { name: "Office A1" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("article", { name: "Workshop X1" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Office A1/ })).toBeVisible();
+    expect(screen.getByRole("button", { name: /^Workshop X1/ })).toBeVisible();
   });
 
   it("opens the machine form from the empty printer state", async () => {
     const user = userEvent.setup();
     renderWithMessages(
-      <PrinterInventory selectedTenant={tenant} printers={[]} agents={[agent]} nowMs={0} />,
+      <PrinterInventory jobs={[]} onOpenReprint={() => {}} onSelectPrinter={() => {}} printers={[]} agents={[agent]} nowMs={0} selectedPrinterId={null} selectedTenant={tenant} />,
     );
 
     expect(screen.getByText("No printers reported")).toBeVisible();

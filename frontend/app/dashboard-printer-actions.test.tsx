@@ -7,7 +7,7 @@ import { toast } from "sonner";
 
 import en from "../messages/en.json";
 import type { Printer } from "./dashboard-types";
-import { PrinterCard } from "./dashboard-printer-card";
+import { PrinterActions } from "./dashboard-printer-actions";
 import { DashboardCameraProvider } from "./dashboard-printer-camera-control";
 import { printerCompatibility } from "./printer-compatibility.test-utils";
 
@@ -43,27 +43,22 @@ const printer: Printer = {
   materials: null,
 };
 
-function renderPrinterCard(queryClient = new QueryClient()) {
+function renderPrinterActions(queryClient = new QueryClient()) {
   return render(
     <QueryClientProvider client={queryClient}>
       <NextIntlClientProvider locale="en" messages={en}>
         <DashboardCameraProvider>
-          <PrinterCard
-            agentName="Agent One"
-            materialDetail="No material data"
-            nowMs={Date.parse("2026-07-17T00:00:30Z")}
-            printer={printer}
-          />
+          <PrinterActions printer={printer} />
         </DashboardCameraProvider>
       </NextIntlClientProvider>
     </QueryClientProvider>,
   );
 }
 
-describe("PrinterCard actions", () => {
+describe("PrinterActions menu", () => {
   it("closes the popover before opening an existing action flow", async () => {
     const user = userEvent.setup();
-    renderPrinterCard();
+    renderPrinterActions();
 
     await user.click(screen.getByRole("button", { name: "Actions for Printer One" }));
     await user.click(screen.getByRole("button", { name: "Edit printer" }));
@@ -77,7 +72,7 @@ describe("PrinterCard actions", () => {
   });
 });
 
-describe("PrinterCard mutations", () => {
+describe("PrinterActions mutations", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -91,7 +86,7 @@ describe("PrinterCard mutations", () => {
           resolveAction = resolve;
         }),
     );
-    renderPrinterCard();
+    renderPrinterActions();
 
     await user.click(screen.getByRole("button", { name: "Actions for Printer One" }));
     await user.click(screen.getByRole("button", { name: "Refresh AMS" }));
@@ -126,7 +121,7 @@ describe("PrinterCard mutations", () => {
     );
     const queryClient = new QueryClient();
     const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
-    renderPrinterCard(queryClient);
+    renderPrinterActions(queryClient);
 
     await user.click(screen.getByRole("button", { name: "Actions for Printer One" }));
     await user.click(screen.getByRole("button", { name: "Delete printer" }));
@@ -160,7 +155,7 @@ describe("PrinterCard mutations", () => {
       ok: false,
       error: "agent_not_connected",
     });
-    renderPrinterCard();
+    renderPrinterActions();
 
     await user.click(screen.getByRole("button", { name: "Actions for Printer One" }));
     await user.click(screen.getByRole("button", { name: "Delete printer" }));
@@ -187,7 +182,7 @@ describe("PrinterCard mutations", () => {
     );
     const queryClient = new QueryClient();
     const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
-    renderPrinterCard(queryClient);
+    renderPrinterActions(queryClient);
 
     await user.click(screen.getByRole("button", { name: "Actions for Printer One" }));
     await user.click(screen.getByRole("button", { name: "Edit printer" }));

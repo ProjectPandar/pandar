@@ -14,7 +14,7 @@ describe("PrinterInventory", () => {
   it("opens an AMS slot popover on click with RFID, load, and unload operations", async () => {
     const user = userEvent.setup();
     renderWithMessages(
-      <PrinterInventory selectedTenant={tenant} printers={[printerWithMaterials]} agents={[agent]} nowMs={0} />,
+      <PrinterInventory jobs={[]} onOpenReprint={() => {}} onSelectPrinter={() => {}} printers={[printerWithMaterials]} agents={[agent]} nowMs={0} selectedPrinterId={null} selectedTenant={tenant} />,
     );
 
     await user.click(

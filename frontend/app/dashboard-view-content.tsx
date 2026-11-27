@@ -1,7 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useCallback, useState } from "react";
+import { useTranslations } from "next-intl";
 
 import { AgentsSection } from "./agents-section";
 import { DISCOVERY_COMMAND_KIND } from "./command-status";
@@ -20,7 +21,9 @@ import type {
 import type { LiveState } from "./dashboard-runtime-helpers";
 import { DiscoverySection } from "./discovery-section";
 import { DispatchDialog } from "./dispatch-dialog";
+import { useShellHeaderOverride } from "./dashboard-shell-provider";
 import { NeedsAttention } from "./needs-attention";
+import { useIsMobile } from "../hooks/use-mobile";
 import { PrinterMismatchCoordinator } from "./printer-mismatch-dialog";
 
 const DiagnosticsSection = dynamic(
@@ -62,36 +65,63 @@ export function DevicesView({
   jobs,
   nowMs,
 }: DevicesViewProps) {
-  const [reprintJob, setReprintJob] = useState<Job | null>(null);
+  const [reprintJob, setReprintJob] = useState<Job | null>(null)
+  // null = no explicit selection: desktop shows the first printer, mobile shows the list.
+  const [selectedPrinterId, setSelectedPrinterId] = useState<string | null>(null)
+  const t = useTranslations('inventory')
+  const tShell = useTranslations('dashboardShell')
+  const backToPrinters = useCallback(() => setSelectedPrinterId(null), [])
+  const isMobile = useIsMobile()
+  const selectedPrinter = printers.find((printer) => printer.id === selectedPrinterId) ?? null
+  // On a phone the selected printer replaces the overview; desktop keeps both in view.
+  const showOverview = !isMobile || !selectedPrinter
+  useShellHeaderOverride(
+    selectedPrinter
+      ? {
+          backLabel: t('backToList'),
+          title: selectedPrinter.name,
+          meta: `${tShell('brand')} · ${tShell('devices')}`,
+          onBack: backToPrinters,
+        }
+      : null,
+  )
 
   return (
     <>
       <div className="space-y-4">
-        <FleetStatusStrip
-          health={health}
-          attentionCount={attentionItems.length}
-          topSeverity={topSeverity}
-          liveState={liveState}
-          lastEventAt={lastEventAt}
-          fleetEmpty={fleetEmpty}
-        />
-        <NeedsAttention
-          items={attentionItems}
-          onOpenReprint={(jobId) => {
-            const job = jobs.find((candidate) => candidate.id === jobId);
-            if (job) setReprintJob(job);
-          }}
-          selectedTenant={selectedTenant}
-        />
+        {showOverview ? (
+          <>
+            <FleetStatusStrip
+              health={health}
+              attentionCount={attentionItems.length}
+              topSeverity={topSeverity}
+              liveState={liveState}
+              lastEventAt={lastEventAt}
+              fleetEmpty={fleetEmpty}
+            />
+            <NeedsAttention
+              items={attentionItems}
+              onOpenReprint={(jobId) => {
+                const job = jobs.find((candidate) => candidate.id === jobId);
+                if (job) setReprintJob(job);
+              }}
+              selectedTenant={selectedTenant}
+            />
+          </>
+        ) : null}
         <PrinterMismatchCoordinator
           key={selectedTenant?.id ?? "no-tenant"}
           printers={printers}
         >
           <PrinterInventory
-            selectedTenant={selectedTenant}
+            jobs={jobs}
+            nowMs={nowMs}
+            onOpenReprint={setReprintJob}
+            onSelectPrinter={setSelectedPrinterId}
             printers={printers}
             agents={agents}
-            nowMs={nowMs}
+            selectedPrinterId={selectedPrinterId}
+            selectedTenant={selectedTenant}
           />
         </PrinterMismatchCoordinator>
       </div>

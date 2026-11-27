@@ -1,4 +1,4 @@
-import { act, screen, waitFor } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -38,7 +38,7 @@ describe("PrinterInventory", () => {
     };
 
     renderWithMessages(
-      <PrinterInventory selectedTenant={tenant} printers={[pausedPrinter]} agents={[agent]} nowMs={0} />,
+      <PrinterInventory jobs={[]} onOpenReprint={() => {}} onSelectPrinter={() => {}} printers={[pausedPrinter]} agents={[agent]} nowMs={0} selectedPrinterId={null} selectedTenant={tenant} />,
       "zh",
     );
 
@@ -56,7 +56,7 @@ describe("PrinterInventory", () => {
     };
 
     renderWithMessages(
-      <PrinterInventory selectedTenant={tenant} printers={[heatingPrinter]} agents={[agent]} nowMs={0} />,
+      <PrinterInventory jobs={[]} onOpenReprint={() => {}} onSelectPrinter={() => {}} printers={[heatingPrinter]} agents={[agent]} nowMs={0} selectedPrinterId={null} selectedTenant={tenant} />,
     );
 
     await user.click(await screen.findByRole("button", { name: "View camera" }));
@@ -90,14 +90,16 @@ describe("PrinterInventory", () => {
     };
 
     renderWithMessages(
-      <PrinterInventory selectedTenant={tenant} printers={[heatingPrinter]} agents={[agent]} nowMs={0} />,
+      <PrinterInventory jobs={[]} onOpenReprint={() => {}} onSelectPrinter={() => {}} printers={[heatingPrinter]} agents={[agent]} nowMs={0} selectedPrinterId={null} selectedTenant={tenant} />,
     );
 
     await user.click(await screen.findByRole("button", { name: "View camera" }));
-    const video = document.querySelector("video");
+    const dialog = await screen.findByRole("dialog", { name: "Camera" });
+    // The console already streams an inline preview; the dialog owns the persistent stream.
+    const video = dialog.querySelector("video");
     expect(video).not.toBeNull();
 
-    await user.click(screen.getByRole("button", { name: "Picture in picture" }));
+    await user.click(within(dialog).getByRole("button", { name: "Picture in picture" }));
 
     await waitFor(() => expect(requestPictureInPicture).toHaveBeenCalledOnce());
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
@@ -151,7 +153,7 @@ describe("PrinterInventory", () => {
     };
 
     renderWithMessages(
-      <PrinterInventory selectedTenant={tenant} printers={[heatingPrinter]} agents={[agent]} nowMs={0} />,
+      <PrinterInventory jobs={[]} onOpenReprint={() => {}} onSelectPrinter={() => {}} printers={[heatingPrinter]} agents={[agent]} nowMs={0} selectedPrinterId={null} selectedTenant={tenant} />,
     );
 
     const lightForm = screen.getByRole("button", { name: "Light On" }).closest("form");

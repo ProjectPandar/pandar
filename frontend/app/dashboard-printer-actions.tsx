@@ -2,18 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import dynamic from 'next/dynamic'
-import {
-  BoxIcon,
-  BotIcon,
-  ClockIcon,
-  Loader2Icon,
-  MoreVerticalIcon,
-  PencilIcon,
-  PrinterIcon,
-  RotateCwIcon,
-  TrashIcon,
-} from 'lucide-react'
+import { Loader2Icon, MoreVerticalIcon, PencilIcon, RotateCwIcon, TrashIcon } from 'lucide-react'
 
 import {
   Dialog,
@@ -34,134 +23,19 @@ import { deletePrinter, refreshPrinterMaterials, updatePrinter } from './actions
 import type { Printer } from './dashboard-types'
 import { useActionStatusFeedback } from './mutation-feedback'
 import { mutationResources } from './mutation-invalidation'
-import { PrinterAxisControls } from './dashboard-printer-axis-controls'
-import { PrinterCoolingSystem } from './dashboard-printer-cooling'
-import { PrinterHmsPanel } from './dashboard-printer-hms'
-import { PrinterMaterialsPanel } from './dashboard-printer-materials'
-import { PrinterRackPanel } from './dashboard-printer-rack'
-import { StatusBadge } from './dashboard-ui'
 import { ConfirmDialog } from './confirm-dialog'
-import { PrinterMismatchWarning } from './printer-mismatch-dialog'
-import { PrinterPrintStatus } from './printer-print-status'
-import { PrinterLastSeen } from './printer-last-seen'
 
-const PrinterTemperatureControls = dynamic(
-  () =>
-    import('./dashboard-printer-temperature-controls').then(
-      (mod) => mod.PrinterTemperatureControls,
-    ),
-  {
-    loading: () => (
-      <div className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-[1fr_1fr_1fr_5rem]">
-        <div className="h-16 animate-pulse rounded-md bg-muted/50" />
-        <div className="h-16 animate-pulse rounded-md bg-muted/50" />
-        <div className="h-16 animate-pulse rounded-md bg-muted/50" />
-        <div className="h-16 animate-pulse rounded-md bg-muted/50" />
-      </div>
-    ),
-  },
-)
-
-const PrinterControlsPanel = dynamic(
-  () =>
-    import('./dashboard-printer-temperature-controls').then(
-      (mod) => mod.PrinterControlsPanel,
-    ),
-  {
-    loading: () => (
-      <div className="mt-4 space-y-2">
-        <div className="h-3 w-16 animate-pulse rounded bg-muted" />
-        <div className="grid grid-cols-2 gap-2">
-          <div className="h-8 animate-pulse rounded-md bg-muted/50" />
-          <div className="h-8 animate-pulse rounded-md bg-muted/50" />
-          <div className="h-8 animate-pulse rounded-md bg-muted/50" />
-          <div className="h-8 animate-pulse rounded-md bg-muted/50" />
-        </div>
-      </div>
-    ),
-  },
-)
-
-export function PrinterCard({
+/**
+ * Printer maintenance actions. `menu` keeps everything behind the ⋯ trigger;
+ * `split` also surfaces refresh-AMS and edit as buttons next to it.
+ */
+export function PrinterActions({
   printer,
-  agentName,
-  materialDetail,
-  nowMs,
+  layout = 'menu',
 }: {
   printer: Printer
-  agentName: string
-  materialDetail: string
-  nowMs: number
+  layout?: 'menu' | 'split'
 }) {
-  const t = useTranslations('inventory')
-  return (
-    <article
-      aria-label={printer.name}
-      className="rounded-md border border-border bg-card p-4 text-card-foreground"
-    >
-      <div className="flex items-start gap-3">
-        <div className="flex size-14 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-          <PrinterIcon className="size-7" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <h3 className="truncate text-base font-semibold text-foreground">{printer.name}</h3>
-              <p className="truncate text-sm text-muted-foreground">
-                {printer.model ?? t('unknownModel')} · <span className="font-mono">{printer.serial_number}</span>
-              </p>
-            </div>
-            <PrinterActions printer={printer} />
-          </div>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <StatusBadge value={printer.status} />
-            <span className="inline-flex max-w-full items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-              <BotIcon className="size-3.5 shrink-0" />
-              <span className="truncate">{agentName}</span>
-            </span>
-            <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-              <ClockIcon className="size-3.5" />
-              <PrinterLastSeen nowMs={nowMs} value={printer.last_seen_at} />
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-4 rounded-md bg-muted/60 p-3">
-        <div className="flex items-center gap-3">
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-md bg-background text-muted-foreground">
-            <BoxIcon className="size-5" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <PrinterPrintStatus
-              coarseStatus={printer.status}
-              print={printer.print ?? null}
-            />
-            <div className="mt-1 truncate text-xs text-muted-foreground">{materialDetail}</div>
-          </div>
-        </div>
-      </div>
-
-      <PrinterMismatchWarning printer={printer} />
-
-      <PrinterHmsPanel printer={printer} />
-
-      <PrinterTemperatureControls printer={printer} />
-
-      <PrinterCoolingSystem printer={printer} />
-
-      <PrinterControlsPanel printer={printer} />
-
-      <PrinterAxisControls printer={printer} />
-
-      <PrinterMaterialsPanel printer={printer} />
-
-      <PrinterRackPanel printer={printer} />
-    </article>
-  )
-}
-
-function PrinterActions({ printer }: { printer: Printer }) {
   const t = useTranslations('inventory')
   const formRef = useRef<HTMLFormElement>(null)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -180,9 +54,25 @@ function PrinterActions({ printer }: { printer: Printer }) {
     invalidate: mutationResources.printer,
     onSuccess: () => setEditOpen(false),
   })
+  const refreshForm = refreshAction.formAction
 
   return (
-    <div className="shrink-0">
+    <div className="flex shrink-0 items-center gap-2">
+      {layout === 'split' ? (
+        <>
+          <form action={refreshForm}>
+            <PrinterIdentityFields printer={printer} />
+            <Button disabled={refreshAction.pending} size="sm" type="submit" variant="outline">
+              {refreshAction.pending ? <Loader2Icon className="animate-spin" /> : <RotateCwIcon />}
+              {t('refreshAms')}
+            </Button>
+          </form>
+          <Button onClick={() => setEditOpen(true)} size="sm" type="button" variant="outline">
+            <PencilIcon />
+            {t('editPrinter')}
+          </Button>
+        </>
+      ) : null}
       <Popover open={menuOpen} onOpenChange={setMenuOpen}>
         <PopoverTrigger
           render={
@@ -190,7 +80,7 @@ function PrinterActions({ printer }: { printer: Printer }) {
               aria-haspopup="dialog"
               aria-label={t('detailsFor', { name: printer.name })}
               className="text-muted-foreground hover:text-foreground"
-              size="icon-xs"
+              size={layout === 'split' ? 'icon' : 'icon-xs'}
               type="button"
               variant="ghost"
             />
@@ -216,9 +106,8 @@ function PrinterActions({ printer }: { printer: Printer }) {
             <PencilIcon className="size-4" />
             {t('editPrinter')}
           </Button>
-          <form action={refreshAction.formAction}>
-            <input name="tenant_id" type="hidden" value={printer.tenant_id} />
-            <input name="printer_id" type="hidden" value={printer.id} />
+          <form action={refreshForm}>
+            <PrinterIdentityFields printer={printer} />
             <Button
               className="h-auto w-full justify-start gap-2 rounded-sm px-2 py-1.5 font-normal"
               disabled={refreshAction.pending}
@@ -250,8 +139,7 @@ function PrinterActions({ printer }: { printer: Printer }) {
         </PopoverContent>
       </Popover>
       <form ref={formRef} action={deleteAction.formAction}>
-        <input name="tenant_id" type="hidden" value={printer.tenant_id} />
-        <input name="printer_id" type="hidden" value={printer.id} />
+        <PrinterIdentityFields printer={printer} />
       </form>
       <ConfirmDialog
         open={confirmOpen}
@@ -272,8 +160,7 @@ function PrinterActions({ printer }: { printer: Printer }) {
             <DialogDescription>{t('editPrinterDescription')}</DialogDescription>
           </DialogHeader>
           <form action={editAction.formAction} className="grid gap-4">
-            <input name="tenant_id" type="hidden" value={printer.tenant_id} />
-            <input name="printer_id" type="hidden" value={printer.id} />
+            <PrinterIdentityFields printer={printer} />
             <label className="flex flex-col gap-1 text-sm">
               <span className="text-xs font-medium text-muted-foreground">{t('editPrinterName')}</span>
               <input
@@ -311,5 +198,14 @@ function PrinterActions({ printer }: { printer: Printer }) {
         </DialogContent>
       </Dialog>
     </div>
+  )
+}
+
+function PrinterIdentityFields({ printer }: { printer: Printer }) {
+  return (
+    <>
+      <input name="tenant_id" type="hidden" value={printer.tenant_id} />
+      <input name="printer_id" type="hidden" value={printer.id} />
+    </>
   )
 }

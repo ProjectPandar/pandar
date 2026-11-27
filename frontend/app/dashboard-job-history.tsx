@@ -19,6 +19,7 @@ import { EmptyState, SectionHeader } from './dashboard-ui'
 import { JobRow } from './dashboard-job-row'
 import { ClearJobsDialog } from './clear-jobs-dialog'
 import { DeleteJobDialog } from './delete-job-dialog'
+import { useJobDelete } from './use-job-delete'
 
 type JobFilterStatus = 'all' | 'active' | 'failed' | 'completed'
 
@@ -54,8 +55,7 @@ export function JobHistory({
   }
   const [clearOpen, setClearOpen] = useState(false)
   const [clearError, setClearError] = useState<'generic' | 'permission' | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<Job | null>(null)
-  const [deleteError, setDeleteError] = useState(false)
+  const jobDelete = useJobDelete(selectedTenant, onDeleteRedirect)
 
   const clearMutation = useMutation({
     mutationFn: async () => {
@@ -101,50 +101,7 @@ export function JobHistory({
     },
   })
 
-  const deleteMutation = useMutation({
-    mutationFn: async (jobId: string) => {
-      const response = await fetch(
-        `/api/tenants/${apiIdSegment(selectedTenant!.id, 'tenant_id')}/jobs/${apiIdSegment(jobId, 'job_id')}`,
-        { method: 'DELETE' },
-      )
-      if (!response.ok) {
-        throw new Error('delete failed')
-      }
-      return response
-    },
-    onMutate: async (jobId) => {
-      const queryKey = resourceDataKeys.jobs(selectedTenant!.id)
-      await queryClient.cancelQueries({ queryKey })
-      const previousData = queryClient.getQueryData<Job[]>(queryKey)
-      queryClient.setQueryData<Job[]>(queryKey, (old) =>
-        old?.filter((job) => job.id !== jobId),
-      )
-      return { previousData }
-    },
-    onSuccess: async () => {
-      setDeleteTarget(null)
-      await invalidateTenantResources(
-        queryClient,
-        selectedTenant!.id,
-        mutationResources.job,
-      )
-      onDeleteRedirect(
-        `/jobs?status=job_deleted`,
-      )
-    },
-    onError: (_error, _jobId, context) => {
-      if (context?.previousData) {
-        queryClient.setQueryData(
-          resourceDataKeys.jobs(selectedTenant!.id),
-          context.previousData,
-        )
-      }
-      setDeleteError(true)
-    },
-  })
-
   const clearing = clearMutation.isPending
-  const deleting = deleteMutation.isPending
   const clearableCount = jobs.filter(isClearableJob).length
   const clearDisabled =
     !canManageJobs || !selectedTenant || clearableCount === 0 || clearing
@@ -181,14 +138,6 @@ export function JobHistory({
     }
     setClearError(null)
     clearMutation.mutate()
-  }
-
-  const deleteJob = () => {
-    if (!selectedTenant || !deleteTarget) {
-      return
-    }
-    setDeleteError(false)
-    deleteMutation.mutate(deleteTarget.id)
   }
 
   return (
@@ -280,10 +229,7 @@ export function JobHistory({
                       ? t('deleteJobUnavailable')
                       : t('deleteJobAdminOnly')
                   }
-                  onDelete={() => {
-                    setDeleteError(false)
-                    setDeleteTarget(job)
-                  }}
+                  onDelete={() => jobDelete.request(job)}
                   onReprint={() => onOpenReprint(job)}
                 />
               ))}
@@ -300,16 +246,11 @@ export function JobHistory({
         onConfirm={clearJobs}
       />
       <DeleteJobDialog
-        target={deleteTarget}
-        deleting={deleting}
-        error={deleteError}
-        onClose={() => {
-          if (!deleting) {
-            setDeleteTarget(null)
-            setDeleteError(false)
-          }
-        }}
-        onConfirm={deleteJob}
+        target={jobDelete.target}
+        deleting={jobDelete.deleting}
+        error={jobDelete.error}
+        onClose={jobDelete.close}
+        onConfirm={jobDelete.confirm}
       />
     </section>
   )
