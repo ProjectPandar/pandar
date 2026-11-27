@@ -1,0 +1,25 @@
+/* 设计稿补充：只做画布内定位修正与图标注入，不改变仓库样式（pandar.css 由 frontend/app/globals.css 真实编译） */
+
+:root {
+  --sidebar-width: 16rem;
+  --sidebar-width-icon: 3rem;
+}
+
+/* 仓库中侧边栏容器为 fixed（相对视口）；画布按整页高度渲染，改为相对文档 */
+[data-slot="sidebar-container"].sidebar-container {
+  position: absolute;
+}
+
+/* 顶层包装高度至少一屏，移动端画板固定 844 */
+.page {
+  min-height: 100vh;
+}
+.page.h-screen {
+  height: 844px;
+  min-height: 844px;
+  overflow: hidden;
+}
+.page.h-tall {
+  height: 1600px;
+  min-height: 1600px;
+}

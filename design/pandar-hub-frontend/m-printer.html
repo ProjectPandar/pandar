@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>打印机详情（移动端）</title>
+<link rel="stylesheet" href="pandar.css">
+<link rel="stylesheet" href="extra.css">
+<link rel="stylesheet" href="tweaks.css">
+</head>
+<body>
+<div class="page h-tall group/sidebar-wrapper flex min-h-svh w-full has-data-[variant=inset]:bg-sidebar">
+
+  <div class="relative flex w-full flex-1 flex-col bg-background md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm" data-slot="sidebar-inset" data-dc-id="inset">
+    <header class="sticky top-0 z-20 flex min-h-16 shrink-0 items-center border-b border-border bg-background/95 px-4 py-3 backdrop-blur" data-dc-id="topbar">
+      <div class="flex min-w-0 items-center gap-2">
+        <a href="m-devices.html" class="btn btn-ghost btn-icon-sm -ml-1" aria-label="返回打印机清单"><i data-icon="chevron-right" class="rotate-180"></i></a>
+        <div class="min-w-0">
+          <div class="text-xs font-medium text-muted-foreground">Pandar · 设备</div>
+          <h1 class="truncate text-lg font-semibold text-foreground">P1S 车间-01</h1>
+        </div>
+      </div>
+      <button type="button" class="btn btn-ghost btn-icon ml-auto text-muted-foreground hover:text-foreground" aria-label="P1S 车间-01 的操作" data-dc-id="detail-actions"><i data-icon="ellipsis-vertical"></i></button>
+    </header>
+
+    <main class="flex-1 p-4" id="main-content">
+      <section class="flex min-w-0 flex-col gap-4" aria-label="P1S 车间-01" data-dc-id="printer-detail">
+
+        <div class="flex flex-wrap items-center justify-between gap-3" data-dc-id="detail-head">
+          <div class="flex min-w-0 items-center gap-3">
+            <span class="flex size-12 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground"><i data-icon="printer" class="size-6"></i></span>
+            <div class="min-w-0">
+              <h2 class="flex items-center gap-2 text-base font-semibold text-foreground"><span class="truncate">P1S</span><span class="badge badge-success"><i data-icon="status-success" class="h-3.5 w-3.5"></i>打印中</span></h2>
+              <p class="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground"><span class="font-mono">01P00A352600123</span> · 车间 Agent</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button type="submit" class="btn btn-outline btn-sm"><i data-icon="rotate-cw"></i>刷新 AMS</button>
+            <button type="button" class="btn btn-outline btn-sm"><i data-icon="pencil"></i>编辑</button>
+          </div>
+        </div>
+
+        <!-- 摄像头 + 控制 -->
+        <div class="rounded-md border border-border bg-card p-4" data-dc-id="detail-camera">
+          <div class="mb-2 flex items-center justify-between gap-2 text-xs font-medium text-muted-foreground">
+            <span>摄像头</span>
+            <span class="inline-flex items-center gap-1"><i data-icon="wifi" class="size-3.5"></i>实时</span>
+          </div>
+          <div class="relative aspect-video w-full overflow-hidden rounded-md bg-black">
+            <svg class="absolute inset-0 size-full" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+              <defs>
+                <linearGradient id="camg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2027"/><stop offset="1" stop-color="#0b0d10"/></linearGradient>
+                <radialGradient id="caml" cx="0.5" cy="0.55" r="0.55"><stop offset="0" stop-color="#4a5568" stop-opacity="0.9"/><stop offset="1" stop-color="#1a2029" stop-opacity="0"/></radialGradient>
+              </defs>
+              <rect width="320" height="180" fill="url(#camg)"/><rect width="320" height="180" fill="url(#caml)"/>
+              <rect x="70" y="22" width="180" height="130" rx="3" fill="none" stroke="#3a414b" stroke-width="2"/>
+              <rect x="74" y="60" width="172" height="6" rx="2" fill="#4b5360"/><rect x="150" y="56" width="20" height="16" rx="2" fill="#5d6673"/>
+              <rect x="90" y="128" width="140" height="8" rx="1" fill="#2f353d"/>
+              <path d="M140 128 v-22 l12 -10 h16 l12 10 v22 z" fill="#e0a24a"/><rect x="138" y="126" width="44" height="3" fill="#c48a35"/>
+              <circle cx="160" cy="72" r="2.5" fill="#ffb347"/>
+            </svg>
+            <div class="absolute right-3 top-3 flex gap-2">
+              <button type="button" class="btn btn-ghost btn-icon rounded-md bg-black/70 text-white hover:bg-black/90 hover:text-white" aria-label="画中画"><i data-icon="picture-in-picture-2"></i></button>
+              <button type="button" class="btn btn-ghost btn-icon rounded-md bg-black/70 text-white hover:bg-black/90 hover:text-white" aria-label="全屏"><i data-icon="maximize"></i></button>
+            </div>
+            <div class="absolute inset-x-3 bottom-3 rounded-md bg-black/55 px-3 py-2 text-xs text-white">
+              <div class="flex items-center justify-between gap-2"><span class="font-medium">benchy.3mf</span><span>62%</span></div>
+              <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-white/25"><div class="h-full rounded-full bg-white" style="width:62%"></div></div>
+            </div>
+          </div>
+
+          <div class="mt-4 space-y-2">
+            <div class="text-xs font-medium text-muted-foreground">控制</div>
+            <div aria-label="控制" class="grid grid-cols-2 gap-2" role="group" data-dc-id="detail-controls">
+              <button type="button" class="btn btn-destructive w-full rounded-md font-semibold disabled:bg-muted/60 disabled:text-muted-foreground"><i data-icon="square"></i>停止打印</button>
+              <button type="submit" class="btn btn-soft w-full rounded-md font-semibold bg-warning/15 text-warning hover:bg-warning/25 disabled:bg-muted/60 disabled:text-muted-foreground" aria-label="暂停打印"><i data-icon="pause"></i>暂停打印</button>
+              <button type="submit" class="btn btn-soft w-full rounded-md font-semibold disabled:bg-muted/60 disabled:text-muted-foreground" aria-pressed="true" aria-label="灯光 已开启"><i data-icon="lightbulb"></i>灯光<span class="text-xs font-normal opacity-75"> 已开启</span></button>
+              <button type="button" class="btn btn-ghost min-h-8 w-full gap-2 rounded-md bg-muted/50 px-3 py-2 hover:bg-muted"><i data-icon="video"></i>查看摄像头</button>
+            </div>
+            <div class="space-y-2" data-dc-id="detail-speed">
+              <div class="flex items-center justify-between gap-2 text-xs font-medium text-muted-foreground">
+                <span class="flex items-center gap-1"><i data-icon="gauge" class="size-3.5"></i>打印速度</span>
+                <span class="font-semibold text-foreground">标准</span>
+              </div>
+              <div aria-label="打印速度" class="grid grid-cols-4 gap-1.5" role="group">
+                <button type="submit" class="btn btn-outline btn-sm w-full px-1">静音</button>
+                <button type="submit" class="btn btn-secondary btn-sm w-full px-1" aria-pressed="true">标准</button>
+                <button type="submit" class="btn btn-outline btn-sm w-full px-1">运动</button>
+                <button type="submit" class="btn btn-outline btn-sm w-full px-1">狂暴</button>
+              </div>
+            </div>
+            <div class="mt-2">
+              <button type="button" class="btn btn-soft w-full rounded-md font-semibold"><i data-icon="axis-3d"></i>移动轴</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 温度 + 冷却 -->
+        <div class="rounded-md border border-border bg-card p-4" data-dc-id="detail-telemetry">
+          <div class="grid grid-cols-2 gap-2 lg:grid-cols-4" data-dc-id="detail-temps">
+            <button type="button" class="btn btn-ghost tile" aria-label="设定喷嘴温度"><i data-icon="thermometer" class="size-4 text-muted-foreground"></i><div class="mt-1 text-xs font-medium text-muted-foreground">喷嘴</div><div class="text-sm font-semibold text-foreground">220°</div></button>
+            <button type="button" class="btn btn-ghost tile" aria-label="设置热床温度"><i data-icon="thermometer" class="size-4 text-muted-foreground"></i><div class="mt-1 text-xs font-medium text-muted-foreground">热床</div><div class="text-sm font-semibold text-foreground">60° / 60°</div></button>
+            <button type="button" class="btn btn-ghost tile col-span-2" aria-label="设置仓温"><i data-icon="thermometer" class="size-4 text-muted-foreground"></i><div class="mt-1 text-xs font-medium text-muted-foreground">仓温</div><div class="text-sm font-semibold text-foreground">38°C</div></button>
+          </div>
+
+          <section aria-label="冷却系统" class="mt-4 space-y-2" data-dc-id="detail-cooling">
+            <div class="flex items-center justify-between gap-2">
+              <div class="text-xs font-medium text-muted-foreground">冷却系统</div>
+              <span class="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"><i data-icon="snowflake" class="size-3.5 text-sky-500"></i>冷却</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2 lg:grid-cols-4">
+              <button type="button" class="btn btn-ghost fan-tile" aria-label="设置部件冷却风扇速度">
+                <span class="flex items-start gap-1.5 text-xs font-medium text-muted-foreground"><i data-icon="fan" class="mt-0.5 size-3.5 shrink-0 text-sky-500"></i><span class="min-w-0 whitespace-normal break-words">部件冷却风扇</span></span>
+                <span class="mt-1 block text-sm font-semibold text-foreground">80%</span>
+                <span class="mt-2 block h-1.5 overflow-hidden rounded-full bg-background"><span class="block h-full rounded-full bg-sky-500" style="width:80%"></span></span>
+              </button>
+              <button type="button" class="btn btn-ghost fan-tile" aria-label="设置辅助风扇速度">
+                <span class="flex items-start gap-1.5 text-xs font-medium text-muted-foreground"><i data-icon="wind" class="mt-0.5 size-3.5 shrink-0 text-sky-500"></i><span class="min-w-0 whitespace-normal break-words">辅助风扇</span></span>
+                <span class="mt-1 block text-sm font-semibold text-foreground">70%</span>
+                <span class="mt-2 block h-1.5 overflow-hidden rounded-full bg-background"><span class="block h-full rounded-full bg-sky-500" style="width:70%"></span></span>
+              </button>
+              <button type="button" class="btn btn-ghost fan-tile" aria-label="设置腔体 / 排风风扇速度">
+                <span class="flex items-start gap-1.5 text-xs font-medium text-muted-foreground"><i data-icon="air-vent" class="mt-0.5 size-3.5 shrink-0 text-sky-500"></i><span class="min-w-0 whitespace-normal break-words">腔体 / 排风风扇</span></span>
+                <span class="mt-1 block text-sm font-semibold text-foreground">60%</span>
+                <span class="mt-2 block h-1.5 overflow-hidden rounded-full bg-background"><span class="block h-full rounded-full bg-sky-500" style="width:60%"></span></span>
+              </button>
+              <div class="rounded-md bg-muted/50 px-3 py-2">
+                <span class="flex items-start gap-1.5 text-xs font-medium text-muted-foreground"><i data-icon="fan" class="mt-0.5 size-3.5 shrink-0"></i><span class="min-w-0 whitespace-normal break-words">热端风扇</span></span>
+                <span class="mt-1 block text-sm font-semibold text-foreground">100%</span>
+                <span class="mt-2 block h-1.5 overflow-hidden rounded-full bg-background"><span class="block h-full rounded-full bg-sky-500" style="width:100%"></span></span>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- 耗材 -->
+        <div class="rounded-md border border-border bg-card p-4" data-dc-id="detail-materials">
+          <div class="space-y-2">
+            <div class="text-xs font-medium text-muted-foreground">耗材</div>
+            <div class="grid gap-2">
+              <div class="rounded-md bg-muted/40 p-2">
+                <div class="mb-2 flex items-center justify-between gap-2">
+                  <div class="flex min-w-0 items-center gap-1.5"><span class="truncate text-sm font-semibold text-foreground">AMS-A</span></div>
+                  <div class="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
+                    <span class="inline-flex items-center gap-1"><i data-icon="droplets" class="size-3"></i>32%</span>
+                    <span class="inline-flex items-center gap-1"><i data-icon="thermometer" class="size-3"></i>28.0°C</span>
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+                  <button type="button" class="btn btn-ghost slot ring-2 ring-success" aria-label="AMS-A 1 号槽，PLA">
+                    <div class="flex items-start justify-between gap-1">
+                      <span aria-hidden="true" class="inline-flex size-4 items-center justify-center rounded-full text-[10px] font-bold text-white shadow-sm" style="background:#F2F2F0">1</span>
+                      <span class="flex items-center gap-1"><i data-icon="circle-check" class="size-3.5 text-success"></i></span>
+                    </div>
+                    <div><div class="truncate text-xs font-semibold text-foreground">PLA 白</div><div aria-hidden="true" class="mt-1 h-1 overflow-hidden rounded-full bg-muted"><div class="h-full rounded-full bg-success" style="width:78%"></div></div></div>
+                  </button>
+                  <button type="button" class="btn btn-ghost slot" aria-label="AMS-A 2 号槽，PLA">
+                    <div class="flex items-start justify-between gap-1"><span aria-hidden="true" class="inline-flex size-4 items-center justify-center rounded-full text-[10px] font-bold text-white shadow-sm" style="background:#2B2B2B">2</span><span class="flex items-center gap-1"></span></div>
+                    <div><div class="truncate text-xs font-semibold text-foreground">PLA 黑</div><div aria-hidden="true" class="mt-1 h-1 overflow-hidden rounded-full bg-muted"><div class="h-full rounded-full bg-success" style="width:45%"></div></div></div>
+                  </button>
+                  <button type="button" class="btn btn-ghost slot" aria-label="AMS-A 3 号槽，PETG">
+                    <div class="flex items-start justify-between gap-1"><span aria-hidden="true" class="inline-flex size-4 items-center justify-center rounded-full text-[10px] font-bold text-white shadow-sm" style="background:#D7262C">3</span><span class="flex items-center gap-1"></span></div>
+                    <div><div class="truncate text-xs font-semibold text-foreground">PETG 红</div><div aria-hidden="true" class="mt-1 h-1 overflow-hidden rounded-full bg-muted"><div class="h-full rounded-full bg-success" style="width:62%"></div></div></div>
+                  </button>
+                  <button type="button" class="btn btn-ghost slot" aria-label="AMS-A 4 号槽，PLA 木纹">
+                    <div class="flex items-start justify-between gap-1"><span aria-hidden="true" class="inline-flex size-4 items-center justify-center rounded-full text-[10px] font-bold text-white shadow-sm" style="background:#8D6E63">4</span><span class="flex items-center gap-1"></span></div>
+                    <div><div class="truncate text-xs font-semibold text-foreground">PLA 木纹</div><div aria-hidden="true" class="mt-1 h-1 overflow-hidden rounded-full bg-muted"><div class="h-full rounded-full bg-success" style="width:54%"></div></div></div>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 此打印机的任务 -->
+        <div class="card" data-dc-id="detail-queue">
+          <div class="section-header">
+            <div><h2 class="text-base font-semibold">此打印机的任务</h2><p class="mt-0.5 text-sm text-muted-foreground">排队、派发与实际打印历史</p></div>
+            <a href="m-jobs.html" class="text-xs font-medium text-primary hover:underline">全部任务</a>
+          </div>
+          <ul class="divide-y divide-border">
+            <li class="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div class="min-w-0">
+                <div class="flex items-center gap-2"><span class="truncate text-sm font-medium text-foreground">benchy.3mf</span><span class="badge badge-success"><i data-icon="status-success" class="h-3.5 w-3.5"></i>打印中</span></div>
+                <div class="mt-1 text-xs text-muted-foreground">派发 成功 · 层数 128/212 · 剩余 1 小时 12 分钟</div>
+              </div>
+              <button type="button" class="btn btn-outline btn-sm">查看</button>
+            </li>
+            <li class="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div class="min-w-0">
+                <div class="flex items-center gap-2"><span class="truncate text-sm font-medium text-foreground">gear_box.3mf</span><span class="badge badge-warning"><i data-icon="status-warning" class="h-3.5 w-3.5"></i>已停滞</span></div>
+                <div class="mt-1 text-xs text-muted-foreground">派发 成功 · 15 分钟内未开始打印</div>
+              </div>
+              <div class="flex shrink-0 gap-2"><button type="submit" class="btn btn-outline btn-sm"><i data-icon="refresh-cw"></i>重试派发</button><button type="button" class="btn btn-outline btn-sm"><i data-icon="rotate-ccw"></i>重新打印</button></div>
+            </li>
+          </ul>
+        </div>
+
+      </section>
+    </main>
+  </div>
+</div>
+<script src="icons.js"></script>
+</body>
+</html>

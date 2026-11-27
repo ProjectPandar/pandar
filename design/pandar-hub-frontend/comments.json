@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "nextNumber": 4,
+  "comments": [
+    {
+      "id": "c-b4f75de4ab4c",
+      "number": 1,
+      "body": "这里有点挤了，优化一下",
+      "anchor": {
+        "artboardId": "devices",
+        "dcId": "detail-queue",
+        "path": "#main-content > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-of-type(2) > div:nth-of-type(3) > div:nth-of-type(2)",
+        "tag": "div",
+        "text": "此打印机的任务 排队、派发与实际打印历史 全部任务 benchy.3mf 打印中 派发 成功 · 层数 128/212 · 剩余 1 小时 12 分钟 查看 gear_box.3mf 已停滞 派发 成功 · 15 分钟内未开始打印 重试派发 重新打印 spacer_v3.3mf 已完成 打印已完成 · 2026年11月27日 重新打印 删除",
+        "html": "<div class=\"card\" data-dc-id=\"detail-queue\">\n                <div class=\"section-header\">\n                  <div><h2 class=\"text-base font-semibold\">此打印机的任务</h2><p class=\"mt-0.5 text-sm text-muted-foreground\">排队、派发与实际打印历史</p></div>\n                  <a href=\"/jobs\" class=\"text-xs font-medium text-primary hover:underline\">全部任务</a>\n                </div>\n                <ul class=\"divide-y divide-border\">\n                  <li class=\"flex items-center justify-between gap-3 px-4 py-3\">\n                    <div class=\"min-w-0\">\n                      <div class=\"flex items-center gap-2\"><span class=\"truncate text-sm font-medium text-foreground\">benchy.3mf</span><span class=\"badge badge-success\"><svg class=\"h-3.5 w-3.5\" viewBox=\"0 0 20 20\" fill=\"currentColor\" aria-hidden=\"true\"><path fill-rule=\"evenodd\" d=\"M10 18a8 8 0 100-16 8 8 0 000 16zm3.86-9.97a.75.75 0 00-1.22-.87l-3.24 4.53-1.61-1.61a.75.75 0 10-1.06 1.06l2.25 2.25a.75.75 0 001.1-.1l3.78-5.26z\" clip-rule=\"evenodd\"></path></svg>打印中</span></div>\n                      <div class=\"mt-1 text-xs text-muted-foreground\">派发 成功 · 层数 128/212 · 剩余 1 小时 12 分钟</div>\n                    </div>\n                    <button type=\"button\" class=\"btn",
+        "rect": {
+          "x": 1012.5,
+          "y": 1071.40625,
+          "width": 388.5,
+          "height": 305
+        }
+      },
+      "status": "resolved",
+      "createdAt": 1795802094822,
+      "sentAt": 1795802138341,
+      "resolvedAt": 1795802286573,
+      "resolution": "「此打印机的任务」改为分行布局：文件名 + 状态徽标一行、进度 / 摘要一行、操作按钮单独右对齐一行，去掉副标题，并把底部栅格改为耗材 0.85fr / 任务 1.15fr 给任务卡更多宽度。"
+    },
+    {
+      "id": "c-1e9738388cce",
+      "number": 2,
+      "body": "这里的状态也是",
+      "anchor": {
+        "artboardId": "agents",
+        "dcId": "diagnostic-result",
+        "path": "#main-content > div:nth-of-type(1) > section:nth-of-type(3) > div:nth-of-type(3)",
+        "tag": "div",
+        "text": "正常 01S00C520800456 192.168.1.43 X1 Carbon 检查项 状态 消息 详情 mqtt_connect 正常 已连接 MQTT 并订阅状态主题 8883 · TLS · QoS 1 mqtt_report 正常 10 秒内收到 3 条状态报告 print.gcode_state = PAUSE ftps_connect 正常 隐式 TLS 990 · 受保护数据通道",
+        "html": "<div class=\"grid gap-0 lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.8fr)]\" data-dc-id=\"diagnostic-result\">\n            <div class=\"border-b border-border lg:border-b-0 lg:border-r\">\n              <div class=\"flex flex-wrap items-center gap-2 border-b border-border px-4 py-3\">\n                <span class=\"badge badge-success\"><svg class=\"h-3.5 w-3.5\" viewBox=\"0 0 20 20\" fill=\"currentColor\" aria-hidden=\"true\"><path fill-rule=\"evenodd\" d=\"M10 18a8 8 0 100-16 8 8 0 000 16zm3.86-9.97a.75.75 0 00-1.22-.87l-3.24 4.53-1.61-1.61a.75.75 0 10-1.06 1.06l2.25 2.25a.75.75 0 001.1-.1l3.78-5.26z\" clip-rule=\"evenodd\"></path></svg>正常</span>\n                <span class=\"font-mono text-xs text-muted-foreground\">01S00C520800456</span>\n                <span class=\"font-mono text-xs text-muted-foreground\">192.168.1.43</span>\n                <span class=\"text-xs text-muted-foreground\">X1 Carbon</span>\n              </div>\n              <div class=\"overflow-x-auto\">\n                <table class=\"min-w-full border-collapse text-left text-sm\">\n                  <thead class=\"bg-muted/60 text-xs font-semibold text-muted-foreground\">\n                    <tr><th class=\"px-4 py-2\">检查项</th><th class=\"px-4 py-2\">状",
+        "rect": {
+          "x": 273,
+          "y": 884,
+          "width": 1142,
+          "height": 395
+        }
+      },
+      "status": "resolved",
+      "createdAt": 1795802117071,
+      "sentAt": 1795802138341,
+      "resolvedAt": 1795802286573,
+      "resolution": "诊断结果去掉独立的「状态」列：通过项只在检查项前显示 16px 状态图标，异常项保留图标 + 「异常」徽标；表格改为 检查项 / 消息 / 详情 三列，右侧兼容性栏最小宽度提到 22rem，等宽值可截断。"
+    },
+    {
+      "id": "c-550f9ebf3450",
+      "number": 3,
+      "body": "还是很奇怪，能再改进下吗",
+      "anchor": {
+        "artboardId": "agents",
+        "dcId": "diagnostic-result",
+        "path": "#main-content > div:nth-of-type(1) > section:nth-of-type(3) > div:nth-of-type(3)",
+        "tag": "div",
+        "text": "正常 01S00C520800456 192.168.1.43 X1 Carbon 检查项 消息 详情 mqtt_connect 已连接 MQTT 并订阅状态主题 8883 · TLS · QoS 1 mqtt_report 10 秒内收到 3 条状态报告 print.gcode_state = PAUSE ftps_connect 隐式 TLS 990 · 受保护数据通道 · 服务端大小校验通过",
+        "html": "<div class=\"grid gap-0 lg:grid-cols-[minmax(0,1.2fr)_minmax(22rem,0.8fr)]\" data-dc-id=\"diagnostic-result\">\n            <div class=\"border-b border-border lg:border-b-0 lg:border-r\">\n              <div class=\"flex flex-wrap items-center gap-2 border-b border-border px-4 py-3\">\n                <span class=\"badge badge-success\"><svg class=\"h-3.5 w-3.5\" viewBox=\"0 0 20 20\" fill=\"currentColor\" aria-hidden=\"true\"><path fill-rule=\"evenodd\" d=\"M10 18a8 8 0 100-16 8 8 0 000 16zm3.86-9.97a.75.75 0 00-1.22-.87l-3.24 4.53-1.61-1.61a.75.75 0 10-1.06 1.06l2.25 2.25a.75.75 0 001.1-.1l3.78-5.26z\" clip-rule=\"evenodd\"></path></svg>正常</span>\n                <span class=\"font-mono text-xs text-muted-foreground\">01S00C520800456</span>\n                <span class=\"font-mono text-xs text-muted-foreground\">192.168.1.43</span>\n                <span class=\"text-xs text-muted-foreground\">X1 Carbon</span>\n              </div>\n              <div class=\"overflow-x-auto\">\n                <table class=\"min-w-full border-collapse text-left text-sm\">\n                  <thead class=\"bg-muted/60 text-xs font-semibold text-muted-foreground\">\n                    <tr><th class=\"px-4 py-2\">检查项</th><th class=\"px-4 py-2\">消",
+        "rect": {
+          "x": 273,
+          "y": 884,
+          "width": 1142,
+          "height": 381
+        }
+      },
+      "status": "resolved",
+      "createdAt": 1795803174096,
+      "sentAt": 1795803174857,
+      "resolvedAt": 1795803261176,
+      "resolution": "诊断结果改为检查清单而不是表格：顶部一行摘要（整体状态徽标 + 打印机名 / 型号 · 序列号 · IP + “5 项检查 · 4 通过 · 1 异常”），每项 = 状态图标 + 消息，检查 id 与详情作次要信息放在第二行，异常行用浅警告底色 + 右侧徽标；右侧兼容性改用同一套状态图标 + 可用/不可用，不再混用 tag + 等宽值，整体状态按真实语义改为「异常」。"
+    }
+  ]
+}

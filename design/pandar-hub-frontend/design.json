@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "title": "pandar-hub 控制台前端设计",
+  "kind": "prototype",
+  "description": "忠实还原 frontend/（pandar-web）当前控制台：样式由 frontend/app/globals.css 经 Tailwind 4.3.1 + shadcn base-nova 真实编译（pandar.css），结构与类名来自 app/*.tsx 与 components/ui。桌面端「设备」采用运维台布局（左列表 + 右详情），另含任务 / 派发 / Agent / 用户 / 设置；mobile 组为 390 宽的移动端适配。",
+  "artboards": [
+    {
+      "id": "devices",
+      "title": "设备 · 运维台",
+      "file": "devices.html",
+      "width": 1440
+    },
+    {
+      "id": "jobs",
+      "title": "任务",
+      "file": "jobs.html",
+      "width": 1440
+    },
+    {
+      "id": "dispatch",
+      "title": "派发打印任务（弹窗）",
+      "file": "dispatch.html",
+      "width": 1440
+    },
+    {
+      "id": "agents",
+      "title": "Agent",
+      "file": "agents.html",
+      "width": 1440
+    },
+    {
+      "id": "users",
+      "title": "用户",
+      "file": "users.html",
+      "width": 1440
+    },
+    {
+      "id": "settings",
+      "title": "设置",
+      "file": "settings.html",
+      "width": 1440
+    },
+    {
+      "id": "m-devices",
+      "title": "设备 · 移动端",
+      "file": "m-devices.html",
+      "width": 390,
+      "height": 844,
+      "group": "mobile"
+    },
+    {
+      "id": "m-printer",
+      "title": "打印机详情 · 移动端",
+      "file": "m-printer.html",
+      "width": 390,
+      "height": 1600,
+      "group": "mobile"
+    },
+    {
+      "id": "m-jobs",
+      "title": "任务 · 移动端",
+      "file": "m-jobs.html",
+      "width": 390,
+      "height": 1400,
+      "group": "mobile"
+    },
+    {
+      "id": "m-dispatch",
+      "title": "派发打印任务 · 移动端",
+      "file": "m-dispatch.html",
+      "width": 390,
+      "height": 844,
+      "group": "mobile"
+    },
+    {
+      "id": "m-nav",
+      "title": "侧边导航 · 移动端",
+      "file": "m-nav.html",
+      "width": 390,
+      "height": 844,
+      "group": "mobile"
+    }
+  ],
+  "tweaks": [
+    {
+      "id": "primary",
+      "label": "主色（按钮 / 激活态）",
+      "var": "--primary",
+      "type": "color",
+      "default": "oklch(0.205 0 0)"
+    },
+    {
+      "id": "radius",
+      "label": "圆角 --radius",
+      "var": "--radius",
+      "type": "range",
+      "min": 0,
+      "max": 16,
+      "step": 1,
+      "unit": "px",
+      "default": 10
+    },
+    {
+      "id": "sidebar",
+      "label": "侧边栏宽度",
+      "var": "--sidebar-width",
+      "type": "range",
+      "min": 224,
+      "max": 320,
+      "step": 8,
+      "unit": "px",
+      "default": 256
+    }
+  ]
+}

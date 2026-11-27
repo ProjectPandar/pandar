@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Agent</title>
+<link rel="stylesheet" href="pandar.css">
+<link rel="stylesheet" href="extra.css">
+<link rel="stylesheet" href="tweaks.css">
+</head>
+<body>
+<div class="page group/sidebar-wrapper flex min-h-svh w-full has-data-[variant=inset]:bg-sidebar">
+
+  <div class="group peer hidden text-sidebar-foreground md:block" data-state="expanded" data-collapsible="" data-variant="inset" data-side="left" data-slot="sidebar" data-dc-id="sidebar">
+    <div class="relative w-(--sidebar-width) bg-transparent group-data-[collapsible=offcanvas]:w-0 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4)))]" data-slot="sidebar-gap"></div>
+    <div class="sidebar-container fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) data-[side=left]:left-0 md:flex p-2" data-slot="sidebar-container" data-side="left">
+      <div class="flex size-full flex-col bg-sidebar" data-sidebar="sidebar" data-slot="sidebar-inner">
+        <div class="flex flex-col gap-2 p-2" data-slot="sidebar-header" data-sidebar="header">
+          <ul class="flex w-full min-w-0 flex-col gap-0" data-slot="sidebar-menu" data-sidebar="menu">
+            <li class="group/menu-item relative" data-slot="sidebar-menu-item" data-sidebar="menu-item">
+              <button type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="选择租户访问" class="peer/menu-button group/menu-button menu-button h-12 text-sm" data-dc-id="tenant-switcher">
+                <div class="flex aspect-square size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground"><i data-icon="building-2"></i></div>
+                <div class="grid min-w-0 flex-1 text-left text-sm leading-tight"><span class="truncate font-semibold">Acme 工坊</span><span class="truncate text-xs text-sidebar-foreground/70">租户访问</span></div>
+                <i data-icon="chevrons-up-down" class="ml-auto size-4 text-sidebar-foreground/70"></i>
+              </button>
+            </li>
+          </ul>
+        </div>
+        <div class="no-scrollbar flex min-h-0 flex-1 flex-col gap-0 overflow-auto group-data-[collapsible=icon]:overflow-hidden" data-slot="sidebar-content" data-sidebar="content">
+          <nav aria-label="控制台" data-dc-id="nav">
+            <div class="relative flex w-full min-w-0 flex-col p-2" data-slot="sidebar-group" data-sidebar="group">
+              <div class="flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 ring-sidebar-ring outline-hidden group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0" data-slot="sidebar-group-label" data-sidebar="group-label">控制台</div>
+              <ul class="flex w-full min-w-0 flex-col gap-0" data-slot="sidebar-menu" data-sidebar="menu">
+                <li class="group/menu-item relative" data-slot="sidebar-menu-item" data-sidebar="menu-item"><a href="/devices" class="peer/menu-button group/menu-button menu-button" data-dc-id="nav-devices"><i data-icon="monitor"></i><span>设备</span></a></li>
+                <li class="group/menu-item relative" data-slot="sidebar-menu-item" data-sidebar="menu-item"><a href="/jobs" class="peer/menu-button group/menu-button menu-button" data-dc-id="nav-jobs"><i data-icon="clipboard-list"></i><span>任务</span></a></li>
+                <li class="group/menu-item relative" data-slot="sidebar-menu-item" data-sidebar="menu-item"><a href="/agents" aria-current="page" data-active="true" class="peer/menu-button group/menu-button menu-button" data-dc-id="nav-agents"><i data-icon="bot"></i><span>Agent</span></a></li>
+                <li class="group/menu-item relative" data-slot="sidebar-menu-item" data-sidebar="menu-item"><a href="/users" class="peer/menu-button group/menu-button menu-button" data-dc-id="nav-users"><i data-icon="users"></i><span>用户</span></a></li>
+                <li class="group/menu-item relative" data-slot="sidebar-menu-item" data-sidebar="menu-item"><a href="/settings" class="peer/menu-button group/menu-button menu-button" data-dc-id="nav-settings"><i data-icon="settings"></i><span>设置</span></a></li>
+              </ul>
+            </div>
+          </nav>
+        </div>
+        <div class="flex flex-col gap-2 p-2" data-slot="sidebar-footer" data-sidebar="footer" data-dc-id="sidebar-footer">
+          <ul class="flex w-full min-w-0 flex-col gap-0" data-slot="sidebar-menu" data-sidebar="menu">
+            <li class="group/menu-item relative" data-slot="sidebar-menu-item" data-sidebar="menu-item"><a href="/sign-out" class="peer/menu-button group/menu-button menu-button" data-dc-id="logout"><i data-icon="log-out"></i><span>退出登录</span></a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="relative flex w-full flex-1 flex-col bg-background md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2" data-slot="sidebar-inset">
+    <header class="sticky top-0 z-20 flex min-h-16 shrink-0 items-center border-b border-border bg-background/95 px-4 py-3 backdrop-blur" data-dc-id="topbar">
+      <div class="flex min-w-0 items-center gap-3">
+        <button type="button" class="btn btn-ghost btn-icon-sm -ml-1" data-sidebar="trigger" data-slot="sidebar-trigger" aria-label="切换侧边栏"><i data-icon="panel-left"></i></button>
+        <div class="min-w-0"><div class="text-xs font-medium text-muted-foreground">Pandar</div><h1 class="truncate text-lg font-semibold text-foreground">Agent</h1></div>
+      </div>
+    </header>
+
+    <main class="flex-1 p-4" id="main-content">
+      <div class="grid gap-4">
+
+        <section class="overflow-hidden rounded-md border border-border bg-card" data-dc-id="agents-card">
+          <div class="section-header">
+            <div>
+              <h2 class="text-base font-semibold">Agent</h2>
+              <p class="mt-0.5 text-sm text-muted-foreground">已连接到 Acme 工坊（acme）的本地 Agent。</p>
+            </div>
+            <div class="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>2 个 Agent</span>
+              <button type="button" class="btn btn-primary btn-sm" aria-haspopup="dialog" data-dc-id="pair-agent"><i data-icon="plus"></i>配对 Agent</button>
+            </div>
+          </div>
+
+          <article class="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between" data-agent-id="01JCK3Q8K2V6M4NB7S9E1XW0PD" data-dc-id="agent-1">
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="truncate text-sm font-medium text-foreground">车间 Agent</span>
+                <span class="badge badge-success"><i data-icon="status-success" class="h-3.5 w-3.5"></i>在线</span>
+              </div>
+              <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                <span class="font-mono">01JCK3Q8K2V6M4NB7S9E1XW0PD</span><span aria-hidden="true">·</span>
+                <span>3 台打印机</span><span aria-hidden="true">·</span>
+                <span>2026年11月12日 10:24</span><span aria-hidden="true">·</span>
+                <span>版本 0.9.4</span>
+              </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2" data-dc-id="agent-1-actions">
+              <button type="button" class="btn btn-outline btn-sm" aria-label="通过 车间 Agent 发现打印机">发现</button>
+              <button type="submit" class="btn btn-outline btn-sm" aria-label="刷新 车间 Agent"><i data-icon="refresh-cw"></i>刷新</button>
+              <a href="/agents/01JCK3Q8K2V6M4NB7S9E1XW0PD/settings" class="btn btn-outline btn-sm" aria-label="设置 车间 Agent">设置</a>
+              <button type="button" class="btn btn-destructive btn-sm" disabled aria-label="删除 车间 Agent" title="车间 Agent 在线，无法删除">删除</button>
+            </div>
+          </article>
+
+          <article class="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between border-t border-border" data-agent-id="01JCK4M2P7Y8Z1QW3ER5TY7UI9" data-dc-id="agent-2">
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="truncate text-sm font-medium text-foreground">实验室 Agent</span>
+                <span class="badge badge-critical"><i data-icon="status-critical" class="h-3.5 w-3.5"></i>离线</span>
+              </div>
+              <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                <span class="font-mono">01JCK4M2P7Y8Z1QW3ER5TY7UI9</span><span aria-hidden="true">·</span>
+                <span>1 台打印机</span><span aria-hidden="true">·</span>
+                <span>2026年11月14日 16:02</span><span aria-hidden="true">·</span>
+                <span>版本 0.9.1</span>
+              </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2" data-dc-id="agent-2-actions">
+              <span title="实验室 Agent 离线，无法运行发现"><button type="button" class="btn btn-outline btn-sm" disabled aria-label="通过 实验室 Agent 发现打印机">发现</button></span>
+              <button type="submit" class="btn btn-outline btn-sm" aria-label="刷新 实验室 Agent"><i data-icon="refresh-cw"></i>刷新</button>
+              <a href="/agents/01JCK4M2P7Y8Z1QW3ER5TY7UI9/settings" class="btn btn-outline btn-sm" aria-label="设置 实验室 Agent">设置</a>
+              <button type="button" class="btn btn-destructive btn-sm" aria-label="删除 实验室 Agent">删除</button>
+            </div>
+          </article>
+        </section>
+
+        <section class="overflow-hidden rounded-md border border-border bg-card" data-dc-id="discovery-card">
+          <div class="section-header">
+            <div>
+              <h2 class="text-base font-semibold">发现的打印机</h2>
+              <p class="mt-0.5 text-sm text-muted-foreground">由 车间 Agent 上报 · 成功</p>
+            </div>
+            <div class="text-sm text-muted-foreground"><span class="font-mono text-xs">01JCL5Q8K2V6M4NB7S9E1XW0PD3F</span></div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full border-collapse text-left text-sm">
+              <thead class="bg-muted/60 text-xs font-semibold text-muted-foreground">
+                <tr><th class="px-4 py-2">名称</th><th class="px-4 py-2">序列号</th><th class="px-4 py-2">主机</th><th class="px-4 py-2">型号</th><th class="px-4 py-2">操作</th></tr>
+              </thead>
+              <tbody class="divide-y divide-border" data-dc-id="discovery-table">
+                <tr>
+                  <td class="px-4 py-3 font-medium text-foreground">P1S 车间-01</td>
+                  <td class="px-4 py-3 font-mono text-xs text-muted-foreground">01P00A352600123</td>
+                  <td class="px-4 py-3 font-mono text-xs text-muted-foreground">192.168.1.42</td>
+                  <td class="px-4 py-3 text-muted-foreground">P1S</td>
+                  <td class="px-4 py-3"><span class="inline-flex items-center gap-2"><span class="tag tag-success">已连接</span><span class="text-xs text-muted-foreground">P1S 车间-01</span></span></td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-3 font-medium text-foreground">X1C 车间-02</td>
+                  <td class="px-4 py-3 font-mono text-xs text-muted-foreground">01S00C520800456</td>
+                  <td class="px-4 py-3 font-mono text-xs text-muted-foreground">192.168.1.43</td>
+                  <td class="px-4 py-3 text-muted-foreground">X1 Carbon</td>
+                  <td class="px-4 py-3"><span class="inline-flex items-center gap-2"><span class="tag tag-success">已连接</span><span class="text-xs text-muted-foreground">X1C 车间-02</span></span></td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-3 font-medium text-foreground">H2D 车间-03</td>
+                  <td class="px-4 py-3 font-mono text-xs text-muted-foreground">01H00D123400789</td>
+                  <td class="px-4 py-3 font-mono text-xs text-muted-foreground">192.168.1.44</td>
+                  <td class="px-4 py-3 text-muted-foreground">H2D</td>
+                  <td class="px-4 py-3"><span class="inline-flex items-center gap-2"><span class="tag tag-success">已连接</span><span class="text-xs text-muted-foreground">H2D 车间-03</span></span></td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-3 font-medium text-foreground">P1P 车间-04</td>
+                  <td class="px-4 py-3 font-mono text-xs text-muted-foreground">01P00A352600987</td>
+                  <td class="px-4 py-3 font-mono text-xs text-muted-foreground">192.168.1.47</td>
+                  <td class="px-4 py-3 text-muted-foreground">P1P</td>
+                  <td class="px-4 py-3"><button type="button" class="btn btn-outline btn-sm" aria-label="接入 P1P 车间-04" aria-haspopup="dialog" data-dc-id="adopt-printer">接入</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="overflow-hidden rounded-md border border-border bg-card" data-dc-id="diagnostics-card">
+          <div class="flex flex-col gap-2 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 class="text-base font-semibold">诊断</h2>
+              <p class="mt-0.5 text-sm text-muted-foreground">diagnose_printer · succeeded</p>
+            </div>
+            <div class="font-mono text-xs text-muted-foreground">01JCK9A2B3C4D5E6F7G8H9J0K1</div>
+          </div>
+
+          <div class="border-b border-border">
+            <div class="divide-y divide-border">
+              <form class="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div class="min-w-0"><div class="truncate text-sm font-medium text-foreground">P1S 车间-01</div><div class="truncate font-mono text-xs text-muted-foreground">01P00A352600123</div></div>
+                <button type="submit" class="btn btn-outline btn-lg" aria-label="诊断 P1S 车间-01">诊断</button>
+              </form>
+              <form class="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div class="min-w-0"><div class="truncate text-sm font-medium text-foreground">X1C 车间-02</div><div class="truncate font-mono text-xs text-muted-foreground">01S00C520800456</div></div>
+                <button type="submit" class="btn btn-outline btn-lg" aria-label="诊断 X1C 车间-02">诊断</button>
+              </form>
+              <form class="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div class="min-w-0"><div class="truncate text-sm font-medium text-foreground">H2D 车间-03</div><div class="truncate font-mono text-xs text-muted-foreground">01H00D123400789</div></div>
+                <button type="submit" class="btn btn-outline btn-lg" aria-label="诊断 H2D 车间-03">诊断</button>
+              </form>
+            </div>
+          </div>
+
+          <div class="grid gap-0 lg:grid-cols-[minmax(0,1.3fr)_minmax(20rem,0.7fr)]" data-dc-id="diagnostic-result">
+            <div class="border-b border-border lg:border-b-0 lg:border-r">
+              <div class="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-border px-4 py-3">
+                <span class="badge badge-warning"><i data-icon="status-warning" class="h-3.5 w-3.5"></i>异常</span>
+                <span class="text-sm font-medium text-foreground">X1C 车间-02</span>
+                <span class="text-xs text-muted-foreground">X1 Carbon · <span class="font-mono">01S00C520800456</span> · <span class="font-mono">192.168.1.43</span></span>
+                <span class="ml-auto text-xs text-muted-foreground">5 项检查 · 4 通过 · 1 异常</span>
+              </div>
+              <ul class="divide-y divide-border" aria-label="检查项">
+                <li class="flex items-start gap-3 px-4 py-3">
+                  <i data-icon="status-success" class="mt-0.5 h-4 w-4 shrink-0 text-success"></i>
+                  <div class="min-w-0">
+                    <div class="text-sm font-medium text-foreground">已连接 MQTT 并订阅状态主题</div>
+                    <div class="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground"><span class="font-mono">mqtt_connect</span><span aria-hidden="true">·</span><span class="font-mono">8883 · TLS · QoS 1</span></div>
+                  </div>
+                </li>
+                <li class="flex items-start gap-3 px-4 py-3">
+                  <i data-icon="status-success" class="mt-0.5 h-4 w-4 shrink-0 text-success"></i>
+                  <div class="min-w-0">
+                    <div class="text-sm font-medium text-foreground">10 秒内收到 3 条状态报告</div>
+                    <div class="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground"><span class="font-mono">mqtt_report</span><span aria-hidden="true">·</span><span class="font-mono">print.gcode_state = PAUSE</span></div>
+                  </div>
+                </li>
+                <li class="flex items-start gap-3 px-4 py-3">
+                  <i data-icon="status-success" class="mt-0.5 h-4 w-4 shrink-0 text-success"></i>
+                  <div class="min-w-0">
+                    <div class="text-sm font-medium text-foreground">隐式 TLS 990 · 受保护数据通道 · 服务端大小校验通过</div>
+                    <div class="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground"><span class="font-mono">ftps_connect</span><span aria-hidden="true">·</span><span>探测文件 64 KiB 已删除</span></div>
+                  </div>
+                </li>
+                <li class="flex items-start gap-3 px-4 py-3">
+                  <i data-icon="status-success" class="mt-0.5 h-4 w-4 shrink-0 text-success"></i>
+                  <div class="min-w-0">
+                    <div class="text-sm font-medium text-foreground">get_version → X1 Carbon · 固件 01.08.02.00</div>
+                    <div class="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground"><span class="font-mono">printer_info</span></div>
+                  </div>
+                </li>
+                <li class="flex items-start gap-3 bg-warning/10 px-4 py-3">
+                  <i data-icon="status-warning" class="mt-0.5 h-4 w-4 shrink-0 text-warning"></i>
+                  <div class="min-w-0 flex-1">
+                    <div class="text-sm font-medium text-foreground">打印已暂停 · 1 条 HMS 系统警告</div>
+                    <div class="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground"><span class="font-mono">configured_printer</span><span aria-hidden="true">·</span><span class="font-mono">HMS 0700201000030010</span></div>
+                  </div>
+                  <span class="badge badge-warning shrink-0"><i data-icon="status-warning" class="h-3.5 w-3.5"></i>异常</span>
+                </li>
+              </ul>
+            </div>
+            <div class="px-4 py-3" aria-label="兼容性">
+              <h3 class="text-sm font-semibold text-foreground">兼容性</h3>
+              <dl class="mt-1 grid gap-2 text-sm">
+                <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border py-2"><dt class="min-w-0 text-muted-foreground"><span class="block truncate">型号</span></dt><dd class="text-right text-xs font-medium text-foreground">X1 Carbon</dd></div>
+                <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border py-2"><dt class="flex min-w-0 items-center gap-1 text-muted-foreground"><span class="truncate">外部存储</span><button type="button" class="btn btn-outline help-tip" aria-label="关于外部存储的更多信息">?</button></dt><dd class="flex items-center gap-1.5 text-right text-xs font-medium text-foreground"><i data-icon="status-success" class="h-3.5 w-3.5 text-success"></i>可用</dd></div>
+                <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border py-2"><dt class="flex min-w-0 items-center gap-1 text-muted-foreground"><span class="truncate">FTPS TLS 1.2 上限</span><button type="button" class="btn btn-outline help-tip" aria-label="关于 FTPS TLS 1.2 上限的更多信息">?</button></dt><dd class="flex items-center gap-1.5 text-right text-xs font-medium text-foreground"><i data-icon="status-critical" class="h-3.5 w-3.5 text-muted-foreground"></i>不可用</dd></div>
+                <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border py-2"><dt class="min-w-0 text-muted-foreground"><span class="block truncate">腔体风扇</span><span class="block truncate font-mono text-xs">chamber_fan</span></dt><dd class="flex items-center gap-1.5 text-right text-xs font-medium text-foreground"><i data-icon="status-success" class="h-3.5 w-3.5 text-success"></i>可用</dd></div>
+                <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-2"><dt class="min-w-0 text-muted-foreground"><span class="block truncate">打印速度</span><span class="block truncate font-mono text-xs">print_speed</span></dt><dd class="flex items-center gap-1.5 text-right text-xs font-medium text-foreground"><i data-icon="status-success" class="h-3.5 w-3.5 text-success"></i>可用</dd></div>
+              </dl>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+</div>
+<script src="icons.js"></script>
+</body>
+</html>
