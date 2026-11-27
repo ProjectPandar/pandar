@@ -11,8 +11,48 @@ import {
   renderWithMessages,
   tenant,
 } from "./dashboard-inventory.test.context";
+import { printerCompatibility } from "./printer-compatibility.test-utils";
 
 describe("PrinterInventory", () => {
+  it("controls every Klipper tool by its T index", async () => {
+    const user = userEvent.setup();
+    const fourToolPrinter: Printer = {
+      ...printer,
+      printer_family: "moonraker",
+      model: "Klipper",
+      compatibility: printerCompatibility("unknown"),
+      nozzle_temperatures: [
+        { label: "T0", current_celsius: "25", target_celsius: "0", diameter_mm: "0.4" },
+        { label: "T1", current_celsius: "210", target_celsius: "220", diameter_mm: "0.6" },
+        { label: "T2", current_celsius: "26", target_celsius: "0", diameter_mm: "0.4" },
+        { label: "T3", current_celsius: "27", target_celsius: "0", diameter_mm: "0.8" },
+      ],
+      active_nozzle: "T1",
+    };
+
+    renderWithMessages(
+      <PrinterInventory selectedTenant={tenant} printers={[fourToolPrinter]} agents={[agent]} nowMs={0} />,
+    );
+
+    await user.click(await screen.findByRole("button", { name: "Set nozzle temperatures" }));
+
+    const panels = within(screen.getByText("Set nozzle temperatures").closest("div")!);
+    expect(panels.getByText("T1").closest("div")).toHaveClass("border-primary");
+    const tool2Preset = within(panels.getByText("T2").closest("div")!).getByRole("button", { name: "220 C" });
+    expect(tool2Preset.closest("form")?.querySelector('input[name="extruder_id"]')).toHaveValue("2");
+    const tool3Off = within(panels.getByText("T3").closest("div")!).getByRole("button", { name: "Off" });
+    expect(tool3Off.closest("form")?.querySelector('input[name="extruder_id"]')).toHaveValue("3");
+
+    expect(screen.queryByRole("button", { name: /Switch to nozzle/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Select nozzle" }));
+    const picker = within(screen.getByRole("group", { name: "Select nozzle" }));
+    const selectTool3 = picker.getByRole("button", { name: "Switch to nozzle T3" });
+    expect(selectTool3.closest("form")?.querySelector('input[name="action"]')).toHaveValue("select_extruder");
+    expect(selectTool3.closest("form")?.querySelector('input[name="extruder_id"]')).toHaveValue("3");
+    expect(picker.getByRole("button", { name: "Switch to nozzle T1" })).toBeDisabled();
+    expect(within(picker.getByRole("button", { name: "Switch to nozzle T0" })).getByText("0.4 mm")).toBeVisible();
+  });
+
   it("switches the active nozzle with the Bambu extruder id", async () => {
     const dualNozzlePrinter: Printer = {
       ...printerWithMaterials,

@@ -87,6 +87,39 @@ describe("LinkPrinterMachineForm", () => {
     );
   });
 
+  it("suggests the nginx port for Moonraker printers and leaves the API key optional", async () => {
+    const { user } = renderForm();
+
+    await user.selectOptions(screen.getByLabelText("Printer type"), "Moonraker");
+
+    expect(screen.getByLabelText(/Moonraker address/)).toHaveAttribute(
+      "placeholder",
+      "192.168.1.50",
+    );
+    expect(screen.getByLabelText("Moonraker API key (optional)")).not.toBeRequired();
+  });
+
+  it("adopts an mDNS-discovered Moonraker printer with its family and address prefilled", () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={en}>
+        <QueryClientProvider client={new QueryClient()}>
+          <LinkPrinterMachineForm
+            agents={[]}
+            defaultHost="10.1.61.14:7125"
+            defaultName="U1"
+            defaultType="Moonraker"
+            fixedAgentId="agent-1"
+            selectedTenant={tenant}
+          />
+        </QueryClientProvider>
+      </NextIntlClientProvider>,
+    );
+
+    expect(screen.getByLabelText("Printer type")).toHaveValue("Moonraker");
+    expect(screen.getByLabelText(/Moonraker address/)).toHaveValue("10.1.61.14:7125");
+    expect(screen.getByLabelText("Name")).toHaveValue("U1");
+  });
+
   it("keeps the dialog open with a loading button until the agent confirms the link", async () => {
     let resolveAction: (value: { ok: true; commandId: string }) => void = () => {};
     linkPrinterMock.mockImplementation(

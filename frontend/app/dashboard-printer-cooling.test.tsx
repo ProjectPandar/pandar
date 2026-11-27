@@ -82,4 +82,32 @@ describe("PrinterCoolingSystem", () => {
 
     expect(screen.queryByRole("region", { name: "Cooling system" })).not.toBeInTheDocument();
   });
+
+  it("exposes Klipper fans the Agent projected, including the chamber fan", async () => {
+    const user = userEvent.setup();
+    renderCooling({
+      ...printer,
+      printer_family: "moonraker",
+      model: "Klipper",
+      compatibility: printerCompatibility("unknown"),
+      cooling_system: {
+        mode: null,
+        fans: [
+          { kind: "part_cooling", speed_percent: 100 },
+          { kind: "auxiliary", speed_percent: 60 },
+          { kind: "chamber", speed_percent: 30 },
+        ],
+      },
+    });
+
+    await user.click(screen.getByRole("button", { name: "Set Chamber / exhaust fan speed" }));
+
+    const half = screen.getByRole("button", { name: "50%" });
+    expect(half.closest("form")).toHaveFormValues({
+      action: "set_fan_speed",
+      fan_index: "3",
+      speed_percent: "50",
+    });
+    expect(screen.getByRole("button", { name: "Set Auxiliary fan speed" })).toBeVisible();
+  });
 });

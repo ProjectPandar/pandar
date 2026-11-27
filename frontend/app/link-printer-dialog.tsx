@@ -58,6 +58,9 @@ export function LinkPrinterDialog(props: LinkPrinterDialogProps) {
           agents={adopt ? [] : props.agents}
           defaultHost={adopt ? props.target.host : undefined}
           defaultName={adopt ? (props.target.name ?? '') : undefined}
+          defaultType={
+            adopt && props.target.source === 'mdns' ? 'Moonraker' : undefined
+          }
           fixedAgentId={adopt ? props.agentId : undefined}
           key={
             adopt

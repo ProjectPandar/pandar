@@ -36,6 +36,7 @@ export function LinkPrinterMachineForm({
   fixedAgentId,
   defaultHost,
   defaultName,
+  defaultType,
   submitLabel,
   onLinked,
 }: {
@@ -44,6 +45,7 @@ export function LinkPrinterMachineForm({
   fixedAgentId?: string
   defaultHost?: string
   defaultName?: string
+  defaultType?: LinkPrinterType
   submitLabel?: string
   onLinked?: () => void
 }) {
@@ -51,7 +53,7 @@ export function LinkPrinterMachineForm({
   const queryClient = useQueryClient()
   const [state, formAction, dispatching] = useActionState(linkPrinter, null)
   const [pollOutcome, setPollOutcome] = useState<PollOutcome | null>(null)
-  const [printerType, setPrinterType] = useState<LinkPrinterType>('BambuLab')
+  const [printerType, setPrinterType] = useState<LinkPrinterType>(defaultType ?? 'BambuLab')
   const [accessCode, setAccessCode] = useState('')
   const [accessCodeVisible, setAccessCodeVisible] = useState(false)
   const accessCodeId = useId()
@@ -196,7 +198,7 @@ export function LinkPrinterMachineForm({
           className={inputClasses}
           defaultValue={defaultHost}
           name="host"
-          placeholder={printerType === 'Moonraker' ? '192.168.1.50:7125' : undefined}
+          placeholder={printerType === 'Moonraker' ? '192.168.1.50' : undefined}
           required
           type="text"
         />

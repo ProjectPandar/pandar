@@ -31,7 +31,6 @@ import {
 } from './printer-controls'
 import type { PrinterTemperatureAction } from './printer-controls'
 import {
-  NozzleSwitchControl,
   NozzleTemperatureCard,
   TemperatureReading,
 } from './dashboard-printer-nozzle-temperature-controls'
@@ -40,6 +39,7 @@ import {
   hasActiveTargetTemperature,
   presentNozzles,
 } from './dashboard-printer-nozzle-temperature'
+import { NozzleSwitchControl } from './dashboard-printer-nozzle-switch'
 
 type TemperatureControl = {
   title: string
