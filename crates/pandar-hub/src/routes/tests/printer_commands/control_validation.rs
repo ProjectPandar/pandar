@@ -25,7 +25,7 @@ async fn printer_control_rejects_invalid_action_and_speed_payloads() {
         printer_control_value(PrinterControlRequest::set_fan_speed(4, 50, true)),
         printer_control_value(PrinterControlRequest::set_fan_speed(1, 101, false)),
         printer_control_value(PrinterControlRequest::action("select_extruder")),
-        printer_control_value(PrinterControlRequest::select_extruder(2)),
+        printer_control_value(PrinterControlRequest::select_extruder(8)),
         printer_control_value(PrinterControlRequest::action("pause").with_speed_mode(2)),
         printer_control_value(PrinterControlRequest::action("pause").with_raw_command("M400")),
         printer_control_value(PrinterControlRequest::move_axes(Vec::new(), None)),
@@ -101,6 +101,10 @@ async fn printer_control_accepts_semantic_home_move_and_hotend_operations() {
             "set_hotend_temperature",
         ),
         (
+            printer_control_value(PrinterControlRequest::select_extruder(3)),
+            "select_extruder",
+        ),
+        (
             printer_control_value(PrinterControlRequest::set_temperature(
                 "set_bed_temperature",
                 75,
@@ -143,6 +147,9 @@ async fn printer_control_accepts_semantic_home_move_and_hotend_operations() {
         assert_eq!(payload.operation.kind, expected_type);
         if expected_type == "set_hotend_temperature" {
             assert_eq!(payload.operation.extruder_id, Some(1));
+        }
+        if expected_type == "select_extruder" {
+            assert_eq!(payload.operation.extruder_id, Some(3));
         }
         if expected_type == "set_chamber_light" {
             assert_eq!(payload.operation.on, Some(true));

@@ -276,15 +276,15 @@ fn printer_operations_reject_invalid_modern_axis_feature_bodies() {
 #[test]
 fn submit_printer_operation_rejects_invalid_latest_agent_operation_values_before_network() {
     for operation in [
-        br#"{"action":"select_extruder","extruder_id":2}"#.as_slice(),
+        br#"{"action":"select_extruder","extruder_id":8}"#.as_slice(),
         br#"{"action":"set_hotend_temperature","temperature_celsius":301}"#.as_slice(),
-        br#"{"action":"set_hotend_temperature","temperature_celsius":210,"extruder_id":2}"#
+        br#"{"action":"set_hotend_temperature","temperature_celsius":210,"extruder_id":8}"#
             .as_slice(),
         br#"{"action":"set_bed_temperature","temperature_celsius":121}"#.as_slice(),
         br#"{"action":"set_chamber_temperature","temperature_celsius":71}"#.as_slice(),
         br#"{"action":"ams_reread_rfid","ams_id":256,"slot_id":1}"#.as_slice(),
         br#"{"action":"ams_load_filament","ams_id":1,"slot_id":256}"#.as_slice(),
-        br#"{"action":"ams_unload_filament","ams_id":1,"slot_id":2,"extruder_id":2}"#.as_slice(),
+        br#"{"action":"ams_unload_filament","ams_id":1,"slot_id":2,"extruder_id":8}"#.as_slice(),
         br#"{"action":"set_bed_temperature","temperature_celsius":60,"ams_id":1}"#.as_slice(),
     ] {
         let result = submit_printer_operation(b"http://127.0.0.1:9", TOKEN, operation);

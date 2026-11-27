@@ -11,7 +11,8 @@ const MAX_BED_TEMPERATURE_CELSIUS: u16 = 120;
 const MAX_CHAMBER_TEMPERATURE_CELSIUS: u16 = 70;
 const MAX_AMS_ID: u32 = 255;
 const MAX_AMS_SLOT_ID: u32 = 255;
-const MAX_EXTRUDER_ID: u32 = 1;
+/// Bambu printers address two extruders; Klipper tool changers may address more.
+const MAX_EXTRUDER_ID: u32 = 7;
 const MAX_HOLDER_CTRL_ACTION: u32 = 2;
 const RACK_NOZZLE_ID_ALL: u32 = 0xff;
 const MIN_AMS_DRYING_TEMPERATURE_CELSIUS: u16 = 45;
@@ -56,7 +57,7 @@ impl PrinterOperation {
                 invalid("invalid printer operation fan speed")
             }
             Self::SelectExtruder { extruder_id } if *extruder_id > MAX_EXTRUDER_ID => {
-                invalid("invalid printer operation extruder_id; expected 0..=1")
+                invalid("invalid printer operation extruder_id; expected 0..=7")
             }
             Self::Home {
                 axes,
