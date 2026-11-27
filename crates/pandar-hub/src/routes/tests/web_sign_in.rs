@@ -195,7 +195,7 @@ async fn web_login_ticket_exchange_issues_one_use_web_session_token() {
     let exchanged = decode_json::<ExchangeResponse>(exchanged);
     assert!(exchanged.token.starts_with("pandar_web_"));
     assert!(exchanged.expires_at.ends_with('Z'));
-    assert_eq!(exchanged.profile.user_name, "Ares web");
+    assert_eq!(exchanged.profile.user_name, "External Test User");
     assert_eq!(exchanged.profile.tenant_id, tenant.id.to_string());
     assert_eq!(exchanged.profile.tenant_name, "Web Exchange");
 

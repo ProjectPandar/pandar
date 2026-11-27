@@ -72,12 +72,17 @@ pub(in crate::routes) async fn exchange_web_login_ticket(
         .get(token.tenant_id)
         .await?
         .ok_or_else(|| ApiError::not_found("tenant_not_found"))?;
+    // The browser app shows who signed in: the ticket creator's display name, not the token name.
+    let (user_id, user_name) = match token.created_by_user_id.clone() {
+        Some(owner_id) => {
+            let owner = state.auth().get_user(token.tenant_id, &owner_id).await?;
+            (owner_id, owner.display_name)
+        }
+        None => (token.id.clone(), token.name.clone()),
+    };
     let profile = PluginProfileResponse {
-        user_id: token
-            .created_by_user_id
-            .clone()
-            .unwrap_or_else(|| token.id.clone()),
-        user_name: token.name.clone(),
+        user_id,
+        user_name,
         tenant_id: token.tenant_id.to_string(),
         tenant_name: tenant.display_name,
     };
