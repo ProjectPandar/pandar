@@ -80,6 +80,9 @@ export type HubSchemaMap = {
   MobileTicketExchangeRequest: Core.MobileTicketExchangeRequest;
   MobileAuthProfile: Core.MobileAuthProfile;
   MobileTicketExchangeResponse: Core.MobileTicketExchangeResponse;
+  WebLoginTicketRequest: Core.WebLoginTicketRequest;
+  WebTicketExchangeRequest: Core.WebTicketExchangeRequest;
+  WebTicketExchangeResponse: Core.WebTicketExchangeResponse;
   PrinterAxis: Core.PrinterAxis;
   PrinterAxisMovement: Core.PrinterAxisMovement;
   PrinterControlRequest: Core.PrinterControlRequest;

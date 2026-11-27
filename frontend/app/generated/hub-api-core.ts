@@ -143,6 +143,22 @@ export type MobileTicketExchangeResponse = {
   profile: MobileAuthProfile;
 };
 
+export type WebLoginTicketRequest = {
+  redirect_url: string;
+  code_challenge: string;
+};
+
+export type WebTicketExchangeRequest = {
+  ticket: string;
+  code_verifier: string;
+};
+
+export type WebTicketExchangeResponse = {
+  token: string;
+  expires_at: string;
+  profile: MobileAuthProfile;
+};
+
 export type PrinterAxis = "x" | "y" | "z";
 
 export type PrinterAxisMovement = {

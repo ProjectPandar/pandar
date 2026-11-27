@@ -106,7 +106,7 @@ pub(super) async fn authorize_plugin_login_ticket_creation(
     authorize_user_login_ticket_creation(state, headers, tenant_id, UserRole::Operator).await
 }
 
-pub(super) async fn authorize_mobile_login_ticket_creation(
+pub(super) async fn authorize_session_login_ticket_creation(
     state: &AppState,
     headers: &HeaderMap,
     tenant_id: TenantId,
@@ -288,7 +288,7 @@ fn tenant_token_allows_role(
     required_role: UserRole,
 ) -> bool {
     authenticated.token.has_scope(TenantTokenScope::All)
-        || authenticated.token.scopes == [TenantTokenScope::MobileSession]
+        || matches!(authenticated.token.scopes.as_slice(), [scope] if scope.is_user_session())
             && authenticated
                 .session_user
                 .as_ref()

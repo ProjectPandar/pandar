@@ -9,6 +9,7 @@ mod mobile;
 mod no_auth_session;
 mod revocation;
 mod types;
+mod web;
 
 pub use types::{
     AuthenticatedTenantToken, TenantToken, TenantTokenScope, TenantTokenWithPlaintext,
@@ -32,6 +33,7 @@ use helpers::{is_expired, tenant_token_audit_event, tenant_token_model};
 const TENANT_TOKEN_PREFIX: &str = "pandar_tenant_";
 const PLUGIN_TOKEN_PREFIX: &str = "pandar_plugin_";
 const MOBILE_TOKEN_PREFIX: &str = "pandar_mobile_";
+const WEB_TOKEN_PREFIX: &str = "pandar_web_";
 
 impl AuthRepository {
     pub async fn create_tenant_token_with_audit(
@@ -120,7 +122,7 @@ impl AuthRepository {
             .await
             .context("failed to update tenant token last_used_at")?;
 
-        let session_user = if token.scopes.contains(&TenantTokenScope::MobileSession)
+        let session_user = if token.scopes.iter().any(|scope| scope.is_user_session())
             || token.created_by_user_id.is_some()
                 && token.scopes.contains(&TenantTokenScope::PluginStudio)
         {

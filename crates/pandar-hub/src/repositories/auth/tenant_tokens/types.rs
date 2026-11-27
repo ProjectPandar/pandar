@@ -9,6 +9,7 @@ pub enum TenantTokenScope {
     AgentRegister,
     PluginStudio,
     MobileSession,
+    WebSession,
 }
 
 impl TenantTokenScope {
@@ -18,6 +19,7 @@ impl TenantTokenScope {
             Self::AgentRegister => "agent:register",
             Self::PluginStudio => "plugin:studio",
             Self::MobileSession => "mobile:session",
+            Self::WebSession => "web:session",
         }
     }
 
@@ -27,8 +29,14 @@ impl TenantTokenScope {
             "agent:register" => Ok(Self::AgentRegister),
             "plugin:studio" => Ok(Self::PluginStudio),
             "mobile:session" => Ok(Self::MobileSession),
+            "web:session" => Ok(Self::WebSession),
             other => Err(RepositoryError::InvalidTokenScope(other.to_owned())),
         }
+    }
+
+    /// Scopes issued by a browser login-ticket exchange that act with the issuing user's current role.
+    pub fn is_user_session(self) -> bool {
+        matches!(self, Self::MobileSession | Self::WebSession)
     }
 }
 

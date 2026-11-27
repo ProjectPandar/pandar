@@ -163,7 +163,7 @@ fn parse_scopes(scopes: Vec<String>) -> Result<Vec<TenantTokenScope>, ApiError> 
         .map(|scope| {
             let scope = TenantTokenScope::parse(&scope)
                 .map_err(|_| ApiError::new(StatusCode::BAD_REQUEST, "invalid_scope"))?;
-            if scope == TenantTokenScope::MobileSession {
+            if scope.is_user_session() {
                 return Err(ApiError::new(StatusCode::BAD_REQUEST, "invalid_scope"));
             }
             Ok(scope)

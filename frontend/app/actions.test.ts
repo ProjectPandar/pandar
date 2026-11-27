@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   createMobileTicket,
+  createWebTicket,
   discoverPrinters,
   linkPrinter,
   refreshPrinterMaterials,
@@ -168,6 +169,71 @@ describe("createMobileTicket", () => {
           code_challenge: "challenge",
         }),
       }),
+    );
+  });
+});
+
+describe("createWebTicket", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              ticket: "pandar_web_ticket_abc",
+              expires_at: "2026-08-31T00:00:00Z",
+              redirect_url: "https://ares.example/cloud-callback.html",
+            }),
+            {
+              status: 201,
+              headers: { "content-type": "application/json" },
+            },
+          ),
+      ),
+    );
+  });
+
+  it("creates a web login ticket and redirects back to the web app", async () => {
+    const formData = new FormData();
+    formData.set("tenant_id", "tenant-1");
+    formData.set("redirect_url", "https://ares.example/cloud-callback.html");
+    formData.set("code_challenge", "challenge");
+    formData.set("state", "opaque state");
+
+    await expect(createWebTicket(formData)).rejects.toThrow(
+      "NEXT_REDIRECT:https://ares.example/cloud-callback.html?ticket=pandar_web_ticket_abc&redirect_url=https%3A%2F%2Fares.example%2Fcloud-callback.html&state=opaque+state",
+    );
+
+    expect(requireAuth).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledWith(
+      "http://localhost:8080/api/v1/tenants/tenant-1/web/login-tickets",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          redirect_url: "https://ares.example/cloud-callback.html",
+          code_challenge: "challenge",
+        }),
+      }),
+    );
+  });
+
+  it("sends Hub rejections to the status page instead of the callback", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: "invalid_redirect_url" }), {
+        status: 400,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    const formData = new FormData();
+    formData.set("tenant_id", "tenant-1");
+    formData.set("redirect_url", "https://evil.example/cloud-callback.html");
+    formData.set("code_challenge", "challenge");
+    formData.set("state", "state");
+
+    await expect(createWebTicket(formData)).rejects.toThrow(
+      "NEXT_REDIRECT:/devices?status=invalid_redirect_url",
     );
   });
 });

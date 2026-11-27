@@ -259,7 +259,12 @@ async fn tenant_token_create_rejects_unknown_scope() {
     )
     .await;
 
-    for scope in ["jobs:write", "plugin:session", "mobile:session"] {
+    for scope in [
+        "jobs:write",
+        "plugin:session",
+        "mobile:session",
+        "web:session",
+    ] {
         let (status, body) = request_as(
             app.clone(),
             Method::POST,

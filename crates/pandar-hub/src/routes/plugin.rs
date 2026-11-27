@@ -23,6 +23,7 @@ mod personal_presets;
 mod responses;
 pub(super) mod studio_devices;
 mod studio_jobs;
+mod web;
 pub(super) use camera::stream_camera;
 pub(super) use h2c::get_auto_nozzle_mapping;
 pub(super) use personal_presets::{
@@ -34,6 +35,7 @@ use studio_devices::{PluginPrinterListResponse, plugin_printer_devices};
 pub(super) use studio_jobs::{
     cancel_job, create_print, get_job, get_model_task, get_plate, get_subtask, list_jobs,
 };
+pub(super) use web::{create_web_login_ticket, exchange_web_login_ticket};
 
 #[derive(Debug, Deserialize)]
 pub(super) struct CreateLoginTicketRequest {
@@ -116,7 +118,7 @@ pub(super) async fn create_mobile_login_ticket(
 ) -> Result<(StatusCode, Json<LoginTicketResponse>), ApiError> {
     let tenant_id = super::parse_tenant_id(&tenant_id)?;
     let principal =
-        auth::authorize_mobile_login_ticket_creation(&state, &headers, tenant_id).await?;
+        auth::authorize_session_login_ticket_creation(&state, &headers, tenant_id).await?;
     let Json(payload) = payload.map_err(|_| ApiError::bad_request("bad_request"))?;
     let code_challenge = payload
         .code_challenge
