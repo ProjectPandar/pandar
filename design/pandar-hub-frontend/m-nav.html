@@ -66,7 +66,15 @@
                   <li class="group/menu-item relative" data-slot="sidebar-menu-item" data-sidebar="menu-item"><a href="/jobs" class="peer/menu-button group/menu-button menu-button" data-dc-id="nav-jobs"><i data-icon="clipboard-list"></i><span>任务</span></a></li>
                   <li class="group/menu-item relative" data-slot="sidebar-menu-item" data-sidebar="menu-item"><a href="/agents" class="peer/menu-button group/menu-button menu-button" data-dc-id="nav-agents"><i data-icon="bot"></i><span>Agent</span></a></li>
                   <li class="group/menu-item relative" data-slot="sidebar-menu-item" data-sidebar="menu-item"><a href="/users" class="peer/menu-button group/menu-button menu-button" data-dc-id="nav-users"><i data-icon="users"></i><span>用户</span></a></li>
-                  <li class="group/menu-item relative" data-slot="sidebar-menu-item" data-sidebar="menu-item"><a href="/settings" class="peer/menu-button group/menu-button menu-button" data-dc-id="nav-settings"><i data-icon="settings"></i><span>设置</span></a></li>
+                  <li class="group/menu-item relative" data-slot="sidebar-menu-item" data-sidebar="menu-item">
+                    <button type="button" aria-expanded="false" aria-controls="m-settings-submenu" data-expanded="false" data-nav-toggle class="peer/menu-button group/menu-button menu-button" data-dc-id="nav-settings"><i data-icon="settings"></i><span class="truncate">设置</span><i data-icon="chevron-down" class="nav-chevron"></i></button>
+                    <ul id="m-settings-submenu" aria-label="设置分区" class="nav-submenu" hidden>
+                      <li><a href="/settings#workspace" class="nav-subitem"><i data-icon="building-2"></i><span>工作区</span></a></li>
+                      <li><a href="/settings#appearance" class="nav-subitem"><i data-icon="palette"></i><span>外观</span></a></li>
+                      <li><a href="/settings#access" class="nav-subitem"><i data-icon="key-round"></i><span>访问与安全</span></a></li>
+                      <li><a href="/settings#account" class="nav-subitem"><i data-icon="user-round"></i><span>账号</span></a></li>
+                    </ul>
+                  </li>
                 </ul>
               </div>
             </nav>

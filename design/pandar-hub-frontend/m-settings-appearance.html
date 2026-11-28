@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>设置 · 外观（移动端）</title>
+<link rel="stylesheet" href="pandar.css">
+<link rel="stylesheet" href="extra.css">
+<link rel="stylesheet" href="tweaks.css">
+</head>
+<body>
+<div class="page h-screen group/sidebar-wrapper flex min-h-svh w-full has-data-[variant=inset]:bg-sidebar">
+
+  <div class="relative flex w-full flex-1 flex-col bg-background" data-slot="sidebar-inset" data-dc-id="inset">
+    <header class="sticky top-0 z-20 flex min-h-16 shrink-0 items-center border-b border-border bg-background/95 px-4 py-3 backdrop-blur" data-dc-id="topbar">
+      <div class="flex min-w-0 items-center gap-3">
+        <button type="button" class="btn btn-ghost btn-icon-sm -ml-1" data-sidebar="trigger" data-slot="sidebar-trigger" aria-label="切换侧边栏"><i data-icon="panel-left"></i></button>
+        <div class="min-w-0"><div class="text-xs font-medium text-muted-foreground">Pandar · 设置</div><h1 class="truncate text-lg font-semibold text-foreground">外观</h1></div>
+      </div>
+    </header>
+
+    <main class="flex-1 p-4" id="main-content">
+      <div class="mx-auto max-w-3xl pb-10" data-dc-id="settings">
+        <header class="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4" data-dc-id="settings-head">
+          <div>
+            <h2 class="text-2xl font-semibold tracking-tight text-foreground">外观</h2>
+            <p class="mt-1 text-sm text-muted-foreground">自定义此设备上 Pandar 的显示方式与语言。</p>
+          </div>
+          <span class="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground"><i data-icon="shield-check" class="size-3.5 text-success"></i>租户管理员</span>
+        </header>
+
+        <section class="divide-y divide-border" id="appearance" data-dc-id="section-appearance">
+          <div class="flex flex-col gap-3 py-5" data-dc-id="pref-language">
+            <div class="flex items-start gap-3"><i data-icon="monitor-cog" class="mt-0.5 size-4 text-muted-foreground"></i><div><div class="text-sm font-medium text-foreground">显示语言</div><div class="mt-0.5 text-sm text-muted-foreground">刷新后应用到整个控制台。</div></div></div>
+            <div>
+              <div aria-label="语言" class="inline-flex items-center gap-1 rounded-lg border border-border bg-background p-1" role="group">
+                <button type="button" aria-pressed="false" class="btn btn-ghost btn-sm rounded-md px-3 text-muted-foreground">EN</button>
+                <button type="button" aria-pressed="true" class="btn btn-primary btn-sm rounded-md px-3">中文</button>
+              </div>
+            </div>
+          </div>
+          <div class="flex flex-col gap-3 py-5" data-dc-id="pref-theme">
+            <div class="flex items-start gap-3"><i data-icon="sun" class="mt-0.5 size-4 text-muted-foreground"></i><div><div class="text-sm font-medium text-foreground">颜色主题</div><div class="mt-0.5 text-sm text-muted-foreground">跟随设备，或固定使用浅色或深色主题。</div></div></div>
+            <div>
+              <div aria-label="主题" class="inline-flex items-center gap-1 rounded-lg border border-border bg-background p-1" role="group">
+                <button type="button" aria-pressed="true" class="btn btn-primary btn-sm rounded-md px-3">系统</button>
+                <button type="button" aria-pressed="false" class="btn btn-ghost btn-sm rounded-md px-3 text-muted-foreground">浅色</button>
+                <button type="button" aria-pressed="false" class="btn btn-ghost btn-sm rounded-md px-3 text-muted-foreground">深色</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="icons.js"></script>
+</body>
+</html>

@@ -32,6 +32,7 @@
     "ellipsis-vertical": '<circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>',
     layers: '<path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="M22 17.65a1 1 0 0 0-1.17.63l-7.58 3.45a2 2 0 0 1-1.5 0l-7.58-3.45a1 1 0 0 0-1.17.63"/><path d="M22 12.65a1 1 0 0 0-1.17.63l-7.58 3.45a2 2 0 0 1-1.5 0l-7.58-3.45a1 1 0 0 0-1.17.63"/>',
     "chevron-down": '<path d="m6 9 6 6 6-6"/>',
+    "chevron-up": '<path d="m18 15-6-6-6 6"/>',
     "chevron-right": '<path d="m9 18 6-6-6-6"/>',
     "rotate-cw": '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>',
     "refresh-cw": '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
@@ -98,6 +99,61 @@
       el.replaceWith(svg);
     });
   }
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", mount);
-  else mount();
+  function bindNav() {
+    document.querySelectorAll("[data-nav-toggle]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("aria-controls");
+        const submenu = id ? document.getElementById(id) : btn.nextElementSibling;
+        if (!submenu) return;
+        const next = btn.getAttribute("aria-expanded") !== "true";
+        btn.setAttribute("aria-expanded", String(next));
+        btn.setAttribute("data-expanded", String(next));
+        submenu.hidden = !next;
+      });
+    });
+    const panels = Array.from(document.querySelectorAll("[data-settings-panel]"));
+    const titleEl = document.querySelector("[data-settings-title]");
+    const topbarTitleEl = document.querySelector("[data-settings-topbar-title]");
+    const descEl = document.querySelector("[data-settings-desc]");
+    function selectPanel(id) {
+      if (!panels.length) return;
+      const target = panels.find((p) => p.id === id) || panels[0];
+      panels.forEach((p) => {
+        p.hidden = p !== target;
+      });
+      if (titleEl && target.dataset.title) titleEl.textContent = target.dataset.title;
+      if (topbarTitleEl && target.dataset.title) topbarTitleEl.textContent = target.dataset.title;
+      if (descEl && target.dataset.desc) descEl.textContent = target.dataset.desc;
+      document.querySelectorAll(".nav-submenu .nav-subitem").forEach((item) => {
+        const match = item.getAttribute("href") === "#" + target.id;
+        if (match) {
+          item.setAttribute("data-active", "true");
+          item.setAttribute("aria-current", "location");
+        } else {
+          item.removeAttribute("data-active");
+          item.removeAttribute("aria-current");
+        }
+      });
+    }
+    document.querySelectorAll(".nav-submenu .nav-subitem").forEach((link) => {
+      link.addEventListener("click", (e) => {
+        const href = link.getAttribute("href") || "";
+        if (!href.startsWith("#")) return;
+        e.preventDefault();
+        const id = href.slice(1);
+        selectPanel(id);
+        if (history.replaceState) history.replaceState(null, "", href);
+      });
+    });
+    if (panels.length && location.hash) {
+      const id = location.hash.slice(1);
+      if (panels.some((p) => p.id === id)) selectPanel(id);
+    }
+  }
+  function init() {
+    mount();
+    bindNav();
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+  else init();
 })();

@@ -75,6 +75,7 @@ const tenantTokens: TenantToken[] = [
 
 describe("Dashboard views", () => {
   const settingsProps = {
+    activeSection: "access" as const,
     auth,
     selectedTenant: tenant,
     membershipRole: "tenant_admin",

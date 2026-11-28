@@ -7,6 +7,7 @@ import { UserPlusIcon } from 'lucide-react'
 
 import { createAgentPairing } from './admin-actions'
 import { Button } from '@/components/ui/button'
+import { inputClasses } from '@/lib/utils'
 import { mutationResources, useInvalidateOnSuccess } from './mutation-invalidation'
 import {
   Input,
@@ -17,9 +18,11 @@ import {
 export function CreateAgentPairingFormInner({
   tenantId,
   onCreateAnother,
+  inline = false,
 }: {
   tenantId: string
   onCreateAnother: () => void
+  inline?: boolean
 }) {
   const t = useTranslations('admin')
   const queryClient = useQueryClient()
@@ -30,12 +33,33 @@ export function CreateAgentPairingFormInner({
   return (
     <form action={formAction} className="grid gap-3">
       <input name="tenant_id" type="hidden" value={tenantId} />
-      <div className="text-sm font-semibold text-foreground">
-        {t('pairAgent')}
-      </div>
-      <Input name="name" label={t('agentName')} required disabled={locked} />
-      {locked ? null : (
-        <PrimaryButton label={pending ? t('creating') : t('createPairing')} />
+      {inline ? (
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <input
+            aria-label={t('agentName')}
+            className={`${inputClasses} sm:max-w-xs`}
+            disabled={locked}
+            name="name"
+            placeholder={t('agentName')}
+            required
+            type="text"
+          />
+          {locked ? null : (
+            <div className="shrink-0">
+              <PrimaryButton label={pending ? t('creating') : t('createPairing')} />
+            </div>
+          )}
+        </div>
+      ) : (
+        <>
+          <div className="text-sm font-semibold text-foreground">
+            {t('pairAgent')}
+          </div>
+          <Input name="name" label={t('agentName')} required disabled={locked} />
+          {locked ? null : (
+            <PrimaryButton label={pending ? t('creating') : t('createPairing')} />
+          )}
+        </>
       )}
       <SecretActionResult state={state} />
       {state?.ok ? (

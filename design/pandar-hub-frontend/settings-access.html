@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>设置 · 访问与安全</title>
+<link rel="stylesheet" href="pandar.css">
+<link rel="stylesheet" href="extra.css">
+<link rel="stylesheet" href="tweaks.css">
+</head>
+<body>
+<div class="page group/sidebar-wrapper flex min-h-svh w-full has-data-[variant=inset]:bg-sidebar">
+
+  <div class="group peer hidden text-sidebar-foreground md:block" data-state="expanded" data-collapsible="" data-variant="inset" data-side="left" data-slot="sidebar" data-dc-id="sidebar">
+    <div class="relative w-(--sidebar-width) bg-transparent group-data-[collapsible=offcanvas]:w-0 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4)))]" data-slot="sidebar-gap"></div>
+    <div class="sidebar-container fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) data-[side=left]:left-0 md:flex p-2" data-slot="sidebar-container" data-side="left">
+      <div class="flex size-full flex-col bg-sidebar" data-sidebar="sidebar" data-slot="sidebar-inner">
+        <div class="flex flex-col gap-2 p-2" data-slot="sidebar-header" data-sidebar="header">
+          <ul class="flex w-full min-w-0 flex-col gap-0" data-slot="sidebar-menu" data-sidebar="menu">
+            <li class="group/menu-item relative" data-slot="sidebar-menu-item" data-sidebar="menu-item">
+              <button type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="选择租户访问" class="peer/menu-button group/menu-button menu-button h-12 text-sm" data-dc-id="tenant-switcher">
+                <div class="flex aspect-square size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground"><i data-icon="building-2"></i></div>
+                <div class="grid min-w-0 flex-1 text-left text-sm leading-tight"><span class="truncate font-semibold">Acme 工坊</span><span class="truncate text-xs text-sidebar-foreground/70">租户访问</span></div>
+                <i data-icon="chevrons-up-down" class="ml-auto size-4 text-sidebar-foreground/70"></i>
+              </button>
+            </li>
+          </ul>
+        </div>
+        <div class="no-scrollbar flex min-h-0 flex-1 flex-col gap-0 overflow-auto group-data-[collapsible=icon]:overflow-hidden" data-slot="sidebar-content" data-sidebar="content">
+          <nav aria-label="控制台" data-dc-id="nav">
+            <div class="relative flex w-full min-w-0 flex-col p-2" data-slot="sidebar-group" data-sidebar="group">
+              <div class="flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 ring-sidebar-ring outline-hidden group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0" data-slot="sidebar-group-label" data-sidebar="group-label">控制台</div>
+              <ul class="flex w-full min-w-0 flex-col gap-0" data-slot="sidebar-menu" data-sidebar="menu">
+                <li class="group/menu-item relative" data-slot="sidebar-menu-item" data-sidebar="menu-item"><a href="/devices" class="peer/menu-button group/menu-button menu-button" data-dc-id="nav-devices"><i data-icon="monitor"></i><span>设备</span></a></li>
+                <li class="group/menu-item relative" data-slot="sidebar-menu-item" data-sidebar="menu-item"><a href="/jobs" class="peer/menu-button group/menu-button menu-button" data-dc-id="nav-jobs"><i data-icon="clipboard-list"></i><span>任务</span></a></li>
+                <li class="group/menu-item relative" data-slot="sidebar-menu-item" data-sidebar="menu-item"><a href="/agents" class="peer/menu-button group/menu-button menu-button" data-dc-id="nav-agents"><i data-icon="bot"></i><span>Agent</span></a></li>
+                <li class="group/menu-item relative" data-slot="sidebar-menu-item" data-sidebar="menu-item"><a href="/users" class="peer/menu-button group/menu-button menu-button" data-dc-id="nav-users"><i data-icon="users"></i><span>用户</span></a></li>
+                <li class="group/menu-item relative" data-slot="sidebar-menu-item" data-sidebar="menu-item">
+                  <button type="button" aria-expanded="true" aria-controls="settings-submenu" data-active="true" data-expanded="true" data-nav-toggle class="peer/menu-button group/menu-button menu-button" data-dc-id="nav-settings"><i data-icon="settings"></i><span class="truncate">设置</span><i data-icon="chevron-down" class="nav-chevron"></i></button>
+                  <ul id="settings-submenu" aria-label="设置分区" class="nav-submenu" data-dc-id="settings-nav">
+                    <li><a href="settings.html" class="nav-subitem" data-dc-id="nav-settings-workspace"><i data-icon="building-2"></i><span>工作区</span></a></li>
+                    <li><a href="settings-appearance.html" class="nav-subitem" data-dc-id="nav-settings-appearance"><i data-icon="palette"></i><span>外观</span></a></li>
+                    <li><a href="settings-access.html" aria-current="location" data-active="true" class="nav-subitem" data-dc-id="nav-settings-access"><i data-icon="key-round"></i><span>访问与安全</span></a></li>
+                    <li><a href="settings-account.html" class="nav-subitem" data-dc-id="nav-settings-account"><i data-icon="user-round"></i><span>账号</span></a></li>
+                  </ul>
+                </li>
+              </ul>
+            </div>
+          </nav>
+        </div>
+        <div class="flex flex-col gap-2 p-2" data-slot="sidebar-footer" data-sidebar="footer" data-dc-id="sidebar-footer">
+          <ul class="flex w-full min-w-0 flex-col gap-0" data-slot="sidebar-menu" data-sidebar="menu">
+            <li class="group/menu-item relative" data-slot="sidebar-menu-item" data-sidebar="menu-item"><a href="/sign-out" class="peer/menu-button group/menu-button menu-button" data-dc-id="logout"><i data-icon="log-out"></i><span>退出登录</span></a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="relative flex w-full flex-1 flex-col bg-background md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2" data-slot="sidebar-inset">
+    <header class="sticky top-0 z-20 flex min-h-16 shrink-0 items-center border-b border-border bg-background/95 px-4 py-3 backdrop-blur" data-dc-id="topbar">
+      <div class="flex min-w-0 items-center gap-3">
+        <button type="button" class="btn btn-ghost btn-icon-sm -ml-1" data-sidebar="trigger" data-slot="sidebar-trigger" aria-label="切换侧边栏"><i data-icon="panel-left"></i></button>
+        <div class="min-w-0"><div class="text-xs font-medium text-muted-foreground">Pandar · 设置</div><h1 class="truncate text-lg font-semibold text-foreground">访问与安全</h1></div>
+      </div>
+    </header>
+
+    <main class="flex-1 p-4 sm:p-5" id="main-content">
+      <div class="mx-auto max-w-3xl pb-10" data-dc-id="settings">
+        <header class="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-6" data-dc-id="settings-head">
+          <div>
+            <h2 class="text-2xl font-semibold tracking-tight text-foreground">访问与安全</h2>
+            <p class="mt-1 text-sm text-muted-foreground">管理凭据、Agent 接入和近期管理活动。</p>
+          </div>
+          <span class="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground"><i data-icon="shield-check" class="size-3.5 text-success"></i>租户管理员</span>
+        </header>
+
+        <section class="divide-y divide-border" id="access" data-dc-id="section-access">
+          <div class="py-5">
+            <div class="flex flex-col gap-3 pb-4 sm:flex-row sm:items-center sm:justify-between" data-dc-id="tokens-header">
+              <div>
+                <h3 class="text-sm font-semibold text-foreground">租户令牌</h3>
+                <p class="mt-0.5 text-xs text-muted-foreground">供插件与自动化使用的权限凭据 · 有效 2 个 · 共 3 个</p>
+              </div>
+              <button type="button" class="btn btn-primary btn-sm" aria-haspopup="dialog" data-dc-id="create-token"><i data-icon="plus"></i>创建租户令牌</button>
+            </div>
+            <div class="divide-y divide-border border-t border-border" data-dc-id="tokens-list">
+              <article class="flex flex-col gap-3 py-4 text-sm sm:flex-row sm:items-center sm:justify-between" data-token-status="active" data-dc-id="token-1">
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2"><span class="font-semibold text-foreground">studio-plugin</span><span class="inline-flex items-center gap-1 rounded-md border border-success/40 bg-success/10 px-2 py-0.5 text-xs font-medium text-success"><i data-icon="shield-check" class="size-3"></i>有效</span><span class="inline-flex rounded-md border border-border bg-muted/60 px-2 py-0.5 text-xs font-medium text-muted-foreground">Studio 插件</span></div>
+                  <div class="mt-1.5 text-xs text-muted-foreground">永不过期 · 上次使用 1 小时前 · 创建于 2026年11月27日 14:02</div>
+                  <div class="mt-1 text-xs text-muted-foreground">ID <code class="break-all font-mono">01JCL2Q8K2V6M4NB7S9E1XW0PD</code></div>
+                </div>
+                <div class="flex shrink-0 items-center gap-2" data-dc-id="token-1-actions">
+                  <button type="button" class="btn btn-outline btn-sm" aria-haspopup="dialog" aria-label="轮换令牌 studio-plugin">轮换</button>
+                  <button type="button" class="btn btn-destructive btn-sm" aria-haspopup="dialog" aria-label="吊销令牌 studio-plugin">吊销</button>
+                </div>
+              </article>
+              <article class="flex flex-col gap-3 py-4 text-sm sm:flex-row sm:items-center sm:justify-between" data-token-status="active" data-dc-id="token-2">
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2"><span class="font-semibold text-foreground">ci-automation</span><span class="inline-flex items-center gap-1 rounded-md border border-success/40 bg-success/10 px-2 py-0.5 text-xs font-medium text-success"><i data-icon="shield-check" class="size-3"></i>有效</span><span class="inline-flex rounded-md border border-border bg-muted/60 px-2 py-0.5 text-xs font-medium text-muted-foreground">完整权限</span></div>
+                  <div class="mt-1.5 text-xs text-muted-foreground">34 天后过期 · 上次使用 3 天前 · 创建于 2026年10月30日 09:12</div>
+                  <div class="mt-1 text-xs text-muted-foreground">ID <code class="break-all font-mono">01JCK3M2P7Y8Z1QW3ER5TY7UI9K4</code></div>
+                </div>
+                <div class="flex shrink-0 items-center gap-2" data-dc-id="token-2-actions">
+                  <button type="button" class="btn btn-outline btn-sm" aria-haspopup="dialog" aria-label="轮换令牌 ci-automation">轮换</button>
+                  <button type="button" class="btn btn-destructive btn-sm" aria-haspopup="dialog" aria-label="吊销令牌 ci-automation">吊销</button>
+                </div>
+              </article>
+              <article class="flex flex-col gap-3 py-4 text-sm sm:flex-row sm:items-center sm:justify-between" data-token-status="revoked" data-dc-id="token-3">
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2"><span class="font-semibold text-foreground">legacy-agent</span><span class="inline-flex items-center gap-1 rounded-md border border-border bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"><i data-icon="circle-x" class="size-3"></i>已吊销</span><span class="inline-flex rounded-md border border-border bg-muted/60 px-2 py-0.5 text-xs font-medium text-muted-foreground">Agent 注册</span></div>
+                  <div class="mt-1.5 text-xs text-muted-foreground">永不过期 · 从未使用 · 创建于 2026年10月21日 17:40</div>
+                  <div class="mt-1 text-xs text-muted-foreground">ID <code class="break-all font-mono">01JCG1Q8K2V6M4NB7S9E1XW0PD6T</code></div>
+                </div>
+              </article>
+            </div>
+          </div>
+
+          <div class="py-5" data-dc-id="pair-agent">
+            <h3 class="text-sm font-semibold text-foreground">接入 Agent</h3>
+            <p class="mt-0.5 text-sm text-muted-foreground">为新的本地 Agent 创建一次性配对凭据。</p>
+            <form class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center" onsubmit="return false">
+              <input class="input-text sm:max-w-xs" name="name" aria-label="Agent 名称" required placeholder="workshop-agent">
+              <button type="submit" class="btn btn-primary h-9 px-3">创建配对</button>
+            </form>
+          </div>
+
+          <div class="py-5" data-dc-id="audit-panel">
+            <div class="flex items-center justify-between pb-4"><h3 class="text-sm font-semibold text-foreground">审计事件</h3><span class="text-xs text-muted-foreground">近期 6 条</span></div>
+            <div class="divide-y divide-border border-t border-border">
+              <div class="flex items-center justify-between gap-4 py-3 text-sm"><span class="font-medium text-foreground">tenant_token.create</span><span class="text-xs text-muted-foreground">user · tenant_token · 2026年11月27日 14:02</span></div>
+              <div class="flex items-center justify-between gap-4 py-3 text-sm"><span class="font-medium text-foreground">agent.pairing_bundle</span><span class="text-xs text-muted-foreground">user · agent · 2026年11月14日 16:02</span></div>
+              <div class="flex items-center justify-between gap-4 py-3 text-sm"><span class="font-medium text-foreground">user.role_update</span><span class="text-xs text-muted-foreground">user · user · 2026年11月3日 11:20</span></div>
+              <div class="flex items-center justify-between gap-4 py-3 text-sm"><span class="font-medium text-foreground">tenant_token.rotate</span><span class="text-xs text-muted-foreground">user · tenant_token · 2026年10月30日 09:12</span></div>
+              <div class="flex items-center justify-between gap-4 py-3 text-sm"><span class="font-medium text-foreground">tenant_token.revoke</span><span class="text-xs text-muted-foreground">user · tenant_token · 2026年10月21日 17:41</span></div>
+              <div class="flex items-center justify-between gap-4 py-3 text-sm"><span class="font-medium text-foreground">tenant.create</span><span class="text-xs text-muted-foreground">bootstrap · tenant · 2026年10月2日 08:15</span></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="icons.js"></script>
+</body>
+</html>

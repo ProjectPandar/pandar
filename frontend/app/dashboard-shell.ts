@@ -8,6 +8,61 @@ export const DASHBOARD_VIEWS = [
 
 export type DashboardView = (typeof DASHBOARD_VIEWS)[number];
 
+export const SETTINGS_SECTIONS = [
+  "workspace",
+  "appearance",
+  "access",
+  "account",
+] as const;
+
+export type SettingsSectionId = (typeof SETTINGS_SECTIONS)[number];
+
+export const SETTINGS_SECTION_META: Record<
+  SettingsSectionId,
+  {
+    titleKey:
+      | "workspaceTitle"
+      | "appearanceTitle"
+      | "accessTitle"
+      | "accountTitle";
+    descriptionKey:
+      | "workspaceDescription"
+      | "appearanceDescription"
+      | "accessDescription"
+      | "accountDescription";
+  }
+> = {
+  workspace: {
+    titleKey: "workspaceTitle",
+    descriptionKey: "workspaceDescription",
+  },
+  appearance: {
+    titleKey: "appearanceTitle",
+    descriptionKey: "appearanceDescription",
+  },
+  access: {
+    titleKey: "accessTitle",
+    descriptionKey: "accessDescription",
+  },
+  account: {
+    titleKey: "accountTitle",
+    descriptionKey: "accountDescription",
+  },
+};
+
+export function parseSettingsSection(
+  value: string | null | undefined,
+): SettingsSectionId {
+  if (value && (SETTINGS_SECTIONS as readonly string[]).includes(value)) {
+    return value as SettingsSectionId;
+  }
+  return "workspace";
+}
+
+export function settingsSectionHref(section: SettingsSectionId): string {
+  return section === "workspace" ? "/settings" : `/settings?section=${section}`;
+}
+
 export type DashboardQuery = {
   command?: string;
   status?: string;

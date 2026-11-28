@@ -1,9 +1,11 @@
 "use client";
 
 import { useQueries } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
+import { parseSettingsSection } from "../../dashboard-shell";
 import { QueryErrorBoundary } from "../../query-error-boundary";
 import {
   settingsAdminRouteQueries,
@@ -22,6 +24,8 @@ export function SettingsPageClient({
   membership: { role: string | null; error: string | null };
 }) {
   const t = useTranslations("settingsPage");
+  const searchParams = useSearchParams();
+  const activeSection = parseSettingsSection(searchParams.get("section"));
   const [nowMs, setNowMs] = useState(() => Date.now());
   useEffect(() => {
     const interval = setInterval(() => setNowMs(Date.now()), 60_000);
@@ -83,6 +87,7 @@ export function SettingsPageClient({
   return (
     <QueryErrorBoundary>
       <SettingsDashboard
+        activeSection={activeSection}
         adminLoadError={adminLoadError}
         adminLoading={
           canAdmin && (tokensQuery.isLoading || auditQuery.isLoading)
@@ -104,16 +109,20 @@ export function SettingsPageClient({
 
 function SettingsLoading() {
   return (
-    <div className="mx-auto max-w-5xl animate-pulse">
-      <div className="space-y-2 pb-6">
-        <div className="h-8 w-40 rounded-lg bg-muted" />
+    <div className="mx-auto max-w-3xl animate-pulse pb-10">
+      <div className="space-y-2 border-b border-border pb-6">
+        <div className="h-8 w-36 rounded-lg bg-muted" />
         <div className="h-4 w-72 rounded-lg bg-muted/70" />
       </div>
-      <div className="grid items-start gap-6 lg:grid-cols-[13rem_minmax(0,1fr)]">
-        <div className="hidden h-44 rounded-xl bg-muted/70 lg:block" />
-        <div className="space-y-6">
-          <div className="h-64 rounded-xl bg-muted" />
-          <div className="h-40 rounded-xl bg-muted" />
+      <div className="divide-y divide-border">
+        <div className="py-5">
+          <div className="h-14 rounded-lg bg-muted/70" />
+        </div>
+        <div className="py-5">
+          <div className="h-24 rounded-lg bg-muted/70" />
+        </div>
+        <div className="py-5">
+          <div className="h-16 rounded-lg bg-muted/70" />
         </div>
       </div>
     </div>

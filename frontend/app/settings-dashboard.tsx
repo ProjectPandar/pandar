@@ -4,13 +4,10 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import {
   ArrowUpRightIcon,
-  Building2Icon,
-  KeyRoundIcon,
   MonitorCogIcon,
-  PaletteIcon,
   ServerCogIcon,
   ShieldCheckIcon,
-  UserRoundIcon,
+  SunIcon,
 } from "lucide-react";
 
 import { FormattedDate } from "../components/formatted-date";
@@ -28,13 +25,16 @@ import type {
   Tenant,
   TenantToken,
 } from "./dashboard-types";
-import { dashboardSidebarHref } from "./dashboard-shell";
+import {
+  dashboardSidebarHref,
+  SETTINGS_SECTION_META,
+  type SettingsSectionId,
+} from "./dashboard-shell";
 import { SettingsAccountSection } from "./settings-account-section";
 import { WorkspaceRenameForm } from "./settings-rename-form";
-import { SettingsSection } from "./settings-section";
-import { useScrollSpy } from "./use-scroll-spy";
 
 type SettingsDashboardProps = {
+  activeSection?: SettingsSectionId;
   auth: AuthMetadata;
   selectedTenant: Tenant;
   membershipRole: string | null;
@@ -49,19 +49,11 @@ type SettingsDashboardProps = {
   nowMs: number;
 };
 
-const SETTINGS_SECTIONS = [
-  { id: "workspace", icon: Building2Icon, key: "workspaceTitle" },
-  { id: "appearance", icon: PaletteIcon, key: "appearanceTitle" },
-  { id: "access", icon: KeyRoundIcon, key: "accessTitle" },
-  { id: "account", icon: UserRoundIcon, key: "accountTitle" },
-] as const;
-
-const SETTINGS_SECTION_IDS = SETTINGS_SECTIONS.map((section) => section.id);
-
 export function SettingsDashboard(props: SettingsDashboardProps) {
   const t = useTranslations("settingsPage");
   const tRoles = useTranslations("tokens");
-  const activeSection = useScrollSpy(SETTINGS_SECTION_IDS);
+  const activeSection = props.activeSection ?? "workspace";
+  const sectionMeta = SETTINGS_SECTION_META[activeSection];
   const roleLabel = props.membershipRole
     ? tRoles(props.membershipRole)
     : props.auth.provider === "none"
@@ -69,54 +61,29 @@ export function SettingsDashboard(props: SettingsDashboardProps) {
       : t("roleUnavailable");
 
   return (
-    <div className="mx-auto max-w-5xl pb-10">
-      <header className="flex flex-wrap items-center justify-between gap-3 pb-6">
+    <div className="mx-auto max-w-3xl pb-10">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4 sm:pb-6">
         <div>
           <h2 className="text-2xl font-semibold tracking-tight text-foreground">
-            {t("title")}
+            {t(sectionMeta.titleKey)}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {t("subtitle", { name: props.selectedTenant.display_name })}
+            {t(sectionMeta.descriptionKey)}
           </p>
         </div>
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground">
           <ShieldCheckIcon aria-hidden="true" className="size-3.5 text-success" />
           {roleLabel}
         </span>
       </header>
 
-      <div className="grid items-start gap-6 lg:grid-cols-[13rem_minmax(0,1fr)]">
-        <nav
-          aria-label={t("sectionNavigation")}
-          className="flex gap-1 overflow-x-auto lg:sticky lg:top-20 lg:flex-col"
-        >
-          {SETTINGS_SECTIONS.map((item) => {
-            const Icon = item.icon;
-            const active = item.id === activeSection;
-            return (
-              <a
-                key={item.id}
-                aria-current={active ? "location" : undefined}
-                className={`flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
-                  active
-                    ? "bg-muted font-medium text-foreground"
-                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-                }`}
-                href={`#${item.id}`}
-              >
-                <Icon aria-hidden="true" className="size-4" />
-                {t(item.key)}
-              </a>
-            );
-          })}
-        </nav>
-
-        <div className="min-w-0 space-y-6">
-          <WorkspaceSection {...props} />
-          <AppearanceSection />
-          <AccessSection {...props} />
+      <div className="min-w-0">
+        {activeSection === "workspace" ? <WorkspaceSection {...props} /> : null}
+        {activeSection === "appearance" ? <AppearanceSection /> : null}
+        {activeSection === "access" ? <AccessSection {...props} /> : null}
+        {activeSection === "account" ? (
           <SettingsAccountSection auth={props.auth} />
-        </div>
+        ) : null}
       </div>
     </div>
   );
@@ -132,28 +99,34 @@ function WorkspaceSection(props: SettingsDashboardProps) {
   ).length;
 
   return (
-    <SettingsSection
-      description={t("workspaceDescription")}
-      icon={Building2Icon}
-      id="workspace"
-      title={t("workspaceTitle")}
-    >
+    <section className="divide-y divide-border" id="workspace">
       {props.canAdmin ? (
         <WorkspaceRenameForm tenant={props.selectedTenant} />
       ) : null}
-      <dl className="grid gap-px border-b border-border bg-border sm:grid-cols-2">
+      <dl className="grid gap-4 py-5 sm:grid-cols-2 sm:gap-5">
         {props.canAdmin ? null : (
-          <WorkspaceFact label={t("workspaceName")} value={props.selectedTenant.display_name} />
+          <WorkspaceFact
+            label={t("workspaceName")}
+            value={props.selectedTenant.display_name}
+          />
         )}
-        <WorkspaceFact label={t("workspaceSlug")} value={props.selectedTenant.slug} mono />
+        <WorkspaceFact
+          label={t("workspaceSlug")}
+          value={props.selectedTenant.slug}
+          mono
+        />
         <WorkspaceFact
           label={t("workspaceCreated")}
           value={<FormattedDate value={props.selectedTenant.created_at} />}
         />
-        <WorkspaceFact label={t("workspaceId")} value={props.selectedTenant.id} mono />
+        <WorkspaceFact
+          label={t("workspaceId")}
+          value={props.selectedTenant.id}
+          mono
+        />
         <WorkspaceFact label={t("authProvider")} value={props.auth.provider} />
       </dl>
-      <div className="grid gap-4 p-4 sm:grid-cols-2 sm:p-5">
+      <div className="divide-y divide-border">
         <WorkspaceLink
           description={t("agentsDescription", {
             connected: connectedAgents,
@@ -173,7 +146,7 @@ function WorkspaceSection(props: SettingsDashboardProps) {
           title={t("managePrinters")}
         />
       </div>
-    </SettingsSection>
+    </section>
   );
 }
 
@@ -181,12 +154,7 @@ function AppearanceSection() {
   const t = useTranslations("settingsPage");
 
   return (
-    <SettingsSection
-      description={t("appearanceDescription")}
-      icon={PaletteIcon}
-      id="appearance"
-      title={t("appearanceTitle")}
-    >
+    <section className="divide-y divide-border" id="appearance">
       <PreferenceRow
         description={t("languageDescription")}
         icon={MonitorCogIcon}
@@ -196,12 +164,12 @@ function AppearanceSection() {
       </PreferenceRow>
       <PreferenceRow
         description={t("themeDescription")}
-        icon={PaletteIcon}
+        icon={SunIcon}
         title={t("themeTitle")}
       >
         <ThemeSwitcher />
       </PreferenceRow>
-    </SettingsSection>
+    </section>
   );
 }
 
@@ -210,53 +178,65 @@ function AccessSection(props: SettingsDashboardProps) {
 
   if (props.adminLoading) {
     return (
-      <SettingsSection description={t("accessDescription")} icon={KeyRoundIcon} id="access" title={t("accessTitle")}>
-        <div className="space-y-3 p-5" aria-label={t("loadingAccess")}>
-          <div className="h-16 animate-pulse rounded-lg bg-muted" />
-          <div className="h-16 animate-pulse rounded-lg bg-muted" />
-        </div>
-      </SettingsSection>
+      <section className="space-y-3 py-5" id="access" aria-label={t("loadingAccess")}>
+        <div className="h-16 animate-pulse rounded-lg bg-muted" />
+        <div className="h-16 animate-pulse rounded-lg bg-muted" />
+      </section>
     );
   }
 
   if (props.adminUnavailable || props.adminLoadError) {
     return (
-      <SettingsSection description={t("accessDescription")} icon={KeyRoundIcon} id="access" title={t("accessTitle")}>
-        <div className="flex gap-3 p-5" role={props.adminLoadError ? "alert" : undefined}>
-          <ShieldCheckIcon aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
+      <section className="py-5" id="access">
+        <div
+          className="flex gap-3"
+          role={props.adminLoadError ? "alert" : undefined}
+        >
+          <ShieldCheckIcon
+            aria-hidden="true"
+            className="mt-0.5 size-5 shrink-0 text-muted-foreground"
+          />
           <div>
             <div className="text-sm font-medium text-foreground">
-              {props.adminLoadError ? t("accessLoadErrorTitle") : t("accessRestrictedTitle")}
+              {props.adminLoadError
+                ? t("accessLoadErrorTitle")
+                : t("accessRestrictedTitle")}
             </div>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
-              {props.adminLoadError ? t("accessLoadErrorDescription") : t("accessRestrictedDescription")}
+              {props.adminLoadError
+                ? t("accessLoadErrorDescription")
+                : t("accessRestrictedDescription")}
             </p>
           </div>
         </div>
-      </SettingsSection>
+      </section>
     );
   }
 
   return (
-    <SettingsSection description={t("accessDescription")} icon={KeyRoundIcon} id="access" title={t("accessTitle")}>
-      <TenantTokensTable
-        nowMs={props.nowMs}
-        tenantId={props.selectedTenant.id}
-        tokens={props.tenantTokens}
-      />
-      <div className="grid gap-px border-t border-border bg-border xl:grid-cols-2">
-        <div className="bg-card p-4 sm:p-5">
-          <h4 className="text-sm font-semibold text-foreground">{t("pairAgentTitle")}</h4>
-          <p className="mt-0.5 text-sm text-muted-foreground">{t("pairAgentDescription")}</p>
-          <div className="mt-4">
-            <CreateAgentPairingForm tenantId={props.selectedTenant.id} />
-          </div>
-        </div>
-        <div className="bg-card">
-          <TenantAuditPanel auditEvents={props.auditEvents} />
+    <section className="divide-y divide-border" id="access">
+      <div className="py-5">
+        <TenantTokensTable
+          nowMs={props.nowMs}
+          tenantId={props.selectedTenant.id}
+          tokens={props.tenantTokens}
+        />
+      </div>
+      <div className="py-5">
+        <h3 className="text-sm font-semibold text-foreground">
+          {t("pairAgentTitle")}
+        </h3>
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          {t("pairAgentDescription")}
+        </p>
+        <div className="mt-4">
+          <CreateAgentPairingForm inline tenantId={props.selectedTenant.id} />
         </div>
       </div>
-    </SettingsSection>
+      <div className="py-5">
+        <TenantAuditPanel auditEvents={props.auditEvents} />
+      </div>
+    </section>
   );
 }
 
@@ -266,18 +246,23 @@ function PreferenceRow({
   description,
   children,
 }: {
-  icon: typeof PaletteIcon;
+  icon: typeof SunIcon;
   title: string;
   description: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-3 border-b border-border px-4 py-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+    <div className="flex flex-col gap-3 py-5 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-start gap-3">
-        <Icon aria-hidden="true" className="mt-0.5 size-4 text-muted-foreground" />
+        <Icon
+          aria-hidden="true"
+          className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+        />
         <div>
           <div className="text-sm font-medium text-foreground">{title}</div>
-          <div className="mt-0.5 text-sm text-muted-foreground">{description}</div>
+          <div className="mt-0.5 text-sm text-muted-foreground">
+            {description}
+          </div>
         </div>
       </div>
       <div className="shrink-0 sm:pl-4">{children}</div>
@@ -295,11 +280,11 @@ function WorkspaceFact({
   mono?: boolean;
 }) {
   return (
-    <div className="bg-card p-4 sm:px-5">
+    <div>
       <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
       <dd
-        className={`mt-1 break-all text-sm font-medium text-foreground ${
-          mono ? "font-mono text-xs" : ""
+        className={`mt-1 break-all text-foreground ${
+          mono ? "font-mono text-xs" : "text-sm"
         }`}
       >
         {value}
@@ -314,27 +299,30 @@ function WorkspaceLink({
   description,
   href,
 }: {
-  icon: typeof PaletteIcon;
+  icon: typeof ServerCogIcon;
   title: string;
   description: string;
   href: string;
 }) {
   return (
     <Link
-      className="group rounded-lg border border-border bg-muted/20 p-3 transition-colors hover:bg-muted/50"
+      className="group flex items-center justify-between gap-4 py-4 transition-colors hover:text-foreground"
       href={href}
     >
-      <div className="flex items-center justify-between gap-3">
-        <span className="flex items-center gap-2 text-sm font-medium text-foreground">
-          <Icon aria-hidden="true" className="size-4 text-muted-foreground" />
-          {title}
-        </span>
-        <ArrowUpRightIcon
+      <div className="flex items-start gap-3">
+        <Icon
           aria-hidden="true"
-          className="size-4 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+          className="mt-0.5 size-4 shrink-0 text-muted-foreground"
         />
+        <div>
+          <div className="text-sm font-medium text-foreground">{title}</div>
+          <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+        </div>
       </div>
-      <p className="mt-1.5 text-xs leading-5 text-muted-foreground">{description}</p>
+      <ArrowUpRightIcon
+        aria-hidden="true"
+        className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+      />
     </Link>
   );
 }

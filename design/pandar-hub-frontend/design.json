@@ -36,9 +36,35 @@
     },
     {
       "id": "settings",
-      "title": "设置",
+      "title": "设置 · 工作区",
       "file": "settings.html",
-      "width": 1440
+      "width": 1440,
+      "height": 640,
+      "group": "settings"
+    },
+    {
+      "id": "settings-appearance",
+      "title": "设置 · 外观",
+      "file": "settings-appearance.html",
+      "width": 1440,
+      "height": 640,
+      "group": "settings"
+    },
+    {
+      "id": "settings-access",
+      "title": "设置 · 访问与安全",
+      "file": "settings-access.html",
+      "width": 1440,
+      "height": 1000,
+      "group": "settings"
+    },
+    {
+      "id": "settings-account",
+      "title": "设置 · 账号",
+      "file": "settings-account.html",
+      "width": 1440,
+      "height": 640,
+      "group": "settings"
     },
     {
       "id": "m-devices",
@@ -79,6 +105,46 @@
       "width": 390,
       "height": 844,
       "group": "mobile"
+    },
+    {
+      "id": "m-nav-settings",
+      "title": "设置导航（子菜单展开）· 移动端",
+      "file": "m-nav-settings.html",
+      "width": 390,
+      "height": 844,
+      "group": "mobile-settings"
+    },
+    {
+      "id": "m-settings",
+      "title": "设置 · 工作区 · 移动端",
+      "file": "m-settings.html",
+      "width": 390,
+      "height": 844,
+      "group": "mobile-settings"
+    },
+    {
+      "id": "m-settings-appearance",
+      "title": "设置 · 外观 · 移动端",
+      "file": "m-settings-appearance.html",
+      "width": 390,
+      "height": 844,
+      "group": "mobile-settings"
+    },
+    {
+      "id": "m-settings-access",
+      "title": "设置 · 访问与安全 · 移动端",
+      "file": "m-settings-access.html",
+      "width": 390,
+      "height": 1340,
+      "group": "mobile-settings"
+    },
+    {
+      "id": "m-settings-account",
+      "title": "设置 · 账号 · 移动端",
+      "file": "m-settings-account.html",
+      "width": 390,
+      "height": 844,
+      "group": "mobile-settings"
     }
   ],
   "tweaks": [

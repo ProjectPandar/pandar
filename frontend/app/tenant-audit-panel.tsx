@@ -3,7 +3,6 @@
 import { useTranslations } from 'next-intl'
 
 import { FormattedDate } from '../components/formatted-date'
-import { Subhead } from './admin-panel-shared'
 import type { AuditEvent } from './dashboard-types'
 
 export function TenantAuditPanel({
@@ -15,23 +14,32 @@ export function TenantAuditPanel({
 
   return (
     <div>
-      <Subhead
-        title={t('auditEvents')}
-        meta={t('auditMeta', { count: auditEvents.length })}
-      />
-      <div className="divide-y divide-border">
+      <div className="flex items-center justify-between pb-4">
+        <h3 className="text-sm font-semibold text-foreground">
+          {t('auditEvents')}
+        </h3>
+        <span className="text-xs text-muted-foreground">
+          {t('auditMeta', { count: auditEvents.length })}
+        </span>
+      </div>
+      <div className="divide-y divide-border border-t border-border">
         {auditEvents.length === 0 ? (
-          <div className="px-4 py-3 text-sm text-muted-foreground">
+          <div className="py-3 text-sm text-muted-foreground">
             {t('noAuditEvents')}
           </div>
         ) : (
           auditEvents.map((event) => (
-            <div key={event.id} className="px-4 py-3 text-sm">
-              <div className="font-medium text-foreground">{event.action}</div>
-              <div className="mt-1 text-xs text-muted-foreground">
+            <div
+              key={event.id}
+              className="flex flex-col gap-1 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+            >
+              <span className="font-medium text-foreground">
+                {event.action}
+              </span>
+              <span className="text-xs text-muted-foreground">
                 {event.actor_type} · {event.target_type} ·{' '}
                 <FormattedDate value={event.created_at} />
-              </div>
+              </span>
             </div>
           ))
         )}

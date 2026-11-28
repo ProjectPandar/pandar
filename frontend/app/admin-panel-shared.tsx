@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { CheckIcon, CopyIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { inputClasses, mutedBgSubtleClasses } from "../lib/utils";
+import { inputClasses } from "../lib/utils";
 import type { SecretActionState } from "./action-state";
 
 function CopyButton({ label, value }: { label: string; value: string }) {
@@ -170,14 +170,5 @@ export function PrimaryButton({
     <Button className="h-9 px-3" disabled={disabled} size="default" type="submit">
       {label}
     </Button>
-  );
-}
-
-export function Subhead({ title, meta }: { title: string; meta: string }) {
-  return (
-    <div className={`flex items-center justify-between border-b border-border ${mutedBgSubtleClasses} px-4 py-2`}>
-      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-      <span className="text-xs text-muted-foreground">{meta}</span>
-    </div>
   );
 }

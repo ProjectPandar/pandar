@@ -23,3 +23,172 @@
   height: 1600px;
   min-height: 1600px;
 }
+
+/* 侧边导航与折叠子菜单样式 */
+[data-dc-id="nav"] [data-slot="sidebar-group-label"] {
+  height: 1.75rem;
+  padding-inline: 0.625rem;
+  color: color-mix(in oklch, var(--sidebar-foreground) 50%, transparent);
+}
+
+[data-dc-id="nav"] > [data-slot="sidebar-group"] > [data-slot="sidebar-menu"],
+[data-dc-id="sidebar-footer"] [data-slot="sidebar-menu"] {
+  gap: 0.125rem;
+}
+
+[data-dc-id="nav"] .menu-button,
+[data-dc-id="sidebar-footer"] .menu-button {
+  height: 2.125rem;
+  padding: 0 0.625rem;
+  gap: 0.5rem;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  color: color-mix(in oklch, var(--sidebar-foreground) 62%, transparent);
+  font-size: 0.875rem;
+  font-weight: 450;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    color 150ms ease;
+}
+
+[data-dc-id="nav"] .menu-button svg,
+[data-dc-id="sidebar-footer"] .menu-button svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  color: color-mix(in oklch, var(--sidebar-foreground) 56%, transparent);
+  transition: color 150ms ease, transform 150ms ease;
+}
+
+[data-dc-id="nav"] .menu-button:hover,
+[data-dc-id="sidebar-footer"] .menu-button:hover {
+  background-color: color-mix(in oklch, var(--sidebar-foreground) 5%, transparent);
+  color: var(--sidebar-foreground);
+}
+
+[data-dc-id="nav"] .menu-button:hover svg,
+[data-dc-id="sidebar-footer"] .menu-button:hover svg {
+  color: var(--sidebar-foreground);
+}
+
+/* 激活态父级 / 顶层菜单：白底微描边轻阴影卡片 */
+[data-dc-id="nav"] .menu-button[data-active="true"] {
+  background-color: var(--card);
+  border-color: color-mix(in oklch, var(--sidebar-border) 92%, var(--sidebar-foreground) 4%);
+  color: var(--sidebar-foreground);
+  font-weight: 500;
+  box-shadow:
+    0 1px 3px oklch(0 0 0 / 0.06),
+    0 1px 2px -1px oklch(0 0 0 / 0.04);
+}
+
+[data-dc-id="nav"] .menu-button[data-active="true"]:hover {
+  background-color: var(--card);
+  color: var(--sidebar-foreground);
+}
+
+[data-dc-id="nav"] .menu-button[data-active="true"] svg {
+  color: var(--sidebar-foreground);
+}
+
+/* 非当前页临时展开子菜单时的轻态提示 */
+[data-dc-id="nav"] .menu-button[data-expanded="true"]:not([data-active="true"]) {
+  background-color: color-mix(in oklch, var(--sidebar-foreground) 4.5%, transparent);
+  color: var(--sidebar-foreground);
+}
+
+[data-dc-id="nav"] .menu-button[data-expanded="true"]:not([data-active="true"]) svg {
+  color: var(--sidebar-foreground);
+}
+
+[data-dc-id="nav"] .menu-button .nav-chevron,
+[data-dc-id="nav"] .menu-button[data-active="true"] .nav-chevron,
+[data-dc-id="nav"] .menu-button[data-expanded="true"] .nav-chevron {
+  margin-left: auto;
+  width: 0.875rem;
+  height: 0.875rem;
+  color: color-mix(in oklch, var(--sidebar-foreground) 48%, transparent);
+}
+
+[data-dc-id="nav"] .menu-button[data-expanded="false"] .nav-chevron {
+  transform: rotate(-90deg);
+}
+
+/* 子菜单容器：左侧 1px 竖向引导线 + 缩进 */
+.nav-submenu {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.0625rem;
+  margin-top: 0.25rem;
+  margin-bottom: 0.125rem;
+  margin-left: 1.125rem;
+  padding-left: 0.625rem;
+}
+
+.nav-submenu::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.2rem;
+  bottom: 0.2rem;
+  width: 1px;
+  background-color: color-mix(in oklch, var(--sidebar-border) 95%, var(--sidebar-foreground) 4%);
+}
+
+.nav-submenu[hidden] {
+  display: none;
+}
+
+/* 子菜单项：默认浅灰文字与图标，激活态柔和灰底圆角胶囊 */
+.nav-subitem {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.5rem;
+  height: 1.875rem;
+  padding: 0 0.625rem;
+  border-radius: calc(var(--radius) * 0.8);
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+  color: color-mix(in oklch, var(--sidebar-foreground) 62%, transparent);
+  text-decoration: none;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.nav-subitem svg {
+  width: 0.9375rem;
+  height: 0.9375rem;
+  flex-shrink: 0;
+  color: color-mix(in oklch, var(--sidebar-foreground) 54%, transparent);
+  transition: color 150ms ease;
+}
+
+.nav-subitem:hover {
+  background-color: color-mix(in oklch, var(--sidebar-foreground) 4.5%, transparent);
+  color: var(--sidebar-foreground);
+}
+
+.nav-subitem:hover svg {
+  color: var(--sidebar-foreground);
+}
+
+.nav-subitem[data-active="true"],
+.nav-subitem[aria-current="location"] {
+  background-color: color-mix(in oklch, var(--sidebar-foreground) 7.5%, transparent);
+  color: var(--sidebar-foreground);
+  font-weight: 500;
+}
+
+.nav-subitem[data-active="true"] svg,
+.nav-subitem[aria-current="location"] svg {
+  color: var(--sidebar-foreground);
+}
+
+/* 设置单面板切换：确保带 hidden 的区块不展示 */
+[data-settings-panel][hidden] {
+  display: none;
+}

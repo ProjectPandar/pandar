@@ -1,8 +1,7 @@
-import { KeyRoundIcon, ShieldCheckIcon, TriangleAlertIcon, XCircleIcon } from "lucide-react";
+import { ShieldCheckIcon, TriangleAlertIcon, XCircleIcon } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
 import { FormattedDate } from "../components/formatted-date";
-import { mutedBgClasses } from "../lib/utils";
 import { useAdminDate } from "./admin-model";
 import {
   CreateTenantTokenDialog,
@@ -114,23 +113,6 @@ function TokenLastUsed({
   );
 }
 
-function TokenFact({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-md border border-border bg-muted/20 px-3 py-2">
-      <dt className="text-xs font-medium text-muted-foreground">
-        {label}
-      </dt>
-      <dd className="mt-1 text-xs font-medium text-foreground">{children}</dd>
-    </div>
-  );
-}
-
 export function TenantTokensTable({
   tenantId,
   tokens,
@@ -157,32 +139,25 @@ export function TenantTokensTable({
 
   return (
     <div>
-      <div className={`flex flex-col gap-4 border-b border-border ${mutedBgClasses} px-4 py-4 sm:flex-row sm:items-center sm:justify-between`}>
-        <div className="flex items-center gap-2">
-          <span className="flex size-8 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground">
-            <KeyRoundIcon className="size-4" />
-          </span>
-          <div>
-            <h3 className="text-sm font-semibold text-foreground">
-              {t("tenantTokens")}
-            </h3>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              {t("tenantTokensDescription")}
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-xs text-muted-foreground">
+      <div className="flex flex-col gap-3 pb-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">
+            {t("tenantTokens")}
+          </h3>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {t("tenantTokensDescription")} ·{" "}
             {t("tenantTokensSummary", {
               active: activeCount,
               total: tokens.length,
             })}
-          </span>
+          </p>
+        </div>
+        <div className="shrink-0">
           <CreateTenantTokenDialog tenantId={tenantId} />
         </div>
       </div>
       {tokens.length === 0 ? (
-        <div className="px-4 py-12 text-center">
+        <div className="border-t border-border py-10 text-center">
           <div className="text-sm font-semibold text-foreground">
             {t("noTokensTitle")}
           </div>
@@ -191,24 +166,22 @@ export function TenantTokensTable({
           </p>
         </div>
       ) : (
-        <div className="divide-y divide-border">
+        <div className="divide-y divide-border border-t border-border">
           {sortedTokens.map((token) => {
             const status = getTokenStatus(token, nowMs);
             return (
               <article
                 key={token.id}
-                className="grid gap-4 px-4 py-4 text-sm transition-colors hover:bg-muted/20 md:grid-cols-[minmax(0,1fr)_auto] md:items-start xl:grid-cols-[minmax(0,1fr)_minmax(28rem,0.9fr)_auto] xl:items-center"
+                className="flex flex-col gap-3 py-4 text-sm sm:flex-row sm:items-center sm:justify-between"
                 data-token-id={token.id}
                 data-token-status={status}
               >
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <div className="font-semibold text-foreground">
+                    <span className="font-semibold text-foreground">
                       {token.name}
-                    </div>
+                    </span>
                     <TokenStatusBadge status={status} />
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-1">
                     {token.scopes.length === 0 ? (
                       <span className="inline-flex rounded-md border border-border bg-muted/60 px-2 py-0.5 text-xs font-medium text-muted-foreground">
                         {t("scopeReadOnly")}
@@ -219,29 +192,36 @@ export function TenantTokensTable({
                       ))
                     )}
                   </div>
-                  <div className="mt-2 text-xs text-muted-foreground">
-                    {t("tokenIdLabel")} {" "}
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted-foreground">
+                    <span>
+                      {token.expires_at ? (
+                        <TokenExpiration
+                          value={token.expires_at}
+                          nowMs={nowMs}
+                        />
+                      ) : (
+                        t("expiresNever")
+                      )}
+                    </span>
+                    <span aria-hidden="true">·</span>
+                    <span>
+                      {t("tokenLastUsedLabel")}{" "}
+                      <TokenLastUsed value={token.last_used_at} nowMs={nowMs} />
+                    </span>
+                    <span aria-hidden="true">·</span>
+                    <span>
+                      {t("tokenCreatedLabel")}{" "}
+                      <FormattedDate value={token.created_at} />
+                    </span>
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {t("tokenIdLabel")}{" "}
                     <code className="break-all font-mono" title={token.id}>
                       {token.id}
                     </code>
                   </div>
                 </div>
-                <dl className="grid gap-2 sm:grid-cols-3 md:col-span-2 xl:col-span-1 xl:col-start-2 xl:row-start-1">
-                  <TokenFact label={t("tokenExpirationLabel")}>
-                    {token.expires_at ? (
-                      <TokenExpiration value={token.expires_at} nowMs={nowMs} />
-                    ) : (
-                      t("expiresNever")
-                    )}
-                  </TokenFact>
-                  <TokenFact label={t("tokenLastUsedLabel")}>
-                    <TokenLastUsed value={token.last_used_at} nowMs={nowMs} />
-                  </TokenFact>
-                  <TokenFact label={t("tokenCreatedLabel")}>
-                    <FormattedDate value={token.created_at} />
-                  </TokenFact>
-                </dl>
-                <div className="flex w-full flex-wrap items-start gap-2 md:col-start-2 md:row-start-1 md:w-auto md:justify-end xl:col-start-3">
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
                   <RotateTenantTokenForm
                     tenantId={tenantId}
                     token={token}

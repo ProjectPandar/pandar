@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>设置 · 访问与安全（移动端）</title>
+<link rel="stylesheet" href="pandar.css">
+<link rel="stylesheet" href="extra.css">
+<link rel="stylesheet" href="tweaks.css">
+</head>
+<body>
+<div class="page group/sidebar-wrapper flex min-h-svh w-full has-data-[variant=inset]:bg-sidebar">
+
+  <div class="relative flex w-full flex-1 flex-col bg-background" data-slot="sidebar-inset" data-dc-id="inset">
+    <header class="sticky top-0 z-20 flex min-h-16 shrink-0 items-center border-b border-border bg-background/95 px-4 py-3 backdrop-blur" data-dc-id="topbar">
+      <div class="flex min-w-0 items-center gap-3">
+        <button type="button" class="btn btn-ghost btn-icon-sm -ml-1" data-sidebar="trigger" data-slot="sidebar-trigger" aria-label="切换侧边栏"><i data-icon="panel-left"></i></button>
+        <div class="min-w-0"><div class="text-xs font-medium text-muted-foreground">Pandar · 设置</div><h1 class="truncate text-lg font-semibold text-foreground">访问与安全</h1></div>
+      </div>
+    </header>
+
+    <main class="flex-1 p-4" id="main-content">
+      <div class="mx-auto max-w-3xl pb-10" data-dc-id="settings">
+        <header class="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4" data-dc-id="settings-head">
+          <div>
+            <h2 class="text-2xl font-semibold tracking-tight text-foreground">访问与安全</h2>
+            <p class="mt-1 text-sm text-muted-foreground">管理凭据、Agent 接入和近期管理活动。</p>
+          </div>
+          <span class="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground"><i data-icon="shield-check" class="size-3.5 text-success"></i>租户管理员</span>
+        </header>
+
+        <section class="divide-y divide-border" id="access" data-dc-id="section-access">
+          <div class="py-5">
+            <div class="flex flex-col gap-3 pb-4" data-dc-id="tokens-header">
+              <div>
+                <h3 class="text-sm font-semibold text-foreground">租户令牌</h3>
+                <p class="mt-0.5 text-xs text-muted-foreground">供插件与自动化使用的权限凭据 · 有效 2 个 · 共 3 个</p>
+              </div>
+              <div><button type="button" class="btn btn-primary btn-sm" aria-haspopup="dialog" data-dc-id="create-token"><i data-icon="plus"></i>创建租户令牌</button></div>
+            </div>
+            <div class="divide-y divide-border border-t border-border" data-dc-id="tokens-list">
+              <article class="flex flex-col gap-3 py-4 text-sm" data-token-status="active" data-dc-id="token-1">
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2"><span class="font-semibold text-foreground">studio-plugin</span><span class="inline-flex items-center gap-1 rounded-md border border-success/40 bg-success/10 px-2 py-0.5 text-xs font-medium text-success"><i data-icon="shield-check" class="size-3"></i>有效</span><span class="inline-flex rounded-md border border-border bg-muted/60 px-2 py-0.5 text-xs font-medium text-muted-foreground">Studio 插件</span></div>
+                  <div class="mt-1.5 text-xs text-muted-foreground">永不过期 · 上次使用 1 小时前 · 创建于 2026年11月27日 14:02</div>
+                  <div class="mt-1 text-xs text-muted-foreground">ID <code class="break-all font-mono">01JCL2Q8K2V6M4NB7S9E1XW0PD</code></div>
+                </div>
+                <div class="flex items-center gap-2" data-dc-id="token-1-actions">
+                  <button type="button" class="btn btn-outline btn-sm" aria-haspopup="dialog" aria-label="轮换令牌 studio-plugin">轮换</button>
+                  <button type="button" class="btn btn-destructive btn-sm" aria-haspopup="dialog" aria-label="吊销令牌 studio-plugin">吊销</button>
+                </div>
+              </article>
+              <article class="flex flex-col gap-3 py-4 text-sm" data-token-status="active" data-dc-id="token-2">
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2"><span class="font-semibold text-foreground">ci-automation</span><span class="inline-flex items-center gap-1 rounded-md border border-success/40 bg-success/10 px-2 py-0.5 text-xs font-medium text-success"><i data-icon="shield-check" class="size-3"></i>有效</span><span class="inline-flex rounded-md border border-border bg-muted/60 px-2 py-0.5 text-xs font-medium text-muted-foreground">完整权限</span></div>
+                  <div class="mt-1.5 text-xs text-muted-foreground">34 天后过期 · 上次使用 3 天前 · 创建于 2026年10月30日 09:12</div>
+                  <div class="mt-1 text-xs text-muted-foreground">ID <code class="break-all font-mono">01JCK3M2P7Y8Z1QW3ER5TY7UI9K4</code></div>
+                </div>
+                <div class="flex items-center gap-2" data-dc-id="token-2-actions">
+                  <button type="button" class="btn btn-outline btn-sm" aria-haspopup="dialog" aria-label="轮换令牌 ci-automation">轮换</button>
+                  <button type="button" class="btn btn-destructive btn-sm" aria-haspopup="dialog" aria-label="吊销令牌 ci-automation">吊销</button>
+                </div>
+              </article>
+              <article class="flex flex-col gap-3 py-4 text-sm" data-token-status="revoked" data-dc-id="token-3">
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2"><span class="font-semibold text-foreground">legacy-agent</span><span class="inline-flex items-center gap-1 rounded-md border border-border bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"><i data-icon="circle-x" class="size-3"></i>已吊销</span><span class="inline-flex rounded-md border border-border bg-muted/60 px-2 py-0.5 text-xs font-medium text-muted-foreground">Agent 注册</span></div>
+                  <div class="mt-1.5 text-xs text-muted-foreground">永不过期 · 从未使用 · 创建于 2026年10月21日 17:40</div>
+                  <div class="mt-1 text-xs text-muted-foreground">ID <code class="break-all font-mono">01JCG1Q8K2V6M4NB7S9E1XW0PD6T</code></div>
+                </div>
+              </article>
+            </div>
+          </div>
+
+          <div class="py-5" data-dc-id="pair-agent">
+            <h3 class="text-sm font-semibold text-foreground">接入 Agent</h3>
+            <p class="mt-0.5 text-sm text-muted-foreground">为新的本地 Agent 创建一次性配对凭据。</p>
+            <form class="mt-4 flex flex-col gap-2" onsubmit="return false">
+              <input class="input-text" name="name" aria-label="Agent 名称" required placeholder="workshop-agent">
+              <div><button type="submit" class="btn btn-primary h-9 px-3">创建配对</button></div>
+            </form>
+          </div>
+
+          <div class="py-5" data-dc-id="audit-panel">
+            <div class="flex items-center justify-between pb-4"><h3 class="text-sm font-semibold text-foreground">审计事件</h3><span class="text-xs text-muted-foreground">近期 6 条</span></div>
+            <div class="divide-y divide-border border-t border-border">
+              <div class="flex flex-col gap-1 py-3 text-sm"><span class="font-medium text-foreground">tenant_token.create</span><span class="text-xs text-muted-foreground">user · tenant_token · 2026年11月27日 14:02</span></div>
+              <div class="flex flex-col gap-1 py-3 text-sm"><span class="font-medium text-foreground">agent.pairing_bundle</span><span class="text-xs text-muted-foreground">user · agent · 2026年11月14日 16:02</span></div>
+              <div class="flex flex-col gap-1 py-3 text-sm"><span class="font-medium text-foreground">user.role_update</span><span class="text-xs text-muted-foreground">user · user · 2026年11月3日 11:20</span></div>
+              <div class="flex flex-col gap-1 py-3 text-sm"><span class="font-medium text-foreground">tenant_token.rotate</span><span class="text-xs text-muted-foreground">user · tenant_token · 2026年10月30日 09:12</span></div>
+              <div class="flex flex-col gap-1 py-3 text-sm"><span class="font-medium text-foreground">tenant_token.revoke</span><span class="text-xs text-muted-foreground">user · tenant_token · 2026年10月21日 17:41</span></div>
+              <div class="flex flex-col gap-1 py-3 text-sm"><span class="font-medium text-foreground">tenant.create</span><span class="text-xs text-muted-foreground">bootstrap · tenant · 2026年10月2日 08:15</span></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="icons.js"></script>
+</body>
+</html>

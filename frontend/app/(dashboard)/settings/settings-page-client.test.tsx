@@ -9,6 +9,7 @@ import { SettingsPageClient } from "./settings-page-client";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(window.location.search),
 }));
 
 const auth: AuthMetadata = {
@@ -75,19 +76,18 @@ function expectNoAdminRequests(
 describe("SettingsPageClient authorization states", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    window.history.replaceState({}, "", "/settings");
   });
 
   it("keeps workspace settings available when membership lookup fails", async () => {
     const fetchMock = stubWorkspaceFetch();
+    window.history.replaceState({}, "", "/settings");
     renderSettings({ role: null, error: "membership request failed" });
 
     expect(
-      await screen.findByRole("heading", { name: "Settings" }),
+      await screen.findByRole("heading", { name: "Workspace" }),
     ).toBeVisible();
     expect(screen.getByText("Role unavailable")).toBeVisible();
-    expect(
-      screen.getByText("Security settings could not be loaded"),
-    ).toBeVisible();
     expect(
       screen.queryByRole("textbox", { name: "Workspace name" }),
     ).not.toBeInTheDocument();
@@ -95,8 +95,21 @@ describe("SettingsPageClient authorization states", () => {
     expectNoAdminRequests(fetchMock);
   });
 
+  it("shows security load error on the access section when membership lookup fails", async () => {
+    const fetchMock = stubWorkspaceFetch();
+    window.history.replaceState({}, "", "/settings?section=access");
+    renderSettings({ role: null, error: "membership request failed" });
+
+    expect(
+      await screen.findByText("Security settings could not be loaded"),
+    ).toBeVisible();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expectNoAdminRequests(fetchMock);
+  });
+
   it("shows restricted administration without requesting protected data", async () => {
     const fetchMock = stubWorkspaceFetch();
+    window.history.replaceState({}, "", "/settings?section=access");
     renderSettings({ role: "viewer", error: null });
 
     expect(await screen.findByText("Viewer")).toBeVisible();
@@ -110,6 +123,7 @@ describe("SettingsPageClient authorization states", () => {
 
   it("offers the rename form to workspace administrators", async () => {
     stubWorkspaceFetch();
+    window.history.replaceState({}, "", "/settings");
     renderSettings({ role: "tenant_admin", error: null });
 
     expect(

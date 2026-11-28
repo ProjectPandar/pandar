@@ -2,17 +2,21 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useTranslations } from "next-intl"
 import {
   BotIcon,
   Building2Icon,
   CheckIcon,
+  ChevronDownIcon,
   ChevronsUpDownIcon,
   ClipboardListIcon,
+  KeyRoundIcon,
   LogOutIcon,
   MonitorIcon,
+  PaletteIcon,
   SettingsIcon,
+  UserRoundIcon,
   UsersIcon,
 } from "lucide-react"
 
@@ -21,9 +25,14 @@ import { Button } from "@/components/ui/button"
 import {
   dashboardSidebarHref,
   logoutHref,
+  parseSettingsSection,
+  SETTINGS_SECTION_META,
+  settingsSectionHref,
   type DashboardView,
+  type SettingsSectionId,
 } from "@/app/dashboard-shell"
 import { setTenantCookie } from "@/app/tenant-cookie"
+import { cn } from "@/lib/utils"
 import {
   Sidebar,
   SidebarContent,
@@ -50,15 +59,24 @@ type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
   tenants: Tenant[]
 }
 
-const navItems: Array<{
-  view: DashboardView
+const primaryNavItems: Array<{
+  view: Exclude<DashboardView, "settings">
   icon: React.ComponentType<{ className?: string }>
 }> = [
   { view: "devices", icon: MonitorIcon },
   { view: "jobs", icon: ClipboardListIcon },
   { view: "agents", icon: BotIcon },
   { view: "users", icon: UsersIcon },
-  { view: "settings", icon: SettingsIcon },
+]
+
+const settingsSubItems: Array<{
+  id: SettingsSectionId
+  icon: React.ComponentType<{ className?: string }>
+}> = [
+  { id: "workspace", icon: Building2Icon },
+  { id: "appearance", icon: PaletteIcon },
+  { id: "access", icon: KeyRoundIcon },
+  { id: "account", icon: UserRoundIcon },
 ]
 
 export function AppSidebar({
@@ -69,17 +87,32 @@ export function AppSidebar({
   ...props
 }: AppSidebarProps) {
   const t = useTranslations("dashboardShell")
+  const tSettings = useTranslations("settingsPage")
   const signOutHref = logoutHref(auth)
   const [tenantAccessOpen, setTenantAccessOpen] = React.useState(false)
-  const { isMobile, setOpenMobile } = useSidebar()
+  const [settingsToggle, setSettingsToggle] = React.useState<{
+    view: DashboardView
+    open: boolean
+  } | null>(null)
+  const { isMobile, setOpenMobile, state } = useSidebar()
   const router = useRouter()
   const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const isSettingsActive = activeView === "settings"
+  const settingsExpanded =
+    settingsToggle?.view === activeView ? settingsToggle.open : isSettingsActive
+  const activeSettingsSection = parseSettingsSection(searchParams.get("section"))
+  const isIconCollapsed = !isMobile && state === "collapsed"
 
-  function closeTenantAccess() {
-    setTenantAccessOpen(false)
+  function closeMobileSidebar() {
     if (isMobile) {
       setOpenMobile(false)
     }
+  }
+
+  function closeTenantAccess() {
+    setTenantAccessOpen(false)
+    closeMobileSidebar()
   }
 
   function selectTenant(tenantId: string) {
@@ -170,7 +203,7 @@ export function AppSidebar({
           <SidebarGroup>
             <SidebarGroupLabel>{t("navigation")}</SidebarGroupLabel>
             <SidebarMenu>
-              {navItems.map((item) => {
+              {primaryNavItems.map((item) => {
                 const Icon = item.icon
                 const isActive = activeView === item.view
                 return (
@@ -182,6 +215,7 @@ export function AppSidebar({
                         <Link
                           aria-current={isActive ? "page" : undefined}
                           href={dashboardSidebarHref(item.view)}
+                          onClick={closeMobileSidebar}
                           prefetch={false}
                         >
                           <Icon />
@@ -192,6 +226,89 @@ export function AppSidebar({
                   </SidebarMenuItem>
                 )
               })}
+              <SidebarMenuItem>
+                {isIconCollapsed ? (
+                  <SidebarMenuButton
+                    isActive={isSettingsActive}
+                    tooltip={t("settings")}
+                    render={
+                      <Link
+                        aria-current={isSettingsActive ? "page" : undefined}
+                        href={dashboardSidebarHref("settings")}
+                        prefetch={false}
+                      >
+                        <SettingsIcon />
+                        <span>{t("settings")}</span>
+                      </Link>
+                    }
+                  />
+                ) : (
+                  <>
+                    <SidebarMenuButton
+                      aria-controls="sidebar-settings-submenu"
+                      aria-expanded={settingsExpanded}
+                      className={cn(
+                        settingsExpanded &&
+                          !isSettingsActive &&
+                          "bg-sidebar-foreground/[0.045] text-sidebar-foreground [&_svg]:text-sidebar-foreground",
+                      )}
+                      isActive={isSettingsActive}
+                      onClick={() =>
+                        setSettingsToggle({
+                          view: activeView,
+                          open: !settingsExpanded,
+                        })
+                      }
+                      tooltip={t("settings")}
+                      type="button"
+                    >
+                      <SettingsIcon />
+                      <span className="truncate">{t("settings")}</span>
+                      <ChevronDownIcon
+                        aria-hidden="true"
+                        className={cn(
+                          "ml-auto size-3.5! text-sidebar-foreground/48! transition-transform duration-150",
+                          !settingsExpanded && "-rotate-90",
+                        )}
+                      />
+                    </SidebarMenuButton>
+                    {settingsExpanded ? (
+                      <ul
+                        aria-label={tSettings("sectionNavigation")}
+                        className="relative mt-1 mb-0.5 ml-[1.125rem] flex flex-col gap-px pl-2.5 before:absolute before:top-0.5 before:bottom-0.5 before:left-0 before:w-px before:bg-sidebar-border"
+                        id="sidebar-settings-submenu"
+                      >
+                        {settingsSubItems.map((sub) => {
+                          const SubIcon = sub.icon
+                          const isSubActive =
+                            isSettingsActive && activeSettingsSection === sub.id
+                          return (
+                            <li key={sub.id}>
+                              <Link
+                                aria-current={isSubActive ? "location" : undefined}
+                                className={cn(
+                                  "flex h-[1.875rem] w-full items-center gap-2 rounded-[calc(var(--radius)*0.8)] px-2.5 text-[0.8125rem] leading-5 transition-colors [&_svg]:size-[0.9375rem] [&_svg]:shrink-0",
+                                  isSubActive
+                                    ? "bg-sidebar-foreground/[0.075] font-medium text-sidebar-foreground [&_svg]:text-sidebar-foreground"
+                                    : "text-sidebar-foreground/65 hover:bg-sidebar-foreground/[0.045] hover:text-sidebar-foreground [&_svg]:text-sidebar-foreground/55 hover:[&_svg]:text-sidebar-foreground",
+                                )}
+                                href={settingsSectionHref(sub.id)}
+                                onClick={closeMobileSidebar}
+                                prefetch={false}
+                              >
+                                <SubIcon aria-hidden="true" />
+                                <span className="truncate">
+                                  {tSettings(SETTINGS_SECTION_META[sub.id].titleKey)}
+                                </span>
+                              </Link>
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    ) : null}
+                  </>
+                )}
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroup>
         </nav>

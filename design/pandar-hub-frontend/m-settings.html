@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>设置 · 工作区（移动端）</title>
+<link rel="stylesheet" href="pandar.css">
+<link rel="stylesheet" href="extra.css">
+<link rel="stylesheet" href="tweaks.css">
+</head>
+<body>
+<div class="page h-screen group/sidebar-wrapper flex min-h-svh w-full has-data-[variant=inset]:bg-sidebar">
+
+  <div class="relative flex w-full flex-1 flex-col bg-background" data-slot="sidebar-inset" data-dc-id="inset">
+    <header class="sticky top-0 z-20 flex min-h-16 shrink-0 items-center border-b border-border bg-background/95 px-4 py-3 backdrop-blur" data-dc-id="topbar">
+      <div class="flex min-w-0 items-center gap-3">
+        <button type="button" class="btn btn-ghost btn-icon-sm -ml-1" data-sidebar="trigger" data-slot="sidebar-trigger" aria-label="切换侧边栏"><i data-icon="panel-left"></i></button>
+        <div class="min-w-0"><div class="text-xs font-medium text-muted-foreground">Pandar · 设置</div><h1 class="truncate text-lg font-semibold text-foreground">工作区</h1></div>
+      </div>
+    </header>
+
+    <main class="flex-1 p-4" id="main-content">
+      <div class="mx-auto max-w-3xl pb-10" data-dc-id="settings">
+        <header class="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4" data-dc-id="settings-head">
+          <div>
+            <h2 class="text-2xl font-semibold tracking-tight text-foreground">工作区</h2>
+            <p class="mt-1 text-sm text-muted-foreground">重命名此工作区，并查看其连接的基础设施。</p>
+          </div>
+          <span class="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground"><i data-icon="shield-check" class="size-3.5 text-success"></i>租户管理员</span>
+        </header>
+
+        <section class="divide-y divide-border" id="workspace" data-dc-id="section-workspace">
+          <form class="flex flex-col gap-3 py-5" data-dc-id="rename-form" onsubmit="return false">
+            <div>
+              <label class="text-sm font-medium text-foreground" for="m-workspace-display-name">工作区名称</label>
+              <p class="mt-0.5 text-sm text-muted-foreground">该名称会显示在控制台各处以及成员邀请中。</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <input class="input-text" id="m-workspace-display-name" name="display_name" required type="text" value="Acme 工坊">
+              <button type="submit" class="btn btn-primary" disabled>保存</button>
+            </div>
+          </form>
+
+          <dl class="grid gap-4 py-5" data-dc-id="workspace-facts">
+            <div><dt class="text-xs font-medium text-muted-foreground">Slug</dt><dd class="mt-1 break-all font-mono text-sm text-foreground">acme</dd></div>
+            <div><dt class="text-xs font-medium text-muted-foreground">创建时间</dt><dd class="mt-1 text-sm text-foreground">2026年10月2日</dd></div>
+            <div><dt class="text-xs font-medium text-muted-foreground">工作区 ID</dt><dd class="mt-1 break-all font-mono text-xs text-foreground">01JA7Z3K5V6M4NB7S9E1XW0PD2R</dd></div>
+            <div><dt class="text-xs font-medium text-muted-foreground">身份认证提供商</dt><dd class="mt-1 text-sm text-foreground">clerk</dd></div>
+          </dl>
+
+          <div class="divide-y divide-border">
+            <a class="group flex items-center justify-between gap-4 py-4" href="/agents" data-dc-id="link-agents">
+              <div class="flex items-start gap-3">
+                <i data-icon="server" class="mt-0.5 size-4 shrink-0 text-muted-foreground"></i>
+                <div>
+                  <div class="text-sm font-medium text-foreground">管理 Agent</div>
+                  <p class="mt-0.5 text-xs text-muted-foreground">当前 1/2 个 Agent 已连接。</p>
+                </div>
+              </div>
+              <i data-icon="arrow-up-right" class="size-4 shrink-0 text-muted-foreground"></i>
+            </a>
+            <a class="group flex items-center justify-between gap-4 py-4" href="/devices" data-dc-id="link-printers">
+              <div class="flex items-start gap-3">
+                <i data-icon="monitor-cog" class="mt-0.5 size-4 shrink-0 text-muted-foreground"></i>
+                <div>
+                  <div class="text-sm font-medium text-foreground">管理打印机</div>
+                  <p class="mt-0.5 text-xs text-muted-foreground">当前 3/4 台打印机在线。</p>
+                </div>
+              </div>
+              <i data-icon="arrow-up-right" class="size-4 shrink-0 text-muted-foreground"></i>
+            </a>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="icons.js"></script>
+</body>
+</html>

@@ -1,13 +1,12 @@
 'use client'
 
-import { LogOutIcon, UserRoundIcon } from 'lucide-react'
+import { LogOutIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 import { Button } from '../components/ui/button'
 import type { AuthMetadata } from './dashboard-types'
 import { formatAuthSource } from './dashboard-runtime-helpers'
 import { logoutHref } from './dashboard-shell'
-import { SettingsSection } from './settings-section'
 
 export function SettingsAccountSection({ auth }: { auth: AuthMetadata }) {
   const t = useTranslations('settingsPage')
@@ -15,13 +14,8 @@ export function SettingsAccountSection({ auth }: { auth: AuthMetadata }) {
   const signOutHref = logoutHref(auth)
 
   return (
-    <SettingsSection
-      description={t('accountDescription')}
-      icon={UserRoundIcon}
-      id="account"
-      title={t('accountTitle')}
-    >
-      <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+    <section className="divide-y divide-border" id="account">
+      <div className="flex flex-col gap-4 py-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="text-sm font-medium text-foreground">
             {t('currentSession')}
@@ -34,21 +28,23 @@ export function SettingsAccountSection({ auth }: { auth: AuthMetadata }) {
           </p>
         </div>
         {signOutHref ? (
-          <Button
-            nativeButton={false}
-            render={<a aria-label={t('signOut')} href={signOutHref} />}
-            size="lg"
-            variant="outline"
-          >
-            <LogOutIcon aria-hidden="true" />
-            {t('signOut')}
-          </Button>
+          <div>
+            <Button
+              nativeButton={false}
+              render={<a aria-label={t('signOut')} href={signOutHref} />}
+              size="lg"
+              variant="outline"
+            >
+              <LogOutIcon aria-hidden="true" />
+              {t('signOut')}
+            </Button>
+          </div>
         ) : (
           <span className="text-xs text-muted-foreground">
             {t('signOutUnavailable')}
           </span>
         )}
       </div>
-    </SettingsSection>
+    </section>
   )
 }

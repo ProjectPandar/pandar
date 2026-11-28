@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>设置 · 账号</title>
+<link rel="stylesheet" href="pandar.css">
+<link rel="stylesheet" href="extra.css">
+<link rel="stylesheet" href="tweaks.css">
+</head>
+<body>
+<div class="page group/sidebar-wrapper flex min-h-svh w-full has-data-[variant=inset]:bg-sidebar">
+
+  <div class="group peer hidden text-sidebar-foreground md:block" data-state="expanded" data-collapsible="" data-variant="inset" data-side="left" data-slot="sidebar" data-dc-id="sidebar">
+    <div class="relative w-(--sidebar-width) bg-transparent group-data-[collapsible=offcanvas]:w-0 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4)))]" data-slot="sidebar-gap"></div>
+    <div class="sidebar-container fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) data-[side=left]:left-0 md:flex p-2" data-slot="sidebar-container" data-side="left">
+      <div class="flex size-full flex-col bg-sidebar" data-sidebar="sidebar" data-slot="sidebar-inner">
+        <div class="flex flex-col gap-2 p-2" data-slot="sidebar-header" data-sidebar="header">
+          <ul class="flex w-full min-w-0 flex-col gap-0" data-slot="sidebar-menu" data-sidebar="menu">
+            <li class="group/menu-item relative" data-slot="sidebar-menu-item" data-sidebar="menu-item">
+              <button type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="选择租户访问" class="peer/menu-button group/menu-button menu-button h-12 text-sm" data-dc-id="tenant-switcher">
+                <div class="flex aspect-square size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground"><i data-icon="building-2"></i></div>
+                <div class="grid min-w-0 flex-1 text-left text-sm leading-tight"><span class="truncate font-semibold">Acme 工坊</span><span class="truncate text-xs text-sidebar-foreground/70">租户访问</span></div>
+                <i data-icon="chevrons-up-down" class="ml-auto size-4 text-sidebar-foreground/70"></i>
+              </button>
+            </li>
+          </ul>
+        </div>
+        <div class="no-scrollbar flex min-h-0 flex-1 flex-col gap-0 overflow-auto group-data-[collapsible=icon]:overflow-hidden" data-slot="sidebar-content" data-sidebar="content">
+          <nav aria-label="控制台" data-dc-id="nav">
+            <div class="relative flex w-full min-w-0 flex-col p-2" data-slot="sidebar-group" data-sidebar="group">
+              <div class="flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 ring-sidebar-ring outline-hidden group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0" data-slot="sidebar-group-label" data-sidebar="group-label">控制台</div>
+              <ul class="flex w-full min-w-0 flex-col gap-0" data-slot="sidebar-menu" data-sidebar="menu">
+                <li class="group/menu-item relative" data-slot="sidebar-menu-item" data-sidebar="menu-item"><a href="/devices" class="peer/menu-button group/menu-button menu-button" data-dc-id="nav-devices"><i data-icon="monitor"></i><span>设备</span></a></li>
+                <li class="group/menu-item relative" data-slot="sidebar-menu-item" data-sidebar="menu-item"><a href="/jobs" class="peer/menu-button group/menu-button menu-button" data-dc-id="nav-jobs"><i data-icon="clipboard-list"></i><span>任务</span></a></li>
+                <li class="group/menu-item relative" data-slot="sidebar-menu-item" data-sidebar="menu-item"><a href="/agents" class="peer/menu-button group/menu-button menu-button" data-dc-id="nav-agents"><i data-icon="bot"></i><span>Agent</span></a></li>
+                <li class="group/menu-item relative" data-slot="sidebar-menu-item" data-sidebar="menu-item"><a href="/users" class="peer/menu-button group/menu-button menu-button" data-dc-id="nav-users"><i data-icon="users"></i><span>用户</span></a></li>
+                <li class="group/menu-item relative" data-slot="sidebar-menu-item" data-sidebar="menu-item">
+                  <button type="button" aria-expanded="true" aria-controls="settings-submenu" data-active="true" data-expanded="true" data-nav-toggle class="peer/menu-button group/menu-button menu-button" data-dc-id="nav-settings"><i data-icon="settings"></i><span class="truncate">设置</span><i data-icon="chevron-down" class="nav-chevron"></i></button>
+                  <ul id="settings-submenu" aria-label="设置分区" class="nav-submenu" data-dc-id="settings-nav">
+                    <li><a href="settings.html" class="nav-subitem" data-dc-id="nav-settings-workspace"><i data-icon="building-2"></i><span>工作区</span></a></li>
+                    <li><a href="settings-appearance.html" class="nav-subitem" data-dc-id="nav-settings-appearance"><i data-icon="palette"></i><span>外观</span></a></li>
+                    <li><a href="settings-access.html" class="nav-subitem" data-dc-id="nav-settings-access"><i data-icon="key-round"></i><span>访问与安全</span></a></li>
+                    <li><a href="settings-account.html" aria-current="location" data-active="true" class="nav-subitem" data-dc-id="nav-settings-account"><i data-icon="user-round"></i><span>账号</span></a></li>
+                  </ul>
+                </li>
+              </ul>
+            </div>
+          </nav>
+        </div>
+        <div class="flex flex-col gap-2 p-2" data-slot="sidebar-footer" data-sidebar="footer" data-dc-id="sidebar-footer">
+          <ul class="flex w-full min-w-0 flex-col gap-0" data-slot="sidebar-menu" data-sidebar="menu">
+            <li class="group/menu-item relative" data-slot="sidebar-menu-item" data-sidebar="menu-item"><a href="/sign-out" class="peer/menu-button group/menu-button menu-button" data-dc-id="logout"><i data-icon="log-out"></i><span>退出登录</span></a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="relative flex w-full flex-1 flex-col bg-background md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2" data-slot="sidebar-inset">
+    <header class="sticky top-0 z-20 flex min-h-16 shrink-0 items-center border-b border-border bg-background/95 px-4 py-3 backdrop-blur" data-dc-id="topbar">
+      <div class="flex min-w-0 items-center gap-3">
+        <button type="button" class="btn btn-ghost btn-icon-sm -ml-1" data-sidebar="trigger" data-slot="sidebar-trigger" aria-label="切换侧边栏"><i data-icon="panel-left"></i></button>
+        <div class="min-w-0"><div class="text-xs font-medium text-muted-foreground">Pandar · 设置</div><h1 class="truncate text-lg font-semibold text-foreground">账号</h1></div>
+      </div>
+    </header>
+
+    <main class="flex-1 p-4 sm:p-5" id="main-content">
+      <div class="mx-auto max-w-3xl pb-10" data-dc-id="settings">
+        <header class="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-6" data-dc-id="settings-head">
+          <div>
+            <h2 class="text-2xl font-semibold tracking-tight text-foreground">账号</h2>
+            <p class="mt-1 text-sm text-muted-foreground">查看并结束当前 Pandar 会话。</p>
+          </div>
+          <span class="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground"><i data-icon="shield-check" class="size-3.5 text-success"></i>租户管理员</span>
+        </header>
+
+        <section class="divide-y divide-border" id="account" data-dc-id="section-account">
+          <div class="flex flex-col gap-4 py-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div class="text-sm font-medium text-foreground">当前会话</div>
+              <p class="mt-1 text-sm text-muted-foreground">通过 clerk 使用 请求 Cookie 完成认证。</p>
+            </div>
+            <button type="button" class="btn btn-outline btn-lg"><i data-icon="log-out"></i>退出登录</button>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="icons.js"></script>
+</body>
+</html>
