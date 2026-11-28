@@ -172,11 +172,15 @@ fn parse_scopes(scopes: Vec<String>) -> Result<Vec<TenantTokenScope>, ApiError> 
 }
 
 fn validate_expires_at(expires_at: Option<String>) -> Result<Option<String>, ApiError> {
-    if let Some(value) = &expires_at {
-        OffsetDateTime::parse(value, &Rfc3339)
-            .map_err(|_| ApiError::new(StatusCode::BAD_REQUEST, "invalid_expires_at"))?;
-    }
-    Ok(expires_at)
+    expires_at
+        .map(|value| {
+            OffsetDateTime::parse(&value, &Rfc3339)
+                .map_err(|_| ApiError::new(StatusCode::BAD_REQUEST, "invalid_expires_at"))?
+                .to_offset(time::UtcOffset::UTC)
+                .format(&Rfc3339)
+                .map_err(|_| ApiError::new(StatusCode::BAD_REQUEST, "invalid_expires_at"))
+        })
+        .transpose()
 }
 
 impl From<TenantToken> for TenantTokenResponse {

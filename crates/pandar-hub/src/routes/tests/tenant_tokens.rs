@@ -426,3 +426,111 @@ async fn expired_and_revoked_tenant_tokens_are_rejected() {
         assert_eq!(decode::<ErrorResponse>(body).error, "invalid_auth_token");
     }
 }
+
+#[tokio::test]
+async fn tenant_token_cleanup_loop_removes_stale_expired_and_revoked_tokens_and_normalizes_expires_at()
+ {
+    let state = external_auth_state(state().await);
+    let app = router(state.clone());
+    let tenant = state
+        .tenants()
+        .create("token-cleanup", "Token Cleanup")
+        .await
+        .unwrap();
+    let admin = external_auth_token_for_role(
+        &state,
+        tenant.id,
+        crate::repositories::UserRole::TenantAdmin,
+        "token-cleanup-admin",
+    )
+    .await;
+
+    let (status, created) = request_as(
+        app.clone(),
+        Method::POST,
+        &format!("/api/v1/tenants/{}/tenant-tokens", tenant.id),
+        tenant_token_create_body("active-tz", &["*"], Some("2030-01-01T08:00:00+08:00")),
+        &admin,
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED);
+    let active = decode::<TenantTokenWithPlaintextResponse>(created);
+    assert_eq!(
+        active.tenant_token.expires_at.as_deref(),
+        Some("2030-01-01T00:00:00Z")
+    );
+
+    let now = time::OffsetDateTime::now_utc();
+    let ts = |days: i64| {
+        (now + time::Duration::days(days))
+            .format(&time::format_description::well_known::Rfc3339)
+            .unwrap()
+    };
+    let connection = state.database().sea_orm_connection();
+    for (name, expires_at, revoked_at) in [
+        ("recent-expired", Some(ts(-3)), None),
+        ("recent-revoked", None, Some(ts(-3))),
+        ("stale-expired", Some(ts(-8)), None),
+        ("stale-revoked", Some(ts(30)), Some(ts(-8))),
+    ] {
+        let (status, body) = request_as(
+            app.clone(),
+            Method::POST,
+            &format!("/api/v1/tenants/{}/tenant-tokens", tenant.id),
+            tenant_token_create_body(name, &[], expires_at.as_deref()),
+            &admin,
+        )
+        .await;
+        assert_eq!(status, StatusCode::CREATED);
+        let created = decode::<TenantTokenWithPlaintextResponse>(body);
+        if let Some(revoked_at) = revoked_at {
+            let model = tenant_tokens::Entity::find_by_id(&created.tenant_token.id)
+                .one(&connection)
+                .await
+                .unwrap()
+                .unwrap();
+            let mut active_model: tenant_tokens::ActiveModel = model.into();
+            active_model.revoked_at = Set(Some(revoked_at));
+            active_model.update(&connection).await.unwrap();
+        }
+    }
+
+    let handle = crate::runtime::spawn_auth_retention_cleanup(
+        state.clone(),
+        crate::cleanup::DEFAULT_REVOKED_TOKENS_RETENTION_DAYS,
+    );
+
+    let mut remaining_names = Vec::new();
+    for _ in 0..40 {
+        let (status, listed) = request_as(
+            app.clone(),
+            Method::GET,
+            &format!("/api/v1/tenants/{}/tenant-tokens", tenant.id),
+            None,
+            &admin,
+        )
+        .await;
+        assert_eq!(status, StatusCode::OK);
+        let listed = decode::<TenantTokenListResponse>(listed);
+        remaining_names = listed
+            .tenant_tokens
+            .into_iter()
+            .map(|token| token.name)
+            .collect();
+        if remaining_names.len() == 3 {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(25)).await;
+    }
+    handle.abort();
+
+    remaining_names.sort();
+    assert_eq!(
+        remaining_names,
+        vec![
+            "active-tz".to_owned(),
+            "recent-expired".to_owned(),
+            "recent-revoked".to_owned(),
+        ]
+    );
+}

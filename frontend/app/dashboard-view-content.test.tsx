@@ -90,49 +90,55 @@ describe("Dashboard views", () => {
     nowMs: 0,
   };
 
-  it("preserves the current expiration for an explicit token rotation", async () => {
+  it("defaults token rotation to keeping current expiration for expiring tokens and never for non-expiring tokens", async () => {
     const user = userEvent.setup();
+    const neverExpiring: TenantToken = {
+      ...tenantTokens[0],
+      id: "never-token",
+      name: "Never token",
+      expires_at: null,
+    };
     renderWithMessages(
       <SettingsDashboard
         {...settingsProps}
         nowMs={nowMs}
-        tenantTokens={[tenantTokens[0]]}
+        tenantTokens={[tenantTokens[0], neverExpiring]}
       />,
     );
 
-    const row = screen.getByText("Future token").closest("article")!;
-    await user.click(within(row).getByRole("button", { name: "Rotate token Future token" }));
-
-    const dialog = screen.getByRole("dialog", { name: "Rotate tenant token" });
-    expect(within(dialog).getByLabelText("Expires at")).toHaveValue(
-      "2026-07-17T00:05:00Z",
-    );
-    expect(within(dialog).getByText(/keeps this expiration/)).toBeVisible();
-  });
-
-  it("clears an expired token expiration by default when rotating", async () => {
-    const user = userEvent.setup();
-    renderWithMessages(
-      <SettingsDashboard
-        {...settingsProps}
-        nowMs={nowMs}
-        tenantTokens={[tenantTokens[1]]}
-      />,
+    const expiringRow = screen.getByText("Future token").closest("article")!;
+    await user.click(
+      within(expiringRow).getByRole("button", {
+        name: "Rotate token Future token",
+      }),
     );
 
-    const row = screen.getByText("Past token").closest("article")!;
-    expect(within(row).getByRole("button", { name: "Revoke token Past token" })).toBeVisible();
-
-    await user.click(within(row).getByRole("button", { name: "Rotate token Past token" }));
-
     const dialog = screen.getByRole("dialog", { name: "Rotate tenant token" });
-    expect(within(dialog).getByLabelText("Expires at")).toHaveValue("");
+    expect(within(dialog).getByLabelText("Expiration")).toHaveValue("keep");
     expect(
-      within(dialog).getByText(/expired.*new future expiration/i),
-    ).toBeVisible();
+      dialog.querySelector<HTMLInputElement>('input[name="current_expires_at"]'),
+    ).toHaveValue("2026-07-17T00:05:00Z");
+
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+
+    const neverRow = screen.getByText("Never token").closest("article")!;
+    await user.click(
+      within(neverRow).getByRole("button", {
+        name: "Rotate token Never token",
+      }),
+    );
+
+    const neverDialog = screen.getByRole("dialog", {
+      name: "Rotate tenant token",
+    });
+    const neverSelect = within(neverDialog).getByLabelText("Expiration");
+    expect(neverSelect).toHaveValue("never");
+    expect(
+      Array.from(neverSelect.querySelectorAll("option")).map((o) => o.value),
+    ).toEqual(["7", "30", "365", "never"]);
   });
 
-  it("treats the exact expiration instant as expired and gives revoked precedence", () => {
+  it("hides expired tokens (including at exact expiration instant) and revoked tokens from Access & security", () => {
     const exactExpiration: TenantToken = {
       ...tenantTokens[0],
       id: "exact-expiration-token",
@@ -150,22 +156,22 @@ describe("Dashboard views", () => {
       <SettingsDashboard
         {...settingsProps}
         nowMs={nowMs}
-        tenantTokens={[exactExpiration, expiredAndRevoked]}
+        tenantTokens={[
+          tenantTokens[0],
+          tenantTokens[1],
+          exactExpiration,
+          expiredAndRevoked,
+        ]}
       />,
     );
 
-    const exactExpirationRow = screen
-      .getByText("Exact expiration token")
-      .closest("article")!;
-    const expiredAndRevokedRow = screen
-      .getByText("Expired and revoked token")
-      .closest("article")!;
-    expect(exactExpirationRow).toHaveAttribute("data-token-status", "expired");
-    expect(within(exactExpirationRow).getByText("Expired")).toBeVisible();
-    expect(expiredAndRevokedRow).toHaveAttribute(
-      "data-token-status",
-      "revoked",
-    );
-    expect(within(expiredAndRevokedRow).getByText("Revoked")).toBeVisible();
+    expect(screen.getByText("Future token")).toBeVisible();
+    expect(screen.queryByText("Past token")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Exact expiration token"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Expired and revoked token"),
+    ).not.toBeInTheDocument();
   });
 });

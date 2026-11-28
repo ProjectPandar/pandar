@@ -63,23 +63,49 @@ function renderSection(joinLinks: JoinLink[]) {
 }
 
 describe("InvitesSection", () => {
-  it("renders status chips with active links first", () => {
-    renderSection([
-      joinLink({ id: "link-expired", expires_at: "2020-01-01T00:00:00Z" }),
+  it("hides expired and revoked links while keeping active and exhausted links visible", () => {
+    const expired = joinLink({
+      id: "link-expired",
+      email_constraint: "expired@example.test",
+      expires_at: "2020-01-01T00:00:00Z",
+    });
+    const revoked = joinLink({
+      id: "link-revoked",
+      email_constraint: "revoked@example.test",
+      revoked_at: "2026-06-30T00:00:00Z",
+    });
+    const view = renderSection([
+      expired,
       joinLink({ id: "link-active", email_constraint: "vip@example.test" }),
-      joinLink({ id: "link-revoked", revoked_at: "2026-06-30T00:00:00Z" }),
+      revoked,
       joinLink({ id: "link-exhausted", used_count: 5 }),
     ]);
 
     expect(screen.getByText("Active")).toBeVisible();
-    expect(screen.getByText("Expired")).toBeVisible();
-    expect(screen.getByText("Revoked")).toBeVisible();
     expect(screen.getByText("Used up")).toBeVisible();
+    expect(screen.queryByText("expired@example.test")).not.toBeInTheDocument();
+    expect(screen.queryByText("revoked@example.test")).not.toBeInTheDocument();
     expect(screen.getByText(/vip@example\.test/)).toBeVisible();
-    expect(screen.getByText("1 active · 4 total")).toBeVisible();
+    expect(screen.getByText("1 active · 2 total")).toBeVisible();
 
     const revokeButtons = screen.getAllByRole("button", { name: /Revoke invite/ });
     expect(revokeButtons).toHaveLength(1);
+
+    view.rerender(
+      <NextIntlClientProvider locale="en" messages={en}>
+        <QueryClientProvider
+          client={
+            new QueryClient({
+              defaultOptions: { queries: { retry: false } },
+            })
+          }
+        >
+          <InvitesSection joinLinks={[expired, revoked]} tenant={tenant} />
+        </QueryClientProvider>
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getByText("No invite links")).toBeVisible();
+    expect(screen.getByText("0 active · 0 total")).toBeVisible();
   });
 
   it("keeps the selected role checked after a successful create", async () => {

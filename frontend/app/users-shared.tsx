@@ -33,14 +33,14 @@ export function YouBadge() {
   );
 }
 
-const INVITE_STATUS_TONES: Record<InviteStatus, string> = {
+type VisibleInviteStatus = Exclude<InviteStatus, "expired" | "revoked">;
+
+const INVITE_STATUS_TONES: Record<VisibleInviteStatus, string> = {
   active: "border-success/40 bg-success/10 text-success",
-  expired: "border-border bg-muted text-muted-foreground",
-  revoked: "border-destructive/40 bg-destructive/10 text-destructive",
   exhausted: "border-border bg-muted text-muted-foreground",
 };
 
-export function InviteStatusChip({ status }: { status: InviteStatus }) {
+export function InviteStatusChip({ status }: { status: VisibleInviteStatus }) {
   const t = useTranslations("usersPage");
   return (
     <span

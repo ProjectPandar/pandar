@@ -9,7 +9,9 @@ mod plan;
 mod sql;
 
 use options::CleanupCutoffs;
-pub use options::{CleanupMode, CleanupOptions, CleanupSummary};
+pub use options::{
+    CleanupMode, CleanupOptions, CleanupSummary, DEFAULT_REVOKED_TOKENS_RETENTION_DAYS,
+};
 use plan::{CleanupCategory, CleanupPlan, CleanupSelection};
 
 pub async fn cleanup_database(
@@ -26,6 +28,7 @@ pub async fn cleanup_database(
     let audit_events = plan.selection(CleanupCategory::AuditEvents);
     let plugin_login_tickets = plan.selection(CleanupCategory::PluginLoginTickets);
     let tenant_tokens = plan.selection(CleanupCategory::TenantTokens);
+    let join_links = plan.selection(CleanupCategory::JoinLinks);
     let summary = CleanupSummary {
         jobs: count(database, &jobs).await?,
         artifact_ids: strings(database, artifacts.sql, &artifacts.binds).await?,
@@ -37,6 +40,7 @@ pub async fn cleanup_database(
         audit_events: count(database, &audit_events).await?,
         plugin_login_tickets: count(database, &plugin_login_tickets).await?,
         tenant_tokens: count(database, &tenant_tokens).await?,
+        join_links: count(database, &join_links).await?,
     };
 
     if mode == CleanupMode::Execute {
@@ -61,6 +65,7 @@ async fn execute_cleanup(database: &Database, plan: &CleanupPlan) -> anyhow::Res
         CleanupCategory::AuditEvents,
         CleanupCategory::PluginLoginTickets,
         CleanupCategory::TenantTokens,
+        CleanupCategory::JoinLinks,
     ] {
         let selection = plan.selection(category);
         delete_category(

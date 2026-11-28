@@ -252,6 +252,7 @@ struct CleanupSummaryJson<'a> {
     audit_events: i64,
     plugin_login_tickets: i64,
     tenant_tokens: i64,
+    join_links: i64,
 }
 
 fn summary_json(
@@ -271,6 +272,7 @@ fn summary_json(
         audit_events: summary.audit_events,
         plugin_login_tickets: summary.plugin_login_tickets,
         tenant_tokens: summary.tenant_tokens,
+        join_links: summary.join_links,
     }
 }
 

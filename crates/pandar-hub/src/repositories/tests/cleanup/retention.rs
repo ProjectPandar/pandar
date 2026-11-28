@@ -89,6 +89,48 @@ pub(super) async fn insert_tenant_token(
     }
 }
 
+pub(super) async fn insert_join_link(
+    database: &Database,
+    id: &str,
+    created_at: &str,
+    revoked_at: Option<&str>,
+    expires_at: &str,
+) {
+    let tenant_id = ensure_cleanup_tenant(database).await;
+    match database {
+        Database::Sqlite(pool) => {
+            sqlx::query(
+                "INSERT INTO join_links (id, tenant_id, token_hash, role, email_constraint, expires_at, max_uses, used_count, created_by_user_id, revoked_at, created_at)
+                 VALUES (?1, ?2, ?3, 'viewer', NULL, ?4, 1, 0, NULL, ?5, ?6)",
+            )
+            .bind(id)
+            .bind(&tenant_id)
+            .bind(format!("hash-{id}"))
+            .bind(expires_at)
+            .bind(revoked_at)
+            .bind(created_at)
+            .execute(pool)
+            .await
+            .unwrap();
+        }
+        Database::Postgres(pool) => {
+            sqlx::query(
+                "INSERT INTO join_links (id, tenant_id, token_hash, role, email_constraint, expires_at, max_uses, used_count, created_by_user_id, revoked_at, created_at)
+                 VALUES ($1, $2, $3, 'viewer', NULL, $4, 1, 0, NULL, $5, $6)",
+            )
+            .bind(id)
+            .bind(&tenant_id)
+            .bind(format!("hash-{id}"))
+            .bind(expires_at)
+            .bind(revoked_at)
+            .bind(created_at)
+            .execute(pool)
+            .await
+            .unwrap();
+        }
+    }
+}
+
 async fn ensure_cleanup_tenant(database: &Database) -> String {
     let tenant_id = "cleanup-token-tenant";
     match database {

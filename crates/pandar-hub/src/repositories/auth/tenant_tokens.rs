@@ -1,8 +1,8 @@
 use anyhow::Context;
 use pandar_core::{TenantId, created_at_now};
 use sea_orm::{
-    ActiveModelTrait, ActiveValue::Set, ColumnTrait, ConnectionTrait, EntityTrait, QueryFilter,
-    QueryOrder, TransactionTrait,
+    ActiveModelTrait, ActiveValue::Set, ColumnTrait, Condition, ConnectionTrait, EntityTrait,
+    QueryFilter, QueryOrder, TransactionTrait,
 };
 mod cli;
 mod helpers;
@@ -221,6 +221,29 @@ impl AuthRepository {
             token,
             plaintext_token,
         })
+    }
+
+    pub async fn purge_expired_or_revoked_tenant_tokens(
+        &self,
+        cutoff: &str,
+    ) -> RepositoryResult<u64> {
+        let condition = Condition::any()
+            .add(
+                Condition::all()
+                    .add(tenant_tokens::Column::RevokedAt.is_not_null())
+                    .add(tenant_tokens::Column::RevokedAt.lt(cutoff)),
+            )
+            .add(
+                Condition::all()
+                    .add(tenant_tokens::Column::ExpiresAt.is_not_null())
+                    .add(tenant_tokens::Column::ExpiresAt.lt(cutoff)),
+            );
+        let deleted = tenant_tokens::Entity::delete_many()
+            .filter(condition)
+            .exec(&self.database.sea_orm_connection())
+            .await
+            .context("failed to purge expired or revoked tenant tokens")?;
+        Ok(deleted.rows_affected)
     }
 
     pub async fn create_plugin_token_from_ticket_tx(

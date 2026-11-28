@@ -100,11 +100,15 @@ pub async fn run_from_env() -> anyhow::Result<()> {
             format!("failed to bind pandar-hub observability to {observability_bind_addr}")
         })?;
 
+    let cleanup_options = crate::cleanup::CleanupOptions::from_env()
+        .context("failed to load retention cleanup configuration")?;
     tracing::info!(%bind_addr, "pandar-hub listening");
     tracing::info!(%grpc_bind_addr, "pandar-hub gRPC listening");
     tracing::info!(%observability_bind_addr, "pandar-hub observability listening");
     let _session_expiry = runtime::spawn_session_expiry(state.clone());
     let _artifact_lifecycle = runtime::spawn_artifact_lifecycle(state.clone());
+    let _auth_retention_cleanup =
+        runtime::spawn_auth_retention_cleanup(state.clone(), cleanup_options.revoked_tokens_days);
     let _control_plane = start_control_plane(state.clone()).await?;
     let http = axum::serve(listener, routes::router(state.clone()));
     let observability = axum::serve(

@@ -568,3 +568,97 @@ async fn join_link_audit_metadata_redacts_subject_and_secret() {
     assert!(!metadata.contains(&token));
     assert!(!metadata.contains("token_hash"));
 }
+
+#[tokio::test]
+async fn join_link_cleanup_loop_removes_stale_expired_and_revoked_links() {
+    use sea_orm::{ActiveModelTrait, ActiveValue::Set, EntityTrait};
+
+    let state = external_auth_state(state().await);
+    let app = router(state.clone());
+    let tenant = state
+        .tenants()
+        .create("join-cleanup", "Join Cleanup")
+        .await
+        .unwrap();
+    let admin = external_auth_token_for_role(
+        &state,
+        tenant.id,
+        crate::repositories::UserRole::TenantAdmin,
+        "join-cleanup-admin",
+    )
+    .await;
+
+    let now = time::OffsetDateTime::now_utc();
+    let ts = |days: i64| {
+        (now + time::Duration::days(days))
+            .format(&time::format_description::well_known::Rfc3339)
+            .unwrap()
+    };
+    let connection = state.database().sea_orm_connection();
+    for (email, expires_at, revoked_at) in [
+        ("active@example.test", ts(10), None),
+        ("recent-expired@example.test", ts(-3), None),
+        ("recent-revoked@example.test", ts(10), Some(ts(-3))),
+        ("stale-expired@example.test", ts(-8), None),
+        ("stale-revoked@example.test", ts(10), Some(ts(-8))),
+    ] {
+        let (status, body) = request_as(
+            app.clone(),
+            Method::POST,
+            &format!("/api/v1/tenants/{}/join-links", tenant.id),
+            join_link_create_with_email_body("viewer", email, 3600, 1),
+            &admin,
+        )
+        .await;
+        assert_eq!(status, StatusCode::CREATED);
+        let created = decode::<JoinLinkWithPlaintextResponse>(body);
+        let model = crate::entities::join_links::Entity::find_by_id(&created.join_link.id)
+            .one(&connection)
+            .await
+            .unwrap()
+            .unwrap();
+        let mut active: crate::entities::join_links::ActiveModel = model.into();
+        active.expires_at = Set(expires_at);
+        active.revoked_at = Set(revoked_at);
+        active.update(&connection).await.unwrap();
+    }
+
+    let handle = crate::runtime::spawn_auth_retention_cleanup(
+        state.clone(),
+        crate::cleanup::DEFAULT_REVOKED_TOKENS_RETENTION_DAYS,
+    );
+
+    let mut remaining_emails = Vec::new();
+    for _ in 0..40 {
+        let (status, listed) = request_as(
+            app.clone(),
+            Method::GET,
+            &format!("/api/v1/tenants/{}/join-links", tenant.id),
+            None,
+            &admin,
+        )
+        .await;
+        assert_eq!(status, StatusCode::OK);
+        let listed = decode::<JoinLinkListResponse>(listed);
+        remaining_emails = listed
+            .join_links
+            .into_iter()
+            .filter_map(|link| link.email_constraint)
+            .collect();
+        if remaining_emails.len() == 3 {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(25)).await;
+    }
+    handle.abort();
+
+    remaining_emails.sort();
+    assert_eq!(
+        remaining_emails,
+        vec![
+            "active@example.test".to_owned(),
+            "recent-expired@example.test".to_owned(),
+            "recent-revoked@example.test".to_owned(),
+        ]
+    );
+}

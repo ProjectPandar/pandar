@@ -2,6 +2,8 @@ use anyhow::Context;
 use serde::Serialize;
 use time::{Duration, OffsetDateTime, format_description::well_known::Rfc3339};
 
+pub const DEFAULT_REVOKED_TOKENS_RETENTION_DAYS: i64 = 7;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CleanupMode {
     DryRun,
@@ -28,6 +30,7 @@ pub struct CleanupSummary {
     pub audit_events: i64,
     pub plugin_login_tickets: i64,
     pub tenant_tokens: i64,
+    pub join_links: i64,
     #[serde(skip)]
     pub artifact_ids: Vec<String>,
     #[serde(skip)]
@@ -42,7 +45,10 @@ impl CleanupOptions {
             machine_events_days: retention_days("PANDAR_RETENTION_MACHINE_EVENTS_DAYS", 30)?,
             audit_days: retention_days("PANDAR_RETENTION_AUDIT_DAYS", 365)?,
             expired_tickets_days: retention_days("PANDAR_RETENTION_EXPIRED_TICKETS_DAYS", 7)?,
-            revoked_tokens_days: retention_days("PANDAR_RETENTION_REVOKED_TOKENS_DAYS", 365)?,
+            revoked_tokens_days: retention_days(
+                "PANDAR_RETENTION_REVOKED_TOKENS_DAYS",
+                DEFAULT_REVOKED_TOKENS_RETENTION_DAYS,
+            )?,
         })
     }
 }
@@ -55,7 +61,7 @@ impl Default for CleanupOptions {
             machine_events_days: 30,
             audit_days: 365,
             expired_tickets_days: 7,
-            revoked_tokens_days: 365,
+            revoked_tokens_days: DEFAULT_REVOKED_TOKENS_RETENTION_DAYS,
         }
     }
 }

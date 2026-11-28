@@ -11,6 +11,9 @@ use crate::{
     sessions::{cutoff_timestamp, live_commands::fail_pending_live_commands},
 };
 
+mod auth_retention;
+pub use auth_retention::spawn_auth_retention_cleanup;
+
 const STALE_SESSION_TIMEOUT: Duration = Duration::from_secs(45);
 const STALE_SESSION_SWEEP_INTERVAL: Duration = Duration::from_secs(15);
 const STALE_LIVE_COMMAND_TIMEOUT: Duration = Duration::from_secs(300);

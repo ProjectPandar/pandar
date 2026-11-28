@@ -152,3 +152,13 @@ async fn postgres_external_onboarding_behavior_when_configured() {
     assert!(!audit_json.contains("operator-subject"));
     assert!(!audit_json.contains(&link.plaintext_token));
 }
+
+#[tokio::test]
+async fn postgres_auth_retention_cleanup_when_configured() {
+    let Some(database) = postgres_database().await else {
+        eprintln!("skipping PostgreSQL test; PANDAR_TEST_POSTGRES_URL is not set");
+        return;
+    };
+
+    crate::repositories::tests::cleanup::exercise_auth_retention_cleanup(database.clone()).await;
+}

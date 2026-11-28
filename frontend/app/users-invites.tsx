@@ -48,13 +48,19 @@ export function InvitesSection({
   const t = useTranslations("usersPage");
   const nowMs = useNowMs();
   const [createOpen, setCreateOpen] = useState(false);
-  const sorted = useMemo(
-    () => sortJoinLinks(joinLinks, nowMs),
+  const visibleLinks = useMemo(
+    () =>
+      sortJoinLinks(joinLinks, nowMs).filter((link) => {
+        const status = inviteStatus(link, nowMs);
+        return status !== "expired" && status !== "revoked";
+      }),
     [joinLinks, nowMs],
   );
   const activeCount = useMemo(
-    () => sorted.filter((link) => inviteStatus(link, nowMs) === "active").length,
-    [sorted, nowMs],
+    () =>
+      visibleLinks.filter((link) => inviteStatus(link, nowMs) === "active")
+        .length,
+    [visibleLinks, nowMs],
   );
 
   return (
@@ -62,7 +68,10 @@ export function InvitesSection({
       <SectionHeader
         title={t("invitesTitle")}
         subtitle={t("invitesSubtitle", { name: tenant.display_name })}
-        meta={t("invitesMeta", { active: activeCount, total: joinLinks.length })}
+        meta={t("invitesMeta", {
+          active: activeCount,
+          total: visibleLinks.length,
+        })}
         actions={
           <Button
             className="h-8 gap-1.5 px-2.5"
@@ -75,11 +84,11 @@ export function InvitesSection({
           </Button>
         }
       />
-      {joinLinks.length === 0 ? (
+      {visibleLinks.length === 0 ? (
         <EmptyState title={t("noInvitesTitle")} message={t("noInvitesMessage")} />
       ) : (
         <div className="divide-y divide-border">
-          {sorted.map((link) => (
+          {visibleLinks.map((link) => (
             <InviteRow
               key={link.id}
               link={link}
@@ -111,6 +120,7 @@ function InviteRow({
   const locale = useLocale();
   const formatDate = useAdminDate();
   const status = inviteStatus(link, nowMs);
+  const visibleStatus = status === "exhausted" ? "exhausted" : "active";
   const relative = getRelativeTime(link.expires_at, nowMs, locale);
   const usagePercent = Math.min(
     100,
@@ -123,7 +133,7 @@ function InviteRow({
     >
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
-          <InviteStatusChip status={status} />
+          <InviteStatusChip status={visibleStatus} />
           <Tag value={link.role} />
           <span className="text-xs text-muted-foreground">
             {t("usage", { used: link.used_count, max: link.max_uses })}
@@ -136,20 +146,18 @@ function InviteRow({
           {" · "}
           <span title={formatDate(link.expires_at)}>
             {relative
-              ? status === "expired"
-                ? t("expiredRelative", { relative: relative.relative })
-                : t("expiresRelative", { relative: relative.relative })
+              ? t("expiresRelative", { relative: relative.relative })
               : formatDate(link.expires_at)}
           </span>
         </div>
         <div className="mt-2 h-1 w-32 overflow-hidden rounded-full bg-muted">
           <div
-            className={`h-full rounded-full ${status === "active" ? "bg-primary" : "bg-muted-foreground/40"}`}
+            className={`h-full rounded-full ${visibleStatus === "active" ? "bg-primary" : "bg-muted-foreground/40"}`}
             style={{ width: `${usagePercent}%` }}
           />
         </div>
       </div>
-      {status === "active" ? (
+      {visibleStatus === "active" ? (
         <RevokeInviteButton link={link} tenant={tenant} />
       ) : null}
     </div>

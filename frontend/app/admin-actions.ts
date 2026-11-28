@@ -58,19 +58,49 @@ function normalizeScopes(raw: string): string[] {
   });
 }
 
+const TOKEN_EXPIRY_DAYS = new Set([7, 30, 365]);
+
+function resolveTokenExpiresAt(
+  formData: FormData,
+  options: { allowKeep?: boolean } = {},
+): { ok: true; value: string | null } | { ok: false; error: string } {
+  const selection = stringField(formData, "expires_in_days").trim();
+  if (selection === "never") {
+    return { ok: true, value: null };
+  }
+  if (options.allowKeep && selection === "keep") {
+    return {
+      ok: true,
+      value: nullableField(formData, "current_expires_at"),
+    };
+  }
+  const days = Number(selection);
+  if (!Number.isInteger(days) || !TOKEN_EXPIRY_DAYS.has(days)) {
+    return { ok: false, error: "invalid_expires_at" };
+  }
+  return {
+    ok: true,
+    value: new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString(),
+  };
+}
+
 export async function createTenantToken(
   _previousState: SecretActionState,
   formData: FormData,
 ): Promise<SecretActionState> {
   await requireAuth();
   const tenantId = stringField(formData, "tenant_id");
+  const expiresAt = resolveTokenExpiresAt(formData);
+  if (!expiresAt.ok) {
+    return expiresAt;
+  }
   const scopes = normalizeScopes(stringField(formData, "scopes"));
   const response = await postJson(
     `/api/v1/tenants/${apiIdSegment(tenantId, "tenant_id")}/tenant-tokens`,
     {
       name: stringField(formData, "name"),
       scopes,
-      expires_at: nullableField(formData, "expires_at"),
+      expires_at: expiresAt.value,
     },
   );
   if (!response.ok) {
@@ -117,10 +147,14 @@ export async function rotateTenantToken(
   await requireAuth();
   const tenantId = stringField(formData, "tenant_id");
   const tokenId = stringField(formData, "token_id");
+  const expiresAt = resolveTokenExpiresAt(formData, { allowKeep: true });
+  if (!expiresAt.ok) {
+    return expiresAt;
+  }
   const response = await postJson(
     `/api/v1/tenants/${apiIdSegment(tenantId, "tenant_id")}/tenant-tokens/${apiIdSegment(tokenId, "token_id")}/rotate`,
     {
-      expires_at: nullableField(formData, "expires_at"),
+      expires_at: expiresAt.value,
     },
   );
   if (!response.ok) {

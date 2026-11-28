@@ -110,6 +110,12 @@ FROM tenant_tokens
 WHERE (revoked_at IS NOT NULL AND revoked_at < ?)
    OR (expires_at IS NOT NULL AND expires_at < ?)";
 
+pub(super) const JOIN_LINK_SELECTION_SQL: &str = "\
+SELECT id
+FROM join_links
+WHERE (revoked_at IS NOT NULL AND revoked_at < ?)
+   OR (expires_at < ?)";
+
 pub(super) const DROP_ARTIFACT_CANDIDATES_SQL: &str =
     "DROP TABLE IF EXISTS cleanup_artifact_candidates";
 

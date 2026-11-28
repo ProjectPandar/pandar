@@ -165,6 +165,36 @@ export function Input({
   );
 }
 
+export function Select({
+  name,
+  label,
+  defaultValue,
+  disabled = false,
+  describedBy,
+  children,
+}: {
+  name: string;
+  label: string;
+  defaultValue?: string;
+  disabled?: boolean;
+  describedBy?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <FormField label={label}>
+      <select
+        aria-describedby={describedBy}
+        className={inputClasses}
+        defaultValue={defaultValue}
+        disabled={disabled}
+        name={name}
+      >
+        {children}
+      </select>
+    </FormField>
+  );
+}
+
 export function PrimaryButton({
   label,
   disabled = false,

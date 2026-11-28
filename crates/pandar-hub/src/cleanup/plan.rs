@@ -9,6 +9,7 @@ pub(super) enum CleanupCategory {
     AuditEvents,
     PluginLoginTickets,
     TenantTokens,
+    JoinLinks,
 }
 
 pub(super) struct CleanupPlan {
@@ -78,6 +79,12 @@ impl CleanupPlan {
                 table: "tenant_tokens",
                 label: "tenant token",
                 sql: TENANT_TOKEN_SELECTION_SQL,
+                binds: vec![&self.cutoffs.tenant_tokens, &self.cutoffs.tenant_tokens],
+            },
+            CleanupCategory::JoinLinks => CleanupSelection {
+                table: "join_links",
+                label: "join link",
+                sql: JOIN_LINK_SELECTION_SQL,
                 binds: vec![&self.cutoffs.tenant_tokens, &self.cutoffs.tenant_tokens],
             },
         }

@@ -83,7 +83,38 @@ describe("tenant token dialogs", () => {
     vi.clearAllMocks();
   });
 
-  it("locks creation, invalidates token siblings, and clears the one-time secret after closing", async () => {
+  it("hides expired and revoked tokens from the UI and shows empty state when none are active", () => {
+    const expiredToken: TenantToken = {
+      ...activeToken,
+      id: "token-expired",
+      name: "Expired token",
+      expires_at: "2026-07-16T23:59:59Z",
+      revoked_at: null,
+    };
+    const revokedToken: TenantToken = {
+      ...activeToken,
+      id: "token-revoked",
+      name: "Revoked token",
+      expires_at: null,
+      revoked_at: "2026-07-16T12:00:00Z",
+    };
+
+    const view = render(
+      <TokenPanel tokens={[activeToken, expiredToken, revokedToken]} />,
+    );
+
+    expect(screen.getByText("Studio token")).toBeVisible();
+    expect(screen.queryByText("Expired token")).not.toBeInTheDocument();
+    expect(screen.queryByText("Revoked token")).not.toBeInTheDocument();
+    expect(screen.getByText(/1 active/)).toBeVisible();
+
+    view.rerender(<TokenPanel tokens={[expiredToken, revokedToken]} />);
+
+    expect(screen.getByText("No tenant tokens")).toBeVisible();
+    expect(screen.getByText(/0 active/)).toBeVisible();
+  });
+
+  it("locks creation, uses expiration presets dropdown, invalidates token siblings, and clears the one-time secret after closing", async () => {
     const user = userEvent.setup();
     const request = deferred<SecretActionState>();
     const queryClient = new QueryClient();
@@ -95,7 +126,23 @@ describe("tenant token dialogs", () => {
     const dialog = screen.getByRole("dialog", {
       name: "Create tenant token",
     });
+    const expirationSelect = within(dialog).getByLabelText("Expiration");
+    expect(expirationSelect.tagName).toBe("SELECT");
+    expect(
+      Array.from(expirationSelect.querySelectorAll("option")).map((option) => ({
+        value: option.value,
+        label: option.textContent,
+      })),
+    ).toEqual([
+      { value: "7", label: "7 days" },
+      { value: "30", label: "30 days" },
+      { value: "365", label: "365 days" },
+      { value: "never", label: "Never expires" },
+    ]);
+    expect(expirationSelect).toHaveValue("30");
+
     await user.type(within(dialog).getByLabelText("Name"), "CI token");
+    await user.selectOptions(expirationSelect, "365");
     await user.click(
       within(dialog).getByRole("button", { name: "Create token" }),
     );
@@ -106,6 +153,9 @@ describe("tenant token dialogs", () => {
         within(dialog).getByRole("button", { name: "Creating..." }),
       ).toBeDisabled();
     });
+    const submittedFormData = actionMocks.createTenantToken.mock
+      .calls[0]?.[1] as FormData;
+    expect(submittedFormData.get("expires_in_days")).toBe("365");
     expect(
       within(dialog).getByRole("button", { name: "Cancel" }),
     ).toBeDisabled();
@@ -140,7 +190,7 @@ describe("tenant token dialogs", () => {
     ).toBeVisible();
     expect(within(dialog).getByLabelText("Name")).toBeDisabled();
     expect(within(dialog).getByLabelText("Scopes")).toBeDisabled();
-    expect(within(dialog).getByLabelText("Expires at")).toBeDisabled();
+    expect(within(dialog).getByLabelText("Expiration")).toBeDisabled();
     expect(
       within(dialog).queryByRole("button", { name: "Create token" }),
     ).not.toBeInTheDocument();
@@ -173,7 +223,7 @@ describe("tenant token dialogs", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("invalidates token siblings and keeps the rotated secret visible when refreshed props revoke the old token", async () => {
+  it("invalidates token siblings and keeps the rotated secret visible when refreshed props revoke and hide the old token", async () => {
     const user = userEvent.setup();
     const request = deferred<SecretActionState>();
     const queryClient = new QueryClient();
@@ -186,6 +236,9 @@ describe("tenant token dialogs", () => {
 
     await user.click(within(row).getByRole("button", { name: "Rotate token Studio token" }));
     const dialog = screen.getByRole("dialog", { name: "Rotate tenant token" });
+    const expirationSelect = within(dialog).getByLabelText("Expiration");
+    expect(expirationSelect.tagName).toBe("SELECT");
+    expect(expirationSelect).toHaveValue("keep");
     await user.click(
       within(dialog).getByRole("button", { name: "Rotate token" }),
     );
@@ -221,7 +274,7 @@ describe("tenant token dialogs", () => {
     expect(
       screen.getByText("pandar_tenant_rotate-once").closest('[data-motion="secret-result"]'),
     ).toBeVisible();
-    expect(within(dialog).getByLabelText("Expires at")).toBeDisabled();
+    expect(within(dialog).getByLabelText("Expiration")).toBeDisabled();
     expect(
       within(dialog).queryByRole("button", { name: "Rotate token" }),
     ).not.toBeInTheDocument();
@@ -258,10 +311,7 @@ describe("tenant token dialogs", () => {
       "data-token-status",
       "active",
     );
-    expect(screen.getByTitle("token-old").closest("article")).toHaveAttribute(
-      "data-token-status",
-      "revoked",
-    );
+    expect(screen.queryByTitle("token-old")).not.toBeInTheDocument();
   });
 
   it("locks revoke confirmation and invalidates token siblings on completion", async () => {

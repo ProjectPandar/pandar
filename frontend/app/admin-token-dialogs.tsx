@@ -19,7 +19,12 @@ import {
   revokeTenantToken,
   rotateTenantToken,
 } from "./admin-actions";
-import { Input, PrimaryButton, SecretActionResult } from "./admin-panel-shared";
+import {
+  Input,
+  PrimaryButton,
+  SecretActionResult,
+  Select,
+} from "./admin-panel-shared";
 import type { TenantToken } from "./dashboard-types";
 import {
   mutationResources,
@@ -27,7 +32,13 @@ import {
 } from "./mutation-invalidation";
 import { useActionStatusFeedback } from "./mutation-feedback";
 
-type TokenStatus = "active" | "expired" | "revoked";
+const TOKEN_EXPIRY_PRESETS = [
+  { value: "7", labelKey: "tokenExpiry.7d" },
+  { value: "30", labelKey: "tokenExpiry.30d" },
+  { value: "365", labelKey: "tokenExpiry.365d" },
+  { value: "never", labelKey: "tokenExpiry.never" },
+] as const;
+
 export function CreateTenantTokenDialog({ tenantId }: { tenantId: string }) {
   const [sessionKey, setSessionKey] = useState(0);
 
@@ -133,16 +144,18 @@ function CreateTenantTokenDialogSession({
           <p className="-mt-2 text-xs text-muted-foreground" id={`${helpId}-scopes`}>
             {t("scopesHelp")}
           </p>
-          <Input
-            name="expires_at"
-            label={t("expiresAt")}
-            describedBy={`${helpId}-expires`}
+          <Select
+            defaultValue="30"
             disabled={completed}
-            placeholder="2026-12-31T00:00:00Z"
-          />
-          <p className="-mt-2 text-xs text-muted-foreground" id={`${helpId}-expires`}>
-            {t("expiresAtHelp")}
-          </p>
+            label={t("tokenExpirationLabel")}
+            name="expires_in_days"
+          >
+            {TOKEN_EXPIRY_PRESETS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {t(option.labelKey)}
+              </option>
+            ))}
+          </Select>
           <SecretActionResult state={state} />
           <DialogFooter>
             {completed ? (
@@ -175,24 +188,25 @@ function CreateTenantTokenDialogSession({
   );
 }
 
-export function RotateTenantTokenForm({
+export function RotateTenantTokenDialog({
   tenantId,
   token,
-  status,
+  onClose,
 }: {
   tenantId: string;
-  token: TenantToken;
-  status: TokenStatus;
+  token: TenantToken | null;
+  onClose: () => void;
 }) {
-  const [sessionKey, setSessionKey] = useState(0);
+  if (!token) {
+    return null;
+  }
 
   return (
     <RotateTenantTokenDialogSession
-      key={sessionKey}
+      key={token.id}
       tenantId={tenantId}
       token={token}
-      status={status}
-      onClosed={() => setSessionKey((current) => current + 1)}
+      onClosed={onClose}
     />
   );
 }
@@ -200,16 +214,13 @@ export function RotateTenantTokenForm({
 function RotateTenantTokenDialogSession({
   tenantId,
   token,
-  status,
   onClosed,
 }: {
   tenantId: string;
   token: TenantToken;
-  status: TokenStatus;
   onClosed: () => void;
 }) {
   const t = useTranslations("admin");
-  const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const [state, formAction, pending] = useActionState(rotateTenantToken, null);
   useInvalidateOnSuccess(
@@ -222,29 +233,13 @@ function RotateTenantTokenDialogSession({
 
   return (
     <Dialog
-      open={open}
+      open
       onOpenChange={(nextOpen) => {
-        if (nextOpen) {
-          setOpen(true);
-        } else if (!pending) {
+        if (!nextOpen && !pending) {
           onClosed();
         }
       }}
     >
-      {status !== "revoked" ? (
-        <DialogTrigger
-          render={
-            <Button
-              aria-label={t("rotateFor", { name: token.name })}
-              className="flex-1 md:flex-none"
-              size="sm"
-              variant="outline"
-            />
-          }
-        >
-          {t("rotate")}
-        </DialogTrigger>
-      ) : null}
       <DialogContent
         className="sm:max-w-lg"
         closeLabel={t("close")}
@@ -267,15 +262,28 @@ function RotateTenantTokenDialogSession({
         >
           <input name="tenant_id" type="hidden" value={tenantId} />
           <input name="token_id" type="hidden" value={token.id} />
-          <Input
-            name="expires_at"
-            label={t("expiresAt")}
-            disabled={completed}
-            defaultValue={status === "expired" ? "" : (token.expires_at ?? "")}
-            placeholder="2026-12-31T00:00:00Z"
+          <input
+            name="current_expires_at"
+            type="hidden"
+            value={token.expires_at ?? ""}
           />
+          <Select
+            defaultValue={token.expires_at ? "keep" : "never"}
+            disabled={completed}
+            label={t("tokenExpirationLabel")}
+            name="expires_in_days"
+          >
+            {token.expires_at ? (
+              <option value="keep">{t("tokenExpiry.keep")}</option>
+            ) : null}
+            {TOKEN_EXPIRY_PRESETS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {t(option.labelKey)}
+              </option>
+            ))}
+          </Select>
           <p className="-mt-2 text-xs text-muted-foreground">
-            {t(status === "expired" ? "rotateExpiredHelp" : "rotateExpiryHelp")}
+            {t("rotateExpiryHelp")}
           </p>
           <SecretActionResult state={state} />
           <DialogFooter>

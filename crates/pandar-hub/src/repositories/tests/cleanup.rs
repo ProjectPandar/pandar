@@ -5,7 +5,7 @@ pub(in crate::repositories::tests) mod lifecycle;
 mod retention;
 pub(super) mod storage;
 
-use retention::{insert_tenant_token, insert_ticket};
+use retention::{insert_join_link, insert_tenant_token, insert_ticket};
 use storage::RecordingArtifactStorage;
 
 #[tokio::test]
@@ -238,6 +238,172 @@ async fn cleanup_uses_terminal_time_for_tokens_and_tickets() {
 
     assert_eq!(dry_run.plugin_login_tickets, 1);
     assert_eq!(dry_run.tenant_tokens, 1);
+}
+
+#[tokio::test]
+async fn auth_retention_cleanup_purges_tokens_and_join_links_past_seven_day_window() {
+    exercise_auth_retention_cleanup(sqlite_database().await).await;
+}
+
+pub(in crate::repositories::tests) async fn exercise_auth_retention_cleanup(database: Database) {
+    let now = time::OffsetDateTime::now_utc();
+    let fmt = |offset: time::Duration| {
+        (now + offset)
+            .format(&time::format_description::well_known::Rfc3339)
+            .unwrap()
+    };
+    let created_old = fmt(-time::Duration::days(60));
+    let future_10d = fmt(time::Duration::days(10));
+    let future_30d = fmt(time::Duration::days(30));
+    let past_3d = fmt(-time::Duration::days(3));
+    let past_8d = fmt(-time::Duration::days(8));
+    let cutoff_7d = fmt(-time::Duration::days(7));
+
+    insert_tenant_token(&database, "active-never", &created_old, None, None).await;
+    insert_tenant_token(
+        &database,
+        "active-future",
+        &created_old,
+        None,
+        Some(&future_10d),
+    )
+    .await;
+    insert_tenant_token(
+        &database,
+        "recent-expired",
+        &created_old,
+        None,
+        Some(&past_3d),
+    )
+    .await;
+    insert_tenant_token(
+        &database,
+        "recent-revoked",
+        &created_old,
+        Some(&past_3d),
+        None,
+    )
+    .await;
+    insert_tenant_token(
+        &database,
+        "stale-expired",
+        &created_old,
+        None,
+        Some(&past_8d),
+    )
+    .await;
+    insert_tenant_token(
+        &database,
+        "stale-revoked",
+        &created_old,
+        Some(&past_8d),
+        Some(&future_30d),
+    )
+    .await;
+
+    insert_join_link(&database, "join-active", &created_old, None, &future_10d).await;
+    insert_join_link(
+        &database,
+        "join-recent-expired",
+        &created_old,
+        None,
+        &past_3d,
+    )
+    .await;
+    insert_join_link(
+        &database,
+        "join-recent-revoked",
+        &created_old,
+        Some(&past_3d),
+        &future_30d,
+    )
+    .await;
+    insert_join_link(
+        &database,
+        "join-stale-expired",
+        &created_old,
+        None,
+        &past_8d,
+    )
+    .await;
+    insert_join_link(
+        &database,
+        "join-stale-revoked",
+        &created_old,
+        Some(&past_8d),
+        &future_30d,
+    )
+    .await;
+
+    let dry_run = cleanup_database(
+        &database,
+        None,
+        CleanupOptions::default(),
+        CleanupMode::DryRun,
+    )
+    .await
+    .unwrap();
+    assert_eq!(dry_run.tenant_tokens, 2);
+    assert_eq!(dry_run.join_links, 2);
+
+    let auth = AuthRepository::new(database.clone());
+    let deleted_tokens = auth
+        .purge_expired_or_revoked_tenant_tokens(&cutoff_7d)
+        .await
+        .unwrap();
+    assert_eq!(deleted_tokens, 2);
+    let deleted_links = auth
+        .purge_expired_or_revoked_join_links(&cutoff_7d)
+        .await
+        .unwrap();
+    assert_eq!(deleted_links, 2);
+
+    let remaining_tokens: std::collections::BTreeSet<String> = match &database {
+        Database::Sqlite(pool) => sqlx::query_scalar::<_, String>("SELECT id FROM tenant_tokens")
+            .fetch_all(pool)
+            .await
+            .unwrap()
+            .into_iter()
+            .collect(),
+        Database::Postgres(pool) => sqlx::query_scalar::<_, String>("SELECT id FROM tenant_tokens")
+            .fetch_all(pool)
+            .await
+            .unwrap()
+            .into_iter()
+            .collect(),
+    };
+    assert_eq!(
+        remaining_tokens,
+        std::collections::BTreeSet::from([
+            "active-never".to_owned(),
+            "active-future".to_owned(),
+            "recent-expired".to_owned(),
+            "recent-revoked".to_owned(),
+        ])
+    );
+
+    let remaining_links: std::collections::BTreeSet<String> = match &database {
+        Database::Sqlite(pool) => sqlx::query_scalar::<_, String>("SELECT id FROM join_links")
+            .fetch_all(pool)
+            .await
+            .unwrap()
+            .into_iter()
+            .collect(),
+        Database::Postgres(pool) => sqlx::query_scalar::<_, String>("SELECT id FROM join_links")
+            .fetch_all(pool)
+            .await
+            .unwrap()
+            .into_iter()
+            .collect(),
+    };
+    assert_eq!(
+        remaining_links,
+        std::collections::BTreeSet::from([
+            "join-active".to_owned(),
+            "join-recent-expired".to_owned(),
+            "join-recent-revoked".to_owned(),
+        ])
+    );
 }
 
 async fn make_old(database: &Database, job_id: &str, command_id: &str) {

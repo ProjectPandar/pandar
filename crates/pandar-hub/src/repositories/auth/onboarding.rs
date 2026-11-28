@@ -1,6 +1,6 @@
 use anyhow::Context;
 use pandar_core::{Tenant, TenantId, created_at_now};
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
+use sea_orm::{ColumnTrait, Condition, EntityTrait, QueryFilter, QueryOrder};
 use serde::Serialize;
 use time::{Duration, OffsetDateTime};
 
@@ -233,6 +233,22 @@ impl AuthRepository {
             .await
             .context("failed to commit join link revoke transaction")?;
         Ok(join_link)
+    }
+
+    pub async fn purge_expired_or_revoked_join_links(&self, cutoff: &str) -> RepositoryResult<u64> {
+        let condition = Condition::any()
+            .add(
+                Condition::all()
+                    .add(join_links::Column::RevokedAt.is_not_null())
+                    .add(join_links::Column::RevokedAt.lt(cutoff)),
+            )
+            .add(join_links::Column::ExpiresAt.lt(cutoff));
+        let deleted = join_links::Entity::delete_many()
+            .filter(condition)
+            .exec(&self.database.sea_orm_connection())
+            .await
+            .context("failed to purge expired or revoked join links")?;
+        Ok(deleted.rows_affected)
     }
 
     pub async fn accept_join_link(
