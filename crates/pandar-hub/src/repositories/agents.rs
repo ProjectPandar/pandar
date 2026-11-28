@@ -7,6 +7,7 @@ use sea_orm::{
 use serde::Serialize;
 
 mod connections;
+mod orphaned_sessions;
 mod pairing;
 mod rows;
 
@@ -21,7 +22,10 @@ pub(crate) use connections::{
 pub use pairing::AGENT_CREDENTIAL_PREFIX;
 
 use crate::{
-    db::{Database, UniqueConstraint, is_foreign_key_violation, is_unique_violation},
+    db::{
+        Database, TransactionDialectExt, UniqueConstraint, is_foreign_key_violation,
+        is_unique_violation,
+    },
     entities::{agents, tenants},
     repositories::{
         AuditActor, RepositoryError, RepositoryResult,
@@ -132,7 +136,7 @@ impl AgentRepository {
     ) -> RepositoryResult<Agent> {
         let connection = self.database.sea_orm_connection();
         let tx = connection
-            .begin()
+            .begin_write_transaction()
             .await
             .context("failed to begin agent delete audit transaction")?;
         let Some(model) = agents::Entity::find_by_id(agent_id.to_string())
@@ -222,7 +226,7 @@ impl AgentRepository {
     ) -> RepositoryResult<AgentCredentialRecord> {
         let connection = self.database.sea_orm_connection();
         let tx = connection
-            .begin()
+            .begin_write_transaction()
             .await
             .context("failed to begin agent credential rotation transaction")?;
         let Some(agent) = agents::Entity::find_by_id(agent_id.to_string())
@@ -273,7 +277,7 @@ impl AgentRepository {
     ) -> RepositoryResult<AgentCredentialRecord> {
         let connection = self.database.sea_orm_connection();
         let tx = connection
-            .begin()
+            .begin_write_transaction()
             .await
             .context("failed to begin agent credential revocation transaction")?;
         let Some(agent) = agents::Entity::find_by_id(agent_id.to_string())
