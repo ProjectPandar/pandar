@@ -5,8 +5,10 @@ use futures_util::StreamExt;
 use tokio::{sync::oneshot, task::JoinHandle};
 
 use crate::{
-    AppState, cluster::HubControlMessage, metrics::ControlPlaneMetric,
-    sessions::live_commands::fail_pending_live_commands,
+    AppState,
+    cluster::HubControlMessage,
+    metrics::ControlPlaneMetric,
+    sessions::{cutoff_timestamp, live_commands::fail_pending_live_commands},
 };
 
 const STALE_SESSION_TIMEOUT: Duration = Duration::from_secs(45);
@@ -233,7 +235,17 @@ async fn expire_stale_sessions_with_timeout(
             .publish_agent_printers_projection_changes(tenant_id, agent_id)
             .await;
     }
-    Ok(expired_count)
+    let orphaned = state
+        .agents()
+        .expire_orphaned_online_sessions(now, cutoff_timestamp(now, timeout)?)
+        .await
+        .context("failed to expire orphaned online agent sessions")?;
+    for agent in &orphaned {
+        state
+            .publish_agent_printers_projection_changes(agent.tenant_id, agent.id)
+            .await;
+    }
+    Ok(expired_count + orphaned.len())
 }
 
 async fn mark_stalled_pending_jobs_once(state: &AppState, now: &str) -> anyhow::Result<usize> {

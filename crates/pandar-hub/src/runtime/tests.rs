@@ -64,6 +64,52 @@ async fn runtime_expiry_tick_marks_stale_agent_offline() {
 }
 
 #[tokio::test]
+async fn runtime_expiry_tick_retires_online_agent_no_instance_owns() {
+    let state = AppState::sqlite_for_tests().await.unwrap();
+    let tenant = state.tenants().create("acme", "Acme Labs").await.unwrap();
+    let orphaned = state.agents().create(tenant.id, "orphaned").await.unwrap();
+    let live = state.agents().create(tenant.id, "live").await.unwrap();
+    // Only persisted sessions exist, as after the owning instance restarted.
+    for (agent, last_seen_at) in [
+        (&orphaned, "2026-06-20T00:00:00Z"),
+        (&live, "2026-06-20T00:00:50Z"),
+    ] {
+        state
+            .agents()
+            .claim_online_session(
+                tenant.id,
+                agent.id,
+                &SessionToken::new().persisted_id(),
+                "0.1.0",
+                last_seen_at,
+            )
+            .await
+            .unwrap();
+    }
+
+    let expired =
+        expire_stale_sessions_with_timeout(&state, "2026-06-20T00:01:00Z", Duration::from_secs(45))
+            .await
+            .unwrap();
+
+    assert_eq!(expired, 1);
+    assert_eq!(
+        state
+            .agents()
+            .get(orphaned.id)
+            .await
+            .unwrap()
+            .unwrap()
+            .status,
+        AgentStatus::Offline
+    );
+    assert_eq!(
+        state.agents().get(live.id).await.unwrap().unwrap().status,
+        AgentStatus::Online
+    );
+}
+
+#[tokio::test]
 async fn runtime_stall_sweep_publishes_persisted_job_progress() {
     let state = AppState::sqlite_for_tests().await.unwrap();
     let (_control_plane, ready) = spawn_control_plane_ready(state.clone());

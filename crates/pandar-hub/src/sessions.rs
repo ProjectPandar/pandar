@@ -376,7 +376,7 @@ impl Default for SessionRegistry {
     }
 }
 
-fn cutoff_timestamp(now: &str, timeout: Duration) -> RepositoryResult<OffsetDateTime> {
+pub(crate) fn cutoff_timestamp(now: &str, timeout: Duration) -> RepositoryResult<OffsetDateTime> {
     let timeout =
         time::Duration::try_from(timeout).context("failed to convert stale session timeout")?;
     OffsetDateTime::parse(now, &Rfc3339)

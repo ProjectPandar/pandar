@@ -1,6 +1,7 @@
 use super::*;
 use requests::agent_name_body;
 use serde::{Deserialize, de::DeserializeOwned};
+use time::{Duration as TimeDuration, OffsetDateTime, format_description::well_known::Rfc3339};
 
 mod requests;
 
@@ -388,6 +389,45 @@ async fn agent_delete_rejects_online_agent() {
     assert_eq!(status, StatusCode::CONFLICT);
     assert_eq!(decode::<ErrorResponse>(body).error, "agent_online");
     assert!(state.agents().get(agent_id).await.unwrap().is_some());
+}
+
+#[tokio::test]
+async fn agent_left_online_by_restart_can_be_deleted_once_stale_session_expires() {
+    let state = state().await;
+    let app = router(state.clone());
+    let (_, agent, token) = tenant_and_agent(&state, app.clone()).await;
+    let agent = decode::<AgentResponse>(agent);
+    let tenant_id = TenantId::parse(&agent.tenant_id).unwrap();
+    let agent_id = pandar_core::AgentId::parse(&agent.id).unwrap();
+    // The Agent was online when the hub instance restarted: its persisted
+    // session survives while no instance holds it in memory.
+    let stale_seen_at = (OffsetDateTime::now_utc() - TimeDuration::minutes(2))
+        .format(&Rfc3339)
+        .unwrap();
+    state
+        .agents()
+        .claim_online_session(tenant_id, agent_id, "lost-session", "0.2.2", &stale_seen_at)
+        .await
+        .unwrap();
+    let delete_uri = format!("/api/v1/tenants/{tenant_id}/agents/{agent_id}");
+
+    let (status, body) = request_as(app.clone(), Method::DELETE, &delete_uri, None, &token).await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_eq!(decode::<ErrorResponse>(body).error, "agent_online");
+
+    crate::runtime::spawn_session_expiry(state.clone());
+    tokio::time::timeout(std::time::Duration::from_secs(5), async {
+        while state.agents().get(agent_id).await.unwrap().unwrap().status
+            != pandar_core::AgentStatus::Offline
+        {
+            tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+        }
+    })
+    .await
+    .expect("stale online agent should be retired by the session expiry loop");
+
+    let (status, _) = request_as(app, Method::DELETE, &delete_uri, None, &token).await;
+    assert_eq!(status, StatusCode::OK);
 }
 
 #[tokio::test]
