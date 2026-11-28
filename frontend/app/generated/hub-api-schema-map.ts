@@ -88,6 +88,12 @@ export type HubSchemaMap = {
   PrinterControlRequest: Core.PrinterControlRequest;
   PrintErrorAction: Core.PrintErrorAction;
   RequiredDeviceFeature: Core.RequiredDeviceFeature;
+  TenantTokenScope: Admin.TenantTokenScope;
+  CliLoginTicketRequest: Core.CliLoginTicketRequest;
+  CliTicketExchangeRequest: Core.CliTicketExchangeRequest;
+  CliTicketExchangeResponse: Core.CliTicketExchangeResponse;
+  WhoamiUser: Core.WhoamiUser;
+  WhoamiResponse: Core.WhoamiResponse;
 };
 
 export type HubSchemaName = keyof HubSchemaMap;

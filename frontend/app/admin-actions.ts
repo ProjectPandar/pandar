@@ -26,18 +26,45 @@ async function selectTenant(tenantId: string) {
   });
 }
 
+const CANONICAL_SCOPE_ORDER = [
+  "*",
+  "operator",
+  "viewer",
+  "agent:register",
+  "plugin:studio",
+] as const;
+
+function normalizeScopes(raw: string): string[] {
+  const seen = new Set<string>();
+  const parsed: string[] = [];
+  for (const part of raw.split(",")) {
+    const trimmed = part.trim();
+    if (trimmed && !seen.has(trimmed)) {
+      seen.add(trimmed);
+      parsed.push(trimmed);
+    }
+  }
+  return parsed.sort((left, right) => {
+    const leftIndex = CANONICAL_SCOPE_ORDER.indexOf(
+      left as (typeof CANONICAL_SCOPE_ORDER)[number],
+    );
+    const rightIndex = CANONICAL_SCOPE_ORDER.indexOf(
+      right as (typeof CANONICAL_SCOPE_ORDER)[number],
+    );
+    const leftRank = leftIndex === -1 ? CANONICAL_SCOPE_ORDER.length : leftIndex;
+    const rightRank =
+      rightIndex === -1 ? CANONICAL_SCOPE_ORDER.length : rightIndex;
+    return leftRank - rightRank;
+  });
+}
+
 export async function createTenantToken(
   _previousState: SecretActionState,
   formData: FormData,
 ): Promise<SecretActionState> {
   await requireAuth();
   const tenantId = stringField(formData, "tenant_id");
-  const scopes = stringField(formData, "scopes")
-    .split(",")
-    .flatMap((scope) => {
-      const trimmed = scope.trim();
-      return trimmed ? [trimmed] : [];
-    });
+  const scopes = normalizeScopes(stringField(formData, "scopes"));
   const response = await postJson(
     `/api/v1/tenants/${apiIdSegment(tenantId, "tenant_id")}/tenant-tokens`,
     {

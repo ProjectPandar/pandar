@@ -36,6 +36,7 @@ mod provisioning;
 mod status;
 mod tenant_tokens;
 mod tenants;
+mod whoami;
 
 pub fn router(state: AppState) -> Router {
     let default_body_limit = 64 * 1024;
@@ -66,6 +67,11 @@ pub fn router(state: AppState) -> Router {
             "/api/v1/mobile/login-tickets/exchange",
             post(plugin::exchange_mobile_login_ticket),
         )
+        .route(
+            "/api/v1/cli/login-tickets/exchange",
+            post(plugin::exchange_cli_login_ticket),
+        )
+        .route("/api/v1/cli/session", delete(plugin::revoke_cli_session))
         .route(
             "/api/v1/plugin/no-auth-session",
             post(plugin::create_no_auth_session),
@@ -147,6 +153,7 @@ pub fn router(state: AppState) -> Router {
 fn client_api_router(cors_allowed_origins: Vec<HeaderValue>) -> Router<AppState> {
     let router = Router::new()
         .route("/api/v1/me", get(onboarding::me))
+        .route("/api/v1/auth/whoami", get(whoami::whoami))
         .route(
             "/api/v1/web/login-tickets/exchange",
             post(plugin::exchange_web_login_ticket),
@@ -214,6 +221,10 @@ fn client_api_router(cors_allowed_origins: Vec<HeaderValue>) -> Router<AppState>
         .route(
             "/api/v1/tenants/{tenant_id}/web/login-tickets",
             post(plugin::create_web_login_ticket),
+        )
+        .route(
+            "/api/v1/tenants/{tenant_id}/cli/login-tickets",
+            post(plugin::create_cli_login_ticket),
         )
         .route(
             "/api/v1/tenants/{tenant_id}/audit-events",

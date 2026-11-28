@@ -9,6 +9,7 @@ use crate::repositories::{
     test_helpers::{insert_command_fixture, insert_printer_fixture},
 };
 
+mod cli_tokens;
 mod jobs;
 mod onboarding;
 mod personal_presets;

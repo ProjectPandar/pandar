@@ -16,6 +16,7 @@ mod artifacts;
 mod auth_support;
 mod basic;
 mod bootstrap;
+mod cli_sign_in;
 mod cors;
 mod jobs;
 mod multipart;

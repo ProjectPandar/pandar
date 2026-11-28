@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  createCliTicket,
   createMobileTicket,
   createWebTicket,
   discoverPrinters,
@@ -234,6 +235,53 @@ describe("createWebTicket", () => {
 
     await expect(createWebTicket(formData)).rejects.toThrow(
       "NEXT_REDIRECT:/devices?status=invalid_redirect_url",
+    );
+  });
+});
+
+describe("createCliTicket", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              ticket: "pandar_cli_ticket_abc",
+              expires_at: "2026-11-28T12:05:00Z",
+              redirect_url: "http://127.0.0.1:54321/callback",
+            }),
+            {
+              status: 201,
+              headers: { "content-type": "application/json" },
+            },
+          ),
+      ),
+    );
+  });
+
+  it("creates a CLI login ticket and redirects back to the local CLI callback", async () => {
+    const formData = new FormData();
+    formData.set("tenant_id", "tenant-1");
+    formData.set("redirect_url", "http://127.0.0.1:54321/callback");
+    formData.set("code_challenge", "challenge");
+    formData.set("state", "cli-state");
+
+    await expect(createCliTicket(formData)).rejects.toThrow(
+      "NEXT_REDIRECT:http://127.0.0.1:54321/callback?ticket=pandar_cli_ticket_abc&redirect_url=http%3A%2F%2F127.0.0.1%3A54321%2Fcallback&state=cli-state",
+    );
+
+    expect(requireAuth).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledWith(
+      "http://localhost:8080/api/v1/tenants/tenant-1/cli/login-tickets",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          redirect_url: "http://127.0.0.1:54321/callback",
+          code_challenge: "challenge",
+        }),
+      }),
     );
   });
 });

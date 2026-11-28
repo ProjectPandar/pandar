@@ -45,7 +45,7 @@ export type TenantToken = {
   id: string;
   tenant_id: string;
   name: string;
-  scopes: Array<string>;
+  scopes: Array<TenantTokenScope>;
   created_by_user_id: string | null;
   created_at: string;
   last_used_at: string | null;
@@ -88,3 +88,13 @@ export type RotatedTenantTokenSecretResponse = {
   token: string;
   rotated_from_token_id: string;
 };
+
+export type TenantTokenScope =
+  | "*"
+  | "operator"
+  | "viewer"
+  | "agent:register"
+  | "plugin:studio"
+  | "mobile:session"
+  | "web:session"
+  | "cli:session";

@@ -50,6 +50,7 @@ function CreateTenantTokenDialogSession({
   const t = useTranslations("admin");
   const helpId = useId();
   const [open, setOpen] = useState(false);
+  const [scopes, setScopes] = useState("*");
   const queryClient = useQueryClient();
   const [state, formAction, pending] = useActionState(createTenantToken, null);
   useInvalidateOnSuccess(
@@ -59,6 +60,12 @@ function CreateTenantTokenDialogSession({
     mutationResources.token,
   );
   const completed = state?.ok && state.kind === "tenant_token";
+  const scopePresets = [
+    { value: "*", label: t("scopeAll") },
+    { value: "operator", label: t("scopeOperator") },
+    { value: "viewer", label: t("scopeViewer") },
+    { value: "agent:register", label: t("scopeAgentRegister") },
+  ] as const;
 
   return (
     <Dialog
@@ -97,12 +104,31 @@ function CreateTenantTokenDialogSession({
           <div className="grid gap-3 sm:grid-cols-2">
             <Input disabled={completed} name="name" label={t("name")} required />
             <Input
-              defaultValue="*"
               describedBy={`${helpId}-scopes`}
               disabled={completed}
               name="scopes"
               label={t("scopes")}
+              onChange={(event) => setScopes(event.target.value)}
+              value={scopes}
             />
+          </div>
+          <div
+            aria-label={t("scopePresetsLabel")}
+            className="flex flex-wrap items-center gap-1.5"
+            role="group"
+          >
+            {scopePresets.map((preset) => (
+              <Button
+                key={preset.value}
+                disabled={completed}
+                onClick={() => setScopes(preset.value)}
+                size="sm"
+                type="button"
+                variant={scopes.trim() === preset.value ? "secondary" : "outline"}
+              >
+                {preset.label}
+              </Button>
+            ))}
           </div>
           <p className="-mt-2 text-xs text-muted-foreground" id={`${helpId}-scopes`}>
             {t("scopesHelp")}

@@ -293,9 +293,13 @@ export async function createWebTicket(formData: FormData) {
   await createSessionTicket(formData, "web");
 }
 
+export async function createCliTicket(formData: FormData) {
+  await createSessionTicket(formData, "cli");
+}
+
 async function createSessionTicket(
   formData: FormData,
-  client: "mobile" | "web",
+  client: "mobile" | "web" | "cli",
 ) {
   await requireAuth();
   const tenantId = stringField(formData, "tenant_id");

@@ -4,6 +4,7 @@ use sea_orm::{
     ActiveModelTrait, ActiveValue::Set, ColumnTrait, ConnectionTrait, EntityTrait, QueryFilter,
     QueryOrder, TransactionTrait,
 };
+mod cli;
 mod helpers;
 mod mobile;
 mod no_auth_session;
@@ -13,6 +14,7 @@ mod web;
 
 pub use types::{
     AuthenticatedTenantToken, TenantToken, TenantTokenScope, TenantTokenWithPlaintext,
+    normalize_tenant_token_scopes,
 };
 
 #[cfg(test)]
@@ -34,6 +36,7 @@ const TENANT_TOKEN_PREFIX: &str = "pandar_tenant_";
 const PLUGIN_TOKEN_PREFIX: &str = "pandar_plugin_";
 const MOBILE_TOKEN_PREFIX: &str = "pandar_mobile_";
 const WEB_TOKEN_PREFIX: &str = "pandar_web_";
+const CLI_TOKEN_PREFIX: &str = "pandar_cli_";
 
 impl AuthRepository {
     pub async fn create_tenant_token_with_audit(
@@ -49,7 +52,7 @@ impl AuthRepository {
             id: uuid::Uuid::new_v4().to_string(),
             tenant_id,
             name: name.into(),
-            scopes,
+            scopes: normalize_tenant_token_scopes(scopes),
             created_by_user_id: actor.user_id.clone(),
             created_at: created_at_now(),
             last_used_at: None,

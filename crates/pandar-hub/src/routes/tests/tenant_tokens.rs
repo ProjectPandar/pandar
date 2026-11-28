@@ -264,6 +264,7 @@ async fn tenant_token_create_rejects_unknown_scope() {
         "plugin:session",
         "mobile:session",
         "web:session",
+        "cli:session",
     ] {
         let (status, body) = request_as(
             app.clone(),

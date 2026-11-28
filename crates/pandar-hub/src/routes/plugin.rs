@@ -9,7 +9,7 @@ use time::{Duration, OffsetDateTime, format_description::well_known::Rfc3339};
 
 use crate::{
     AppState,
-    repositories::{AuthenticatedPrincipal, NoAuthPluginSessionOutcome, RepositoryError},
+    repositories::NoAuthPluginSessionOutcome,
     routes::{
         ApiError, auth,
         printer_operations::{PrinterOperationRequest, dispatch_plugin_printer_operation},
@@ -17,14 +17,17 @@ use crate::{
 };
 
 mod camera;
+mod cli;
 pub(super) mod firmware;
 mod h2c;
 mod personal_presets;
 mod responses;
 pub(super) mod studio_devices;
 mod studio_jobs;
+mod ticket_helpers;
 mod web;
 pub(super) use camera::stream_camera;
+pub(super) use cli::{create_cli_login_ticket, exchange_cli_login_ticket, revoke_cli_session};
 pub(super) use h2c::get_auto_nozzle_mapping;
 pub(super) use personal_presets::{
     create as create_preset, delete as delete_preset, get as get_preset, list as list_presets,
@@ -34,6 +37,9 @@ pub(crate) use responses::redact_artifact_error;
 use studio_devices::{PluginPrinterListResponse, plugin_printer_devices};
 pub(super) use studio_jobs::{
     cancel_job, create_print, get_job, get_model_task, get_plate, get_subtask, list_jobs,
+};
+use ticket_helpers::{
+    plugin_login_ticket_expires_at, plugin_ticket_error, user_id, valid_pkce_challenge,
 };
 pub(super) use web::{create_web_login_ticket, exchange_web_login_ticket};
 
@@ -329,39 +335,4 @@ pub(super) async fn create_printer_operation(
         command_id: command.id.to_string(),
         status: command.status.to_string(),
     }))
-}
-
-fn user_id(principal: &AuthenticatedPrincipal) -> Option<String> {
-    match principal {
-        AuthenticatedPrincipal::User(authenticated) => Some(authenticated.user.id.clone()),
-        AuthenticatedPrincipal::TenantToken(authenticated) => {
-            authenticated.token.created_by_user_id.clone()
-        }
-        AuthenticatedPrincipal::NoAuth { .. } => None,
-    }
-}
-
-fn valid_pkce_challenge(value: &str) -> bool {
-    value.len() == 43
-        && value
-            .bytes()
-            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
-}
-
-fn plugin_ticket_error(err: RepositoryError) -> ApiError {
-    match err {
-        RepositoryError::MissingPluginLoginTicket => {
-            ApiError::new(StatusCode::UNAUTHORIZED, "invalid_plugin_ticket")
-        }
-        other => other.into(),
-    }
-}
-
-fn plugin_login_ticket_expires_at() -> Result<String, ApiError> {
-    (OffsetDateTime::now_utc() + Duration::minutes(5))
-        .format(&Rfc3339)
-        .map_err(|err| {
-            tracing::error!(error = %format!("{err:#}"), "failed to format plugin login ticket expiry");
-            ApiError::new(StatusCode::INTERNAL_SERVER_ERROR, "internal_server_error")
-        })
 }

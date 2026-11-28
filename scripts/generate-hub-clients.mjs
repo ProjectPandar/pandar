@@ -33,6 +33,7 @@ function validateContract() {
     Object.values(value).forEach(inspect);
   };
   inspect(contract);
+  const securitySchemes = contract.components.securitySchemes ?? {};
   for (const [route, item] of Object.entries(contract.paths)) {
     const declared = new Set(
       (item.parameters ?? []).map((parameter) => {
@@ -46,6 +47,27 @@ function validateContract() {
     for (const method of ["get", "post", "put", "patch", "delete"]) {
       const operation = item[method];
       if (!operation) continue;
+      if (!Array.isArray(operation.security)) {
+        throw new Error(`Missing security array for ${method.toUpperCase()} ${route}`);
+      }
+      for (const requirement of operation.security) {
+        const schemeNames = Object.keys(requirement);
+        if (schemeNames.length === 0) {
+          throw new Error(`Empty security requirement {} is forbidden for ${method.toUpperCase()} ${route}`);
+        }
+        for (const scheme of schemeNames) {
+          if (!Object.hasOwn(securitySchemes, scheme)) {
+            throw new Error(`Unknown security scheme ${scheme} for ${method.toUpperCase()} ${route}`);
+          }
+        }
+      }
+      if (operation.security.length === 0) {
+        if (Object.hasOwn(operation, "x-pandar-no-auth")) {
+          throw new Error(`Public operation ${method.toUpperCase()} ${route} must not set x-pandar-no-auth`);
+        }
+      } else if (!["allowed", "forbidden"].includes(operation["x-pandar-no-auth"])) {
+        throw new Error(`Missing valid x-pandar-no-auth ("allowed" | "forbidden") for ${method.toUpperCase()} ${route}`);
+      }
       const errorRef = operation.responses?.default?.content?.["application/json"]?.schema?.$ref;
       if (errorRef !== "#/components/schemas/ErrorResponse") {
         throw new Error(`Missing default ErrorResponse for ${method.toUpperCase()} ${route}`);

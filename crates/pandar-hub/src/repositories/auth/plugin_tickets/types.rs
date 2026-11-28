@@ -22,6 +22,7 @@ pub enum LoginTicketKind {
     Plugin,
     Mobile,
     Web,
+    Cli,
 }
 
 impl LoginTicketKind {
@@ -30,6 +31,7 @@ impl LoginTicketKind {
             Self::Plugin => "plugin",
             Self::Mobile => "mobile",
             Self::Web => "web",
+            Self::Cli => "cli",
         }
     }
 
@@ -38,6 +40,7 @@ impl LoginTicketKind {
             "plugin" => Ok(Self::Plugin),
             "mobile" => Ok(Self::Mobile),
             "web" => Ok(Self::Web),
+            "cli" => Ok(Self::Cli),
             other => Err(anyhow::anyhow!("invalid persisted login ticket kind {other}").into()),
         }
     }

@@ -1,6 +1,6 @@
 use anyhow::Context;
 use pandar_core::created_at_now;
-use sea_orm::{ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter, TransactionTrait};
+use sea_orm::{ActiveValue::Set, ColumnTrait, EntityTrait, QueryFilter};
 
 use super::{TenantToken, TenantTokenScope, tenant_token_from_model};
 use crate::{
@@ -17,25 +17,43 @@ impl AuthRepository {
         &self,
         plaintext_token: &str,
     ) -> RepositoryResult<Option<TenantToken>> {
+        self.revoke_scoped_token_with_audit(plaintext_token, TenantTokenScope::PluginStudio, true)
+            .await
+    }
+
+    pub async fn revoke_cli_session_token_with_audit(
+        &self,
+        plaintext_token: &str,
+    ) -> RepositoryResult<Option<TenantToken>> {
+        self.revoke_scoped_token_with_audit(plaintext_token, TenantTokenScope::CliSession, false)
+            .await
+    }
+
+    async fn revoke_scoped_token_with_audit(
+        &self,
+        plaintext_token: &str,
+        expected_scope: TenantTokenScope,
+        use_plugin_actor: bool,
+    ) -> RepositoryResult<Option<TenantToken>> {
         let token_hash = hash_token(plaintext_token);
-        let connection = self.database.sea_orm_connection();
+        let tx = self
+            .database
+            .begin_write_transaction()
+            .await
+            .context("failed to begin scoped token self-revoke transaction")?;
         let Some(model) = tenant_tokens::Entity::find()
             .filter(tenant_tokens::Column::TokenHash.eq(token_hash.clone()))
-            .one(&connection)
+            .one(&tx)
             .await
-            .context("failed to load plugin Studio token for self-revoke")?
+            .context("failed to load scoped token for self-revoke")?
         else {
             return Ok(None);
         };
         let token = tenant_token_from_model(model)?;
-        if token.scopes != [TenantTokenScope::PluginStudio] {
+        if token.scopes != [expected_scope] {
             return Ok(None);
         }
 
-        let tx = connection
-            .begin()
-            .await
-            .context("failed to begin plugin Studio token self-revoke transaction")?;
         let revoked_at = created_at_now();
         let result = tenant_tokens::Entity::update_many()
             .set(tenant_tokens::ActiveModel {
@@ -48,16 +66,24 @@ impl AuthRepository {
             .filter(tenant_tokens::Column::RevokedAt.is_null())
             .exec(&tx)
             .await
-            .context("failed to self-revoke plugin Studio token")?;
+            .context("failed to self-revoke scoped token")?;
 
         if result.rows_affected == 1 {
             let mut revoked = token;
             revoked.revoked_at = Some(revoked_at);
-            let actor = AuditActor::plugin_token(
-                revoked.created_by_user_id.clone(),
-                revoked.id.clone(),
-                vec![TenantTokenScope::PluginStudio.as_str()],
-            );
+            let actor = if use_plugin_actor {
+                AuditActor::plugin_token(
+                    revoked.created_by_user_id.clone(),
+                    revoked.id.clone(),
+                    vec![expected_scope.as_str()],
+                )
+            } else {
+                AuditActor::tenant_token(
+                    revoked.created_by_user_id.clone(),
+                    revoked.id.clone(),
+                    vec![expected_scope.as_str()],
+                )
+            };
             insert_audit_event_tx(
                 &tx,
                 &tenant_token_audit_event(&revoked, "tenant_token.revoke", actor),
@@ -65,7 +91,7 @@ impl AuthRepository {
             .await?;
             tx.commit()
                 .await
-                .context("failed to commit plugin Studio token self-revoke transaction")?;
+                .context("failed to commit scoped token self-revoke transaction")?;
             return Ok(Some(revoked));
         }
 
@@ -74,15 +100,13 @@ impl AuthRepository {
             .filter(tenant_tokens::Column::TokenHash.eq(token_hash))
             .one(&tx)
             .await
-            .context("failed to reload plugin Studio token after self-revoke race")?
+            .context("failed to reload scoped token after self-revoke race")?
             .map(tenant_token_from_model)
             .transpose()?
-            .filter(|token| {
-                token.scopes == [TenantTokenScope::PluginStudio] && token.revoked_at.is_some()
-            });
+            .filter(|token| token.scopes == [expected_scope] && token.revoked_at.is_some());
         tx.commit()
             .await
-            .context("failed to commit repeated plugin Studio token self-revoke transaction")?;
+            .context("failed to commit repeated scoped token self-revoke transaction")?;
         Ok(revoked)
     }
 }

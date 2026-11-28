@@ -2988,16 +2988,24 @@ name = "pandar-app"
 version = "0.2.2"
 dependencies = [
  "anyhow",
+ "axum",
+ "base64 0.23.1",
  "clap",
  "pandar-agent",
+ "pandar-core",
  "pandar-hub",
  "pandar-network-plugin",
  "pandar-studio-hook",
+ "reqwest",
  "serde",
  "serde_json",
+ "sha2 0.11.0",
+ "tempfile",
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "uuid",
+ "zeroize",
 ]
 
 [[package]]

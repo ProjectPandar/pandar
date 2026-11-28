@@ -47,7 +47,13 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bootstrapToken": []
+          }
+        ],
+        "x-pandar-no-auth": "allowed"
       }
     },
     "/api/v1/me": {
@@ -73,7 +79,13 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "externalJwt": []
+          }
+        ],
+        "x-pandar-no-auth": "forbidden"
       }
     },
     "/api/v1/auth/status": {
@@ -99,7 +111,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/api/v1/tenants/{tenant_id}/printers": {
@@ -130,7 +143,16 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "externalJwt": []
+          },
+          {
+            "tenantToken": []
+          }
+        ],
+        "x-pandar-no-auth": "allowed"
       }
     },
     "/api/v1/tenants/{tenant_id}/agents": {
@@ -161,7 +183,16 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "externalJwt": []
+          },
+          {
+            "tenantToken": []
+          }
+        ],
+        "x-pandar-no-auth": "allowed"
       }
     },
     "/api/v1/tenants/{tenant_id}/jobs": {
@@ -192,7 +223,16 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "externalJwt": []
+          },
+          {
+            "tenantToken": []
+          }
+        ],
+        "x-pandar-no-auth": "allowed"
       }
     },
     "/api/v1/tenants/{tenant_id}/commands/{command_id}": {
@@ -226,7 +266,16 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "externalJwt": []
+          },
+          {
+            "tenantToken": []
+          }
+        ],
+        "x-pandar-no-auth": "allowed"
       }
     },
     "/api/v1/tenants/{tenant_id}/printers/{printer_id}/controls": {
@@ -270,7 +319,16 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "externalJwt": []
+          },
+          {
+            "tenantToken": []
+          }
+        ],
+        "x-pandar-no-auth": "allowed"
       }
     },
     "/api/v1/onboarding/tenants": {
@@ -296,7 +354,13 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "externalJwt": []
+          }
+        ],
+        "x-pandar-no-auth": "forbidden"
       }
     },
     "/api/v1/join-links/accept": {
@@ -322,7 +386,13 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "externalJwt": []
+          }
+        ],
+        "x-pandar-no-auth": "forbidden"
       }
     },
     "/api/v1/tenants/{tenant_id}/tenant-tokens": {
@@ -353,7 +423,16 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "externalJwt": []
+          },
+          {
+            "tenantToken": []
+          }
+        ],
+        "x-pandar-no-auth": "allowed"
       },
       "get": {
         "responses": {
@@ -377,7 +456,16 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "externalJwt": []
+          },
+          {
+            "tenantToken": []
+          }
+        ],
+        "x-pandar-no-auth": "allowed"
       }
     },
     "/api/v1/tenants/{tenant_id}/join-links": {
@@ -408,7 +496,13 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "externalJwt": []
+          }
+        ],
+        "x-pandar-no-auth": "allowed"
       },
       "get": {
         "responses": {
@@ -432,7 +526,13 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "externalJwt": []
+          }
+        ],
+        "x-pandar-no-auth": "allowed"
       }
     },
     "/api/v1/tenants/{tenant_id}/agent-pairings": {
@@ -463,7 +563,16 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "externalJwt": []
+          },
+          {
+            "tenantToken": []
+          }
+        ],
+        "x-pandar-no-auth": "allowed"
       }
     },
     "/api/v1/tenants/{tenant_id}/agents/{agent_id}/discover-printers": {
@@ -497,7 +606,16 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "externalJwt": []
+          },
+          {
+            "tenantToken": []
+          }
+        ],
+        "x-pandar-no-auth": "allowed"
       }
     },
     "/api/v1/tenants/{tenant_id}/agents/{agent_id}/diagnose-printer": {
@@ -531,7 +649,16 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "externalJwt": []
+          },
+          {
+            "tenantToken": []
+          }
+        ],
+        "x-pandar-no-auth": "allowed"
       }
     },
     "/api/v1/tenants/{tenant_id}/agents/{agent_id}/link-printer": {
@@ -565,7 +692,16 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "externalJwt": []
+          },
+          {
+            "tenantToken": []
+          }
+        ],
+        "x-pandar-no-auth": "allowed"
       }
     },
     "/api/v1/tenants/{tenant_id}/plugin/login-tickets": {
@@ -596,7 +732,13 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "externalJwt": []
+          }
+        ],
+        "x-pandar-no-auth": "allowed"
       }
     },
     "/api/v1/tenants/{tenant_id}/mobile/login-tickets": {
@@ -627,7 +769,13 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "externalJwt": []
+          }
+        ],
+        "x-pandar-no-auth": "allowed"
       }
     },
     "/api/v1/tenants/{tenant_id}/web/login-tickets": {
@@ -668,7 +816,13 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "externalJwt": []
+          }
+        ],
+        "x-pandar-no-auth": "allowed"
       }
     },
     "/api/v1/tenants/{tenant_id}/artifact-metadata-preview": {
@@ -699,7 +853,16 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "externalJwt": []
+          },
+          {
+            "tenantToken": []
+          }
+        ],
+        "x-pandar-no-auth": "allowed"
       }
     },
     "/api/v1/tenants/{tenant_id}/tenant-tokens/{token_id}/rotate": {
@@ -733,7 +896,16 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "externalJwt": []
+          },
+          {
+            "tenantToken": []
+          }
+        ],
+        "x-pandar-no-auth": "allowed"
       }
     },
     "/api/v1/tenants/{tenant_id}/users": {
@@ -764,7 +936,16 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "externalJwt": []
+          },
+          {
+            "tenantToken": []
+          }
+        ],
+        "x-pandar-no-auth": "allowed"
       }
     },
     "/api/v1/tenants/{tenant_id}/audit-events": {
@@ -795,7 +976,16 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "externalJwt": []
+          },
+          {
+            "tenantToken": []
+          }
+        ],
+        "x-pandar-no-auth": "allowed"
       }
     },
     "/api/v1/tenants/{tenant_id}/printers/{printer_id}": {
@@ -829,7 +1019,16 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "externalJwt": []
+          },
+          {
+            "tenantToken": []
+          }
+        ],
+        "x-pandar-no-auth": "allowed"
       }
     },
     "/api/v1/tenants/{tenant_id}/jobs/{job_id}/retry-dispatch": {
@@ -873,7 +1072,16 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "externalJwt": []
+          },
+          {
+            "tenantToken": []
+          }
+        ],
+        "x-pandar-no-auth": "allowed"
       }
     },
     "/api/v1/tenants/{tenant_id}/jobs/{job_id}/reprint": {
@@ -917,7 +1125,16 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "externalJwt": []
+          },
+          {
+            "tenantToken": []
+          }
+        ],
+        "x-pandar-no-auth": "allowed"
       }
     },
     "/api/v1/mobile/login-tickets/exchange": {
@@ -953,7 +1170,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/api/v1/web/login-tickets/exchange": {
@@ -975,6 +1193,218 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/WebTicketExchangeResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Hub API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/auth/whoami": {
+      "get": {
+        "security": [
+          {
+            "tenantToken": []
+          }
+        ],
+        "x-pandar-no-auth": "forbidden",
+        "responses": {
+          "200": {
+            "description": "Authenticated tenant API key or session token identity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WhoamiResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid tenant token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Hub API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tenants/{tenant_id}/cli/login-tickets": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/TenantId"
+        }
+      ],
+      "post": {
+        "security": [
+          {
+            "externalJwt": []
+          }
+        ],
+        "x-pandar-no-auth": "forbidden",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CliLoginTicketRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created CLI login ticket",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TicketResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request, PKCE challenge, or loopback redirect URL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid external JWT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden role, tenant, or external auth required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Hub API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cli/login-tickets/exchange": {
+      "post": {
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CliTicketExchangeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Exchanged CLI login ticket",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CliTicketExchangeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid, expired, used, or PKCE-mismatched CLI ticket",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Hub API error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cli/session": {
+      "delete": {
+        "security": [
+          {
+            "tenantToken": []
+          }
+        ],
+        "x-pandar-no-auth": "forbidden",
+        "responses": {
+          "204": {
+            "description": "CLI session token revoked (idempotent)"
+          },
+          "401": {
+            "description": "Missing, unknown, or non-CLI-session token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -3262,7 +3692,7 @@
           "scopes": {
             "type": "array",
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/TenantTokenScope"
             }
           },
           "created_by_user_id": {
@@ -3964,6 +4394,174 @@
           "bambu_mqtt_axis_control"
         ],
         "x-typescript-group": "core"
+      },
+      "TenantTokenScope": {
+        "type": "string",
+        "enum": [
+          "*",
+          "operator",
+          "viewer",
+          "agent:register",
+          "plugin:studio",
+          "mobile:session",
+          "web:session",
+          "cli:session"
+        ],
+        "x-typescript-group": "admin"
+      },
+      "CliLoginTicketRequest": {
+        "type": "object",
+        "required": [
+          "redirect_url",
+          "code_challenge"
+        ],
+        "properties": {
+          "redirect_url": {
+            "type": "string"
+          },
+          "code_challenge": {
+            "type": "string"
+          }
+        },
+        "x-typescript-group": "core"
+      },
+      "CliTicketExchangeRequest": {
+        "type": "object",
+        "required": [
+          "ticket",
+          "code_verifier"
+        ],
+        "properties": {
+          "ticket": {
+            "type": "string"
+          },
+          "code_verifier": {
+            "type": "string"
+          }
+        },
+        "x-typescript-group": "core"
+      },
+      "CliTicketExchangeResponse": {
+        "type": "object",
+        "required": [
+          "token",
+          "expires_at",
+          "profile"
+        ],
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": "string"
+          },
+          "profile": {
+            "$ref": "#/components/schemas/MobileAuthProfile"
+          }
+        },
+        "x-typescript-group": "core"
+      },
+      "WhoamiUser": {
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "display_name",
+          "role"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          }
+        },
+        "x-typescript-group": "core"
+      },
+      "WhoamiResponse": {
+        "type": "object",
+        "required": [
+          "token_id",
+          "token_name",
+          "tenant_id",
+          "tenant_slug",
+          "tenant_display_name",
+          "scopes",
+          "effective_role",
+          "expires_at",
+          "user"
+        ],
+        "properties": {
+          "token_id": {
+            "type": "string"
+          },
+          "token_name": {
+            "type": "string"
+          },
+          "tenant_id": {
+            "type": "string"
+          },
+          "tenant_slug": {
+            "type": "string"
+          },
+          "tenant_display_name": {
+            "type": "string"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TenantTokenScope"
+            }
+          },
+          "effective_role": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "expires_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "user": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/WhoamiUser"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "x-typescript-group": "core"
+      }
+    },
+    "securitySchemes": {
+      "externalJwt": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "External identity provider JWT for interactive Pandar users."
+      },
+      "tenantToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Tenant API key (pandar_tenant_*) or login-ticket session token (pandar_cli_*, pandar_web_*, pandar_mobile_*)."
+      },
+      "bootstrapToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Hub bootstrap token for administrative tenant listing/provisioning."
       }
     }
   }

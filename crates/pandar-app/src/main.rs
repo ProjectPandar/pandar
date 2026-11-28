@@ -13,6 +13,9 @@ use pandar_studio_hook::installer::{
 use serde::Serialize;
 use std::path::PathBuf;
 
+mod cli_auth;
+mod client;
+
 #[derive(Debug, Parser)]
 #[command(name = "pandar", about = "Pandar operator CLI")]
 struct Cli {
@@ -78,6 +81,12 @@ enum Command {
         #[arg(long)]
         data_dir: Option<PathBuf>,
     },
+    #[command(about = "Sign in to a Pandar Hub using an API key or browser login")]
+    Login(cli_auth::LoginArgs),
+    #[command(about = "Remove a saved Pandar CLI profile and revoke browser CLI sessions")]
+    Logout(cli_auth::LogoutArgs),
+    #[command(about = "Send authenticated requests to a Pandar Hub API")]
+    Client(client::ClientArgs),
     #[command(about = "Decrypt a Bambu Studio log written with the local-key hook")]
     DecryptBambuStudioLog {
         #[arg(long)]
@@ -163,6 +172,17 @@ async fn main() -> anyhow::Result<()> {
                 data_dir,
             })?;
             println!("{}", serde_json::to_string(&studio_hook_json(summary))?);
+        }
+        Command::Login(args) => {
+            let output = cli_auth::run_login(args).await?;
+            println!("{}", serde_json::to_string_pretty(&output)?);
+        }
+        Command::Logout(args) => {
+            let output = cli_auth::run_logout(args).await?;
+            println!("{}", serde_json::to_string_pretty(&output)?);
+        }
+        Command::Client(args) => {
+            client::run_client(args).await?;
         }
         Command::DecryptBambuStudioLog {
             log_file,

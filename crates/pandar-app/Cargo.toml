@@ -11,16 +11,24 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow.workspace = true
+axum.workspace = true
+base64.workspace = true
 clap.workspace = true
 pandar-agent = { path = "../pandar-agent" }
 pandar-hub = { path = "../pandar-hub" }
 pandar-network-plugin = { path = "../pandar-network-plugin" }
 pandar-studio-hook.workspace = true
+reqwest.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+sha2.workspace = true
 tokio.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
+uuid.workspace = true
+zeroize.workspace = true
 
 [dev-dependencies]
 clap.workspace = true
+pandar-core.workspace = true
+tempfile.workspace = true

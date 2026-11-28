@@ -125,6 +125,8 @@ export function Input({
   name,
   label,
   defaultValue,
+  value,
+  onChange,
   disabled = false,
   describedBy,
   min,
@@ -135,6 +137,8 @@ export function Input({
   name: string;
   label: string;
   defaultValue?: string;
+  value?: string;
+  onChange?: React.ChangeEventHandler<HTMLInputElement>;
   disabled?: boolean;
   describedBy?: string;
   min?: string;
@@ -147,13 +151,15 @@ export function Input({
       <input
         aria-describedby={describedBy}
         className={inputClasses}
-        defaultValue={defaultValue}
+        defaultValue={value === undefined ? defaultValue : undefined}
         disabled={disabled}
         min={min}
         name={name}
+        onChange={onChange}
         placeholder={placeholder}
         required={required}
         type={type}
+        value={value}
       />
     </FormField>
   );

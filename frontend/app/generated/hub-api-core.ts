@@ -1,4 +1,5 @@
 // Generated from contracts/hub-client.openapi.json. Do not edit.
+import type { TenantTokenScope } from "./hub-api-admin";
 
 export type UserRole = "tenant_admin" | "operator" | "viewer";
 
@@ -198,3 +199,38 @@ export type PrintErrorAction = "resume" | "ignore" | "stop";
 export type RequiredDeviceFeature =
   | "bambu_mqtt_homing"
   | "bambu_mqtt_axis_control";
+
+export type CliLoginTicketRequest = {
+  redirect_url: string;
+  code_challenge: string;
+};
+
+export type CliTicketExchangeRequest = {
+  ticket: string;
+  code_verifier: string;
+};
+
+export type CliTicketExchangeResponse = {
+  token: string;
+  expires_at: string;
+  profile: MobileAuthProfile;
+};
+
+export type WhoamiUser = {
+  id: string;
+  email: string;
+  display_name: string;
+  role: string;
+};
+
+export type WhoamiResponse = {
+  token_id: string;
+  token_name: string;
+  tenant_id: string;
+  tenant_slug: string;
+  tenant_display_name: string;
+  scopes: Array<TenantTokenScope>;
+  effective_role: string | null;
+  expires_at: string | null;
+  user: WhoamiUser | null;
+};

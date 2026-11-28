@@ -81,8 +81,13 @@ function TokenScope({ scope }: { scope: string }) {
   const t = useTranslations("admin");
   const labels: Record<string, string> = {
     "*": t("scopeAll"),
+    operator: t("scopeOperator"),
+    viewer: t("scopeViewer"),
     "agent:register": t("scopeAgentRegister"),
     "plugin:studio": t("scopePluginStudio"),
+    "cli:session": t("scopeCliSession"),
+    "web:session": t("scopeWebSession"),
+    "mobile:session": t("scopeMobileSession"),
   };
 
   return (

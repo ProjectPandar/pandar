@@ -307,4 +307,44 @@ describe("tenant token dialogs", () => {
       queryKey: ["tenant", tenant.id, "audit-events"],
     });
   });
+
+  it("renders friendly labels for operator, viewer, and session scopes and submits chosen preset scope", async () => {
+    const user = userEvent.setup();
+    actionMocks.createTenantToken.mockResolvedValue({
+      ok: true,
+      kind: "tenant_token",
+      operation: "created",
+      tenantToken: { ...rotatedToken, id: "token-op", scopes: ["operator"] },
+      token: "pandar_tenant_op_secret",
+    });
+    render(
+      <TokenPanel
+        tokens={[
+          { ...activeToken, id: "t-op", name: "Op key", scopes: ["operator"] },
+          { ...activeToken, id: "t-view", name: "Viewer key", scopes: ["viewer"] },
+          { ...activeToken, id: "t-cli", name: "Pandar CLI", scopes: ["cli:session"] },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("Operator")).toBeVisible();
+    expect(screen.getByText("Viewer")).toBeVisible();
+    expect(screen.getByText("CLI session")).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "Create token" }));
+    const dialog = screen.getByRole("dialog", { name: "Create tenant token" });
+    await user.type(within(dialog).getByLabelText("Name"), "Automation key");
+    await user.click(within(dialog).getByRole("button", { name: "Operator" }));
+    expect(within(dialog).getByLabelText("Scopes")).toHaveValue("operator");
+    await user.click(
+      within(dialog).getByRole("button", { name: "Create token" }),
+    );
+
+    await waitFor(() => {
+      expect(actionMocks.createTenantToken).toHaveBeenCalledTimes(1);
+    });
+    const submittedFormData = actionMocks.createTenantToken.mock
+      .calls[0][1] as FormData;
+    expect(submittedFormData.get("scopes")).toBe("operator");
+  });
 });

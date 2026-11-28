@@ -1,14 +1,18 @@
-use axum::http::{HeaderMap, StatusCode, header::AUTHORIZATION};
+use axum::http::{HeaderMap, StatusCode};
 use pandar_core::TenantId;
 
 use crate::{
     AppState,
-    identity::VerifiedExternalIdentity,
     repositories::{
-        AuditActor, AuthenticatedPrincipal, AuthenticatedUser, ExternalIdentityProfile,
-        TenantTokenScope, UserRole,
+        AuditActor, AuthenticatedPrincipal, AuthenticatedUser, TenantTokenScope, UserRole,
     },
     routes::ApiError,
+};
+
+mod external;
+
+pub(super) use external::{
+    authenticate_bearer_tenant_token, bearer_token, external_profile, verify_external_identity,
 };
 
 pub(super) async fn authorize_tenant(
@@ -114,6 +118,20 @@ pub(super) async fn authorize_session_login_ticket_creation(
     authorize_user_login_ticket_creation(state, headers, tenant_id, UserRole::Operator).await
 }
 
+pub(super) async fn authorize_cli_login_ticket_creation(
+    state: &AppState,
+    headers: &HeaderMap,
+    tenant_id: TenantId,
+) -> Result<AuthenticatedPrincipal, ApiError> {
+    if state.no_auth_enabled() {
+        return Err(ApiError::new(
+            StatusCode::FORBIDDEN,
+            "external_auth_required",
+        ));
+    }
+    authorize_user_login_ticket_creation(state, headers, tenant_id, UserRole::Viewer).await
+}
+
 async fn authorize_user_login_ticket_creation(
     state: &AppState,
     headers: &HeaderMap,
@@ -189,77 +207,6 @@ pub(super) async fn authorize_plugin_studio_for_tenant(
     Ok(authenticated)
 }
 
-pub(super) fn bearer_token(headers: &HeaderMap) -> Result<&str, ApiError> {
-    let Some(header) = headers.get(AUTHORIZATION) else {
-        return Err(ApiError::new(
-            StatusCode::UNAUTHORIZED,
-            "missing_auth_token",
-        ));
-    };
-    let header = header
-        .to_str()
-        .map_err(|_| ApiError::new(StatusCode::UNAUTHORIZED, "invalid_auth_token"))?;
-    let Some(token) = header.strip_prefix("Bearer ") else {
-        return Err(ApiError::new(
-            StatusCode::UNAUTHORIZED,
-            "invalid_auth_token",
-        ));
-    };
-    Ok(token)
-}
-
-pub(super) async fn verify_external_identity(
-    state: &AppState,
-    headers: &HeaderMap,
-) -> Result<VerifiedExternalIdentity, ApiError> {
-    let Some(header) = headers.get(AUTHORIZATION) else {
-        return Err(ApiError::new(
-            StatusCode::UNAUTHORIZED,
-            "missing_auth_token",
-        ));
-    };
-    let header = header
-        .to_str()
-        .map_err(|_| ApiError::new(StatusCode::UNAUTHORIZED, "invalid_auth_token"))?;
-    let Some(token) = header.strip_prefix("Bearer ") else {
-        return Err(ApiError::new(
-            StatusCode::UNAUTHORIZED,
-            "invalid_auth_token",
-        ));
-    };
-    let Some(verifier) = state.external_auth() else {
-        return Err(ApiError::new(
-            StatusCode::UNAUTHORIZED,
-            "invalid_auth_token",
-        ));
-    };
-    verifier.verify(token).await.map_err(|err| {
-        let error = anyhow::Error::from(err);
-        tracing::debug!(
-            error = %format!("{error:#}"),
-            "external bearer token verification failed"
-        );
-        ApiError::new(StatusCode::UNAUTHORIZED, "invalid_auth_token")
-    })
-}
-
-pub(super) fn external_profile(
-    verified: &VerifiedExternalIdentity,
-) -> Result<ExternalIdentityProfile, ApiError> {
-    let Some(email) = verified.verified_email() else {
-        return Err(ApiError::new(
-            StatusCode::BAD_REQUEST,
-            "external_email_unverified",
-        ));
-    };
-    Ok(ExternalIdentityProfile {
-        provider: verified.provider.clone(),
-        subject: verified.subject.clone(),
-        email: email.to_owned(),
-        display_name: verified.display_name(),
-    })
-}
-
 async fn authorize_principal_for_role(
     state: &AppState,
     headers: &HeaderMap,
@@ -288,6 +235,10 @@ fn tenant_token_allows_role(
     required_role: UserRole,
 ) -> bool {
     authenticated.token.has_scope(TenantTokenScope::All)
+        || (authenticated.token.has_scope(TenantTokenScope::Operator)
+            && UserRole::Operator.allows(required_role))
+        || (authenticated.token.has_scope(TenantTokenScope::Viewer)
+            && UserRole::Viewer.allows(required_role))
         || matches!(authenticated.token.scopes.as_slice(), [scope] if scope.is_user_session())
             && authenticated
                 .session_user
@@ -304,21 +255,7 @@ pub(super) async fn authorize_principal(
         return Ok(AuthenticatedPrincipal::NoAuth { tenant_id });
     }
 
-    let Some(header) = headers.get(AUTHORIZATION) else {
-        return Err(ApiError::new(
-            StatusCode::UNAUTHORIZED,
-            "missing_auth_token",
-        ));
-    };
-    let header = header
-        .to_str()
-        .map_err(|_| ApiError::new(StatusCode::UNAUTHORIZED, "invalid_auth_token"))?;
-    let Some(token) = header.strip_prefix("Bearer ") else {
-        return Err(ApiError::new(
-            StatusCode::UNAUTHORIZED,
-            "invalid_auth_token",
-        ));
-    };
+    let token = bearer_token(headers)?;
 
     let authenticated =
         if let Some(authenticated) = state.auth().authenticate_tenant_token(token).await? {

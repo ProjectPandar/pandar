@@ -123,7 +123,7 @@ describe("createTenantToken", () => {
     const formData = new FormData();
     formData.set("tenant_id", "tenant-1");
     formData.set("name", "Studio automation");
-    formData.set("scopes", " plugin:studio, agent:register, ");
+    formData.set("scopes", " plugin:studio, agent:register, agent:register, ");
     formData.set("expires_at", "2026-12-31T00:00:00Z");
 
     await expect(createTenantToken(null, formData)).resolves.toEqual({
@@ -140,7 +140,7 @@ describe("createTenantToken", () => {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           name: "Studio automation",
-          scopes: ["plugin:studio", "agent:register"],
+          scopes: ["agent:register", "plugin:studio"],
           expires_at: "2026-12-31T00:00:00Z",
         }),
       },
